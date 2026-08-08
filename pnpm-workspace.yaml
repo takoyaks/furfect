@@ -1,0 +1,11 @@
+packages:
+  - '.'
+
+allowBuilds:
+  unrs-resolver: true
+
+minimumReleaseAgeExclude:
+  - '@hookform/resolvers@5.7.1'
+
+publicHoistPattern:
+  - '@inertiajs/core'

@@ -19,16 +19,16 @@ export default function OnboardingLayout({ children, currentStep }: Props) {
             {/* Minimal Fullscreen Header */}
             <header className="border-b border-[#D4A017]/15 bg-white/80 backdrop-blur-md sticky top-0 z-50">
                 <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
+                    {/* <div className="flex items-center space-x-3">
                         <AppLogo />
                         <span className="hidden sm:inline-block h-4 w-[1px] bg-gray-300" />
                         <span className="hidden sm:inline-block text-xs font-semibold tracking-wide text-gray-500 uppercase">
                             Adopter Onboarding
                         </span>
-                    </div>
+                    </div> */}
 
                     {/* Step indicator */}
-                    <div className="flex items-center space-x-2 text-xs font-medium">
+                    <div className="flex items-center justify-center space-x-2 text-xs font-medium">
                         <div className={`px-3 py-1 rounded-full flex items-center gap-1.5 transition-colors ${
                             currentStep === 1 
                                 ? 'bg-[#D4A017] text-white shadow-sm font-semibold' 
@@ -51,7 +51,7 @@ export default function OnboardingLayout({ children, currentStep }: Props) {
                     </div>
 
                     {/* Right side user info & logout */}
-                    <div className="flex items-center space-x-3 text-xs">
+                    {/* <div className="flex items-center space-x-3 text-xs">
                         <span className="hidden md:inline-block text-gray-600 font-medium">
                             {user?.name}
                         </span>
@@ -65,7 +65,7 @@ export default function OnboardingLayout({ children, currentStep }: Props) {
                                 <span className="hidden sm:inline">Logout</span>
                             </Button>
                         </Link>
-                    </div>
+                    </div> */}
                 </div>
             </header>
 

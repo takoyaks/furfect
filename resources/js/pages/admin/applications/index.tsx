@@ -39,7 +39,7 @@ export default function AdminApplications({
 
     return (
         <AppLayout breadcrumbs={[{ title: 'Manage Applications', href: '#' }]}>
-            {/* <Head title="Manage Adoption Applications" /> */}
+            <Head title="Manage Adoption Applications" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 
                 <div className="flex justify-between items-center flex-wrap gap-4">

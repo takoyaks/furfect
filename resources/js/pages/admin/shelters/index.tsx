@@ -72,7 +72,7 @@ export default function AdminShelters({
 
     return (
         <AppLayout breadcrumbs={[{ title: 'Manage Shelters', href: '#' }]}>
-            {/* <Head title="Manage Shelters" /> */}
+            <Head title="Manage Shelters" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 
                 <div className="flex justify-between items-center flex-wrap gap-4">

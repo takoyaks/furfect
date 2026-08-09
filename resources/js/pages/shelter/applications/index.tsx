@@ -50,7 +50,7 @@ export default function ShelterApplicationIndex({
     return (
         <AppLayout breadcrumbs={[{ title: 'Review Applications', href: '#' }]}>
             <Head title="Review Applications" />
-            <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
 
                 <div className="flex justify-between items-center flex-wrap gap-4">
                     <div>

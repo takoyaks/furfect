@@ -68,7 +68,7 @@ export default function PetShow({
     return (
         <AppLayout breadcrumbs={[{ title: 'Browse Pets', href: route('pets.index') }, { title: pet.name, href: '#' }]}>
             <Head title={pet.name} />
-            <div className="max-w-6xl mx-auto py-8 px-4 space-y-8">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     
                     {/* Pictures and Details */}

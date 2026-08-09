@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Heart, Sparkles, FileCheck, Menu } from 'lucide-react';
+import { Home as HomeIcon, Heart, Sparkles, FileCheck, HelpCircle, Info, Menu } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Breadcrumbs } from '@/components/breadcrumbs';
@@ -27,7 +27,7 @@ import { UserMenuContent } from '@/components/user-menu-content';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
-import { dashboard } from '@/routes';
+import { dashboard, login, register } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
 type Props = {
@@ -43,28 +43,61 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const getInitials = useInitials();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
 
-    const mainNavItems: NavItem[] = [
-        {
-            title: 'Dashboard',
-            href: dashboard(),
-            icon: LayoutGrid,
-        },
-        {
-            title: 'Browse Pets',
-            href: route('pets.index'),
-            icon: Heart,
-        },
-        {
-            title: 'My Matches',
-            href: route('matches.index'),
-            icon: Sparkles,
-        },
-        {
-            title: 'My Application',
-            href: route('application.show'),
-            icon: FileCheck,
-        },
-    ];
+    const mainNavItems: NavItem[] = auth.user
+        ? [
+              {
+                  title: 'Home',
+                  href: dashboard(),
+                  icon: HomeIcon,
+              },
+              {
+                  title: 'Browse Pets',
+                  href: route('pets.index'),
+                  icon: Heart,
+              },
+              {
+                  title: 'My Matches',
+                  href: route('matches.index'),
+                  icon: Sparkles,
+              },
+              {
+                  title: 'How It Works',
+                  href: route('how-it-works'),
+                  icon: HelpCircle,
+              },
+              {
+                  title: 'About Us',
+                  href: route('about'),
+                  icon: Info,
+              },
+              {
+                  title: 'My Application',
+                  href: route('application.show'),
+                  icon: FileCheck,
+              },
+          ]
+        : [
+              {
+                  title: 'Home',
+                  href: route('home'),
+                  icon: HomeIcon,
+              },
+              {
+                  title: 'Browse Pets',
+                  href: route('pets.index'),
+                  icon: Heart,
+              },
+            //   {
+            //       title: 'How It Works',
+            //       href: route('how-it-works'),
+            //       icon: HelpCircle,
+            //   },
+            //   {
+            //       title: 'About Us',
+            //       href: route('about'),
+            //       icon: Info,
+            //   },
+          ];
 
     return (
         <>
@@ -157,29 +190,42 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </div>
 
                     <div className="ml-auto flex items-center space-x-2">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    className="size-10 rounded-full p-1"
-                                >
-                                    <Avatar className="size-8 overflow-hidden rounded-full">
-                                        <AvatarImage
-                                            src={auth.user?.avatar}
-                                            alt={auth.user?.name}
-                                        />
-                                        <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
-                                            {getInitials(auth.user?.name ?? '')}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-56" align="end">
-                                {auth.user && (
+                        {auth.user ? (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        className="size-10 rounded-full p-1"
+                                    >
+                                        <Avatar className="size-8 overflow-hidden rounded-full">
+                                            <AvatarImage
+                                                src={auth.user?.avatar}
+                                                alt={auth.user?.name}
+                                            />
+                                            <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
+                                                {getInitials(auth.user?.name ?? '')}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-56" align="end">
                                     <UserMenuContent user={auth.user} />
-                                )}
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <Link href={login()}>
+                                    <Button variant="ghost" size="sm" className="text-xs font-semibold text-gray-700 hover:text-gray-900">
+                                        Log in
+                                    </Button>
+                                </Link>
+                                <Link href={register()}>
+                                    <Button size="sm" className="text-xs font-semibold bg-[#D4A017] hover:bg-[#B8860B] text-white shadow-xs">
+                                        Register
+                                    </Button>
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

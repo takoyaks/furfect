@@ -9,9 +9,12 @@ import {
     BookOpen, 
     Users, 
     Home, 
+    Cat,
     Settings, 
     HelpCircle,
-    ShieldCheck
+    ShieldCheck,
+    Wand2,
+    Megaphone
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -27,6 +30,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import admin from '@/routes/admin';
 import type { NavGroup, NavItem } from '@/types';
 
 export function AppSidebar() {
@@ -56,7 +60,7 @@ export function AppSidebar() {
                         {
                             title: 'Pets',
                             href: route('admin.pets.index'),
-                            icon: FolderGit2,
+                            icon: Cat,
                         },
                         {
                             title: 'Users',
@@ -82,6 +86,21 @@ export function AppSidebar() {
                             title: 'Reports',
                             href: route('admin.reports.index'),
                             icon: BookOpen,
+                        },
+                    ],
+                },
+                {
+                    title: 'Content & Pages',
+                    items: [
+                        {
+                            title: 'Landing Builder',
+                            href: admin.cms.builder.index().url,
+                            icon: Wand2,
+                        },
+                        {
+                            title: 'Announcements',
+                            href: admin.cms.announcements.index().url,
+                            icon: Megaphone,
                         },
                     ],
                 },

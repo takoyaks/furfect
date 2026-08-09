@@ -41,7 +41,7 @@ export default function AdminReports({
 }) {
     return (
         <AppLayout breadcrumbs={[{ title: 'Reports & Exports', href: '#' }]}>
-            {/* <Head title="Adoption Activity Reports" /> */}
+            <Head title="Adoption Activity Reports" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 
                 {/* Header Action Row */}

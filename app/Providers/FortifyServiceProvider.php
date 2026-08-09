@@ -11,6 +11,8 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
+use Laravel\Fortify\Contracts\LoginResponse;
+use Laravel\Fortify\Contracts\RegisterResponse;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
 
@@ -21,8 +23,9 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(\Laravel\Fortify\Contracts\RegisterResponse::class, function () {
-            return new class implements \Laravel\Fortify\Contracts\RegisterResponse {
+        $this->app->singleton(RegisterResponse::class, function () {
+            return new class implements RegisterResponse
+            {
                 public function toResponse($request)
                 {
                     return redirect()->route('onboarding.personal.edit');
@@ -30,18 +33,29 @@ class FortifyServiceProvider extends ServiceProvider
             };
         });
 
-        $this->app->singleton(\Laravel\Fortify\Contracts\LoginResponse::class, function () {
-            return new class implements \Laravel\Fortify\Contracts\LoginResponse {
+        $this->app->singleton(LoginResponse::class, function () {
+            return new class implements LoginResponse
+            {
                 public function toResponse($request)
                 {
                     $user = $request->user();
 
-                    if ($user && $user->hasRole('admin')) {
-                        return redirect()->route('admin.dashboard');
-                    }
+                    if ($user) {
+                        if ($user->hasRole('admin')) {
+                            return redirect()->route('admin.dashboard');
+                        }
 
-                    if ($user && !$user->adopterProfile?->profile_completed_at) {
-                        return redirect()->route('onboarding.personal.edit');
+                        if ($user->hasRole('shelter_staff')) {
+                            return redirect()->route('shelter.pets.index');
+                        }
+
+                        if ($user->hasRole('mao_officer')) {
+                            return redirect()->route('mao.applications.index');
+                        }
+
+                        if (! $user->hasAnyRole(['admin', 'shelter_staff', 'mao_officer']) && ! $user->adopterProfile?->profile_completed_at) {
+                            return redirect()->route('onboarding.personal.edit');
+                        }
                     }
 
                     return redirect()->intended(config('fortify.home'));

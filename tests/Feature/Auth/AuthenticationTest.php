@@ -1,8 +1,11 @@
 <?php
 
+use App\Models\AdopterProfile;
+use App\Models\LifestyleProfile;
 use App\Models\User;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
+use Spatie\Permission\Models\Role;
 
 test('login screen can be rendered', function () {
     $response = $this->get(route('login'));
@@ -12,7 +15,7 @@ test('login screen can be rendered', function () {
 
 test('users can authenticate using the login screen', function () {
     $user = User::factory()->create();
-    \App\Models\AdopterProfile::create([
+    AdopterProfile::create([
         'user_id' => $user->id,
         'full_name' => 'Test User',
         'contact_number' => '09123456789',
@@ -27,7 +30,7 @@ test('users can authenticate using the login screen', function () {
         'pet_stay' => 'inside',
         'profile_completed_at' => now(),
     ]);
-    \App\Models\LifestyleProfile::create([
+    LifestyleProfile::create([
         'user_id' => $user->id,
         'housing_type' => 'apartment',
         'has_aircon' => 'stable',
@@ -51,6 +54,34 @@ test('users can authenticate using the login screen', function () {
 
     $this->assertAuthenticated();
     $response->assertRedirect(route('dashboard', absolute: false));
+});
+
+test('shelter staff are redirected to shelter pets index upon login without onboarding', function () {
+    Role::firstOrCreate(['name' => 'shelter_staff']);
+    $user = User::factory()->create();
+    $user->assignRole('shelter_staff');
+
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticated();
+    $response->assertRedirect(route('shelter.pets.index', absolute: false));
+});
+
+test('mao officers are redirected to mao applications index upon login without onboarding', function () {
+    Role::firstOrCreate(['name' => 'mao_officer']);
+    $user = User::factory()->create();
+    $user->assignRole('mao_officer');
+
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticated();
+    $response->assertRedirect(route('mao.applications.index', absolute: false));
 });
 
 test('users with two factor enabled are redirected to two factor challenge', function () {

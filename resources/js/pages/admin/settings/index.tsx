@@ -31,7 +31,7 @@ export default function AdminSettings({ settings }: { settings: Setting[] }) {
 
     return (
         <AppLayout breadcrumbs={[{ title: 'System Settings', href: '#' }]}>
-            {/* <Head title="System Configuration Settings" /> */}
+            <Head title="System Configuration Settings" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 
                 <Card className="border-[#D4A017]/20 shadow-md">

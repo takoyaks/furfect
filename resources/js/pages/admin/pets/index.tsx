@@ -42,7 +42,7 @@ export default function AdminPets({
 
     return (
         <AppLayout breadcrumbs={[{ title: 'Manage Pets', href: '#' }]}>
-            {/* <Head title="Manage Pets Catalog" /> */}
+            <Head title="Manage Pets" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 
                 <div className="flex justify-between items-center flex-wrap gap-4">

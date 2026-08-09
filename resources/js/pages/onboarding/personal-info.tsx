@@ -49,7 +49,7 @@ export default function PersonalInfo({ profile }: { profile: Profile | null }) {
 
     return (
         <OnboardingLayout currentStep={1}>
-            {/* <Head title="Personal Information — Onboarding" /> */}
+            <Head title="Personal Information — Onboarding" />
             <Card className="border-[#D4A017]/20 shadow-lg">
                     <CardHeader className="bg-[#F5EDD7]/50 border-b border-[#D4A017]/10">
                         <div className="text-sm font-semibold text-[#D4A017] mb-1">Step 1 of 2 - Personal Information</div>

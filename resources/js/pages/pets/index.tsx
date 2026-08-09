@@ -66,7 +66,7 @@ export default function PetsIndex({
     return (
         <AppLayout breadcrumbs={[{ title: 'Browse Pets', href: '#' }]}>
             <Head title="Browse Pets" />
-            <div className="max-w-6xl mx-auto py-8 px-4">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 
                 {/* Anti-Bias Info Banner */}
                 <Alert className="mb-6 bg-[#F5EDD7] border-[#D4A017]/30 text-amber-900">

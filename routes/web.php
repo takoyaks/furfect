@@ -1,18 +1,21 @@
 <?php
 
+use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\ApplicationController as AdminApplicationController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\LandingPageBuilderController;
 use App\Http\Controllers\Admin\PetController as AdminPetController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
-use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ShelterController as AdminShelterController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\AdopterProfileController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\DssMatchController;
 use App\Http\Controllers\LifestyleProfileController;
 use App\Http\Controllers\Mao\ApplicationController as MaoApplicationController;
 use App\Http\Controllers\Mao\ReportController as MaoReportController;
+use App\Http\Controllers\PageController;
 use App\Http\Controllers\PetController;
 use App\Http\Controllers\SavedPetController;
 use App\Http\Controllers\Shelter\ApplicationController as ShelterApplicationController;
@@ -21,13 +24,15 @@ use App\Http\Controllers\Shelter\ReportController as ShelterReportController;
 use Illuminate\Support\Facades\Route;
 
 // Public / Guest Routes
-Route::inertia('/', 'welcome')->name('home');
+Route::get('/', [PageController::class, 'home'])->name('home');
 Route::get('/pets', [PetController::class, 'index'])->name('pets.index');
 Route::get('/pets/{id}', [PetController::class, 'show'])->name('pets.show');
+Route::get('/how-it-works', [PageController::class, 'howItWorks'])->name('how-it-works');
+Route::get('/about', [PageController::class, 'about'])->name('about');
 
 // Authenticated Routes
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('/dashboard', [PageController::class, 'home'])->name('dashboard');
 
     // Onboarding (Adopter Role)
     Route::get('/onboarding/personal', [AdopterProfileController::class, 'edit'])->name('onboarding.personal.edit');
@@ -93,6 +98,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/settings', [AdminSettingController::class, 'index'])->name('settings.index');
         Route::patch('/settings', [AdminSettingController::class, 'update'])->name('settings.update');
+
+        // CMS & Landing Page Builder
+        Route::get('/cms/builder', [LandingPageBuilderController::class, 'index'])->name('cms.builder.index');
+        Route::post('/cms/builder', [LandingPageBuilderController::class, 'update'])->name('cms.builder.update');
+
+        Route::get('/cms/announcements', [AnnouncementController::class, 'index'])->name('cms.announcements.index');
+        Route::post('/cms/announcements', [AnnouncementController::class, 'store'])->name('cms.announcements.store');
+        Route::post('/cms/announcements/{id}', [AnnouncementController::class, 'update'])->name('cms.announcements.update');
+        Route::delete('/cms/announcements/{id}', [AnnouncementController::class, 'destroy'])->name('cms.announcements.destroy');
     });
 });
 

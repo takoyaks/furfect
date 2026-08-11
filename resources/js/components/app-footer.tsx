@@ -1,6 +1,6 @@
 import { Link } from '@inertiajs/react';
 import AppLogo from '@/components/app-logo';
-import { Heart, MapPin, Phone, Mail, Clock, ShieldCheck } from 'lucide-react';
+import { Heart, Cat, MapPin, Phone, Mail, Clock, ShieldCheck } from 'lucide-react';
 import { login, register } from '@/routes';
 
 interface AppFooterProps {
@@ -25,7 +25,7 @@ export function AppFooter({ user, config }: AppFooterProps) {
                             <AppLogo />
                         </Link>
                         <p className="text-xs text-gray-600 leading-relaxed">
-                            FurFect Match is the official animal adoption platform of Virac, Catanduanes, connecting rescued shelter animals with verified adopters using data-driven compatibility scoring.
+                            A Capstone Project of the College of information and Communications Technology (CICT) students of Catanduanes State University, Virac Campus. This project is a web-based adoption management system for the Virac Municipal Animal Shelter.
                         </p>
                         <div className="flex items-center gap-2 text-xs font-semibold text-[#B8860B]">
                             <ShieldCheck className="h-4 w-4 text-[#D4A017]" />
@@ -35,29 +35,21 @@ export function AppFooter({ user, config }: AppFooterProps) {
 
                     {/* Quick Navigation */}
                     <div className="space-y-3">
-                        <h4 className="font-bold text-sm text-gray-900 uppercase tracking-wider">Quick Links</h4>
+                        <h4 className="font-bold text-sm text-gray-900 uppercase tracking-wider">Capstone Project </h4>
                         <ul className="space-y-2 text-xs">
                             <li>
-                                <Link href={user ? route('dashboard') : route('home')} className="hover:text-[#D4A017] transition-colors">
-                                    Home
-                                </Link>
+                                <span className="text-gray-400">Baltzar, Danna Lorraine I.</span>
                             </li>
                             <li>
-                                <Link href={route('pets.index')} className="hover:text-[#D4A017] transition-colors">
-                                    Browse Pets Available for Adoption
-                                </Link>
+                                <span className="text-gray-400">Padua, Sophia Yzabel V.</span>
                             </li>
                             <li>
-                                <Link href={route('how-it-works')} className="hover:text-[#D4A017] transition-colors">
-                                    How It Works
-                                </Link>
+                                <span className="text-gray-400">Romero, Xandra T.</span>
                             </li>
                             <li>
-                                <Link href={route('about')} className="hover:text-[#D4A017] transition-colors">
-                                    About Us &amp; Shelter Policies
-                                </Link>
+                                <span className="text-gray-400">Tendencia, Moira Cielo</span>
                             </li>
-                            {!user && (
+                            {/* {!user && (
                                 <>
                                     <li>
                                         <Link href={login()} className="hover:text-[#D4A017] transition-colors">
@@ -70,7 +62,7 @@ export function AppFooter({ user, config }: AppFooterProps) {
                                         </Link>
                                     </li>
                                 </>
-                            )}
+                            )} */}
                         </ul>
                     </div>
 
@@ -84,11 +76,11 @@ export function AppFooter({ user, config }: AppFooterProps) {
                             </div>
                             <div className="flex items-start gap-2">
                                 <Clock className="h-4 w-4 text-[#D4A017] shrink-0 mt-0.5" />
-                                <span>{config?.about_hours || 'Mon–Fri: 8:00 AM – 5:00 PM | Sat: 9:00 AM – 12:00 PM'}</span>
+                                <span>{config?.about_hours || 'Mon–Fri: 8:00 AM – 5:00 PM'}</span>
                             </div>
                             <div className="flex items-start gap-2">
                                 <Phone className="h-4 w-4 text-[#D4A017] shrink-0 mt-0.5" />
-                                <span>{config?.about_phone || '(052) 811-2345 / +63 950-321-7654'}</span>
+                                <span>{config?.about_phone || '(000) 000-0000 / +63 900-000-0000'}</span>
                             </div>
                             <div className="flex items-start gap-2">
                                 <Mail className="h-4 w-4 text-[#D4A017] shrink-0 mt-0.5" />
@@ -102,7 +94,7 @@ export function AppFooter({ user, config }: AppFooterProps) {
                 <div className="mt-8 pt-6 border-t border-gray-200/80 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-500 gap-4">
                     <div className="flex items-center gap-1.5">
                         <span>&copy; {new Date().getFullYear()} FurFect Match. Made with</span>
-                        <Heart className="h-3.5 w-3.5 fill-red-500 text-red-500" />
+                        <Cat className="h-3.5 w-3.5 fill-yellow-500 text-black-500" />
                         <span>for Virac Animal Welfare.</span>
                     </div>
                     <div className="flex gap-4">

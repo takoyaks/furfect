@@ -157,7 +157,7 @@ export default function AdminUsers({
                                     <th className="p-3">Email</th>
                                     <th className="p-3">Role</th>
                                     <th className="p-3">Date Registered</th>
-                                    <th className="p-3">Status</th>
+                                    {/* <th className="p-3">Status</th> */}
                                     <th className="p-3">Action</th>
                                 </tr>
                             </thead>
@@ -172,11 +172,11 @@ export default function AdminUsers({
                                             </span>
                                         </td>
                                         <td className="p-3 text-gray-500">{new Date(u.created_at).toLocaleDateString()}</td>
-                                        <td className="p-3">
+                                        {/* <td className="p-3">
                                             <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-green-100 text-green-700">
                                                 Available
                                             </span>
-                                        </td>
+                                        </td> */}
                                         <td className="p-3 space-x-2">
                                             <Button 
                                                 variant="ghost" 

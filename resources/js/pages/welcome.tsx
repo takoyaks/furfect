@@ -102,7 +102,7 @@ export default function Welcome({ config, featuredPets = [], announcements = [],
 
     return (
         <AppHeaderLayout>
-            <Head title="FurFect Match — Virac Animal Shelter Adoption Portal" />
+            <Head title="FurFect Match " />
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 py-6">
                 {/* ── 1. Hero Section ────────────────────────────────────────────── */}

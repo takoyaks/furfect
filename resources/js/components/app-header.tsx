@@ -60,16 +60,16 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                   href: route('matches.index'),
                   icon: Sparkles,
               },
-              {
-                  title: 'How It Works',
-                  href: route('how-it-works'),
-                  icon: HelpCircle,
-              },
-              {
-                  title: 'About Us',
-                  href: route('about'),
-                  icon: Info,
-              },
+            //   {
+            //       title: 'How It Works',
+            //       href: route('how-it-works'),
+            //       icon: HelpCircle,
+            //   },
+            //   {
+            //       title: 'About Us',
+            //       href: route('about'),
+            //       icon: Info,
+            //   },
               {
                   title: 'My Application',
                   href: route('application.show'),

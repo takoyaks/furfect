@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FormEvent, useState, ChangeEvent } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -69,6 +69,8 @@ const HOUSING_OPTIONS = [
 ];
 
 export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Shelter[] }) {
+    const { systemSettings } = usePage().props as any;
+    const pricingEnabled = systemSettings?.pricing_enabled ?? false;
     const { data, setData, post, processing, errors } = useForm({
         shelter_id: String(pet.shelter_id),
         name: pet.name || '',
@@ -289,7 +291,8 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                                 </Select>
                             </div>
 
-                            {/* Adoption Fee */}
+                            {/* Adoption Fee — only shown when pricing is enabled */}
+                            {pricingEnabled && (
                             <div className="space-y-2">
                                 <Label htmlFor="adoption_fee">Adoption Fee (₱) *</Label>
                                 <Input
@@ -302,6 +305,7 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                                     required
                                 />
                             </div>
+                            )}
                         </CardContent>
                     </Card>
 

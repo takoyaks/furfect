@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\AdopterProfile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,6 +20,7 @@ class AdopterProfileController extends Controller
 
         return Inertia::render('onboarding/personal-info', [
             'profile' => $profile,
+            'userName' => $user->name,
         ]);
     }
 
@@ -63,7 +63,7 @@ class AdopterProfileController extends Controller
         // Flash message
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => __('Step 1 Personal Information saved successfully.')
+            'message' => __('Step 1 Personal Information saved successfully.'),
         ]);
 
         return to_route('onboarding.lifestyle.edit');

@@ -69,6 +69,13 @@ class SystemSettingsSeeder extends Seeder
                 'label' => 'MAO Office Name',
                 'description' => 'Name of the Municipal Agriculture Office responsible for final audit.',
             ],
+            [
+                'key' => 'pricing_enabled',
+                'value' => '0',
+                'type' => 'boolean',
+                'label' => 'Enable Adoption Fee / Pricing Display',
+                'description' => 'When disabled, adoption fees and pricing inputs will be hidden across the public catalog, pet details, shelter forms, and application views.',
+            ],
         ];
 
         foreach ($settings as $setting) {

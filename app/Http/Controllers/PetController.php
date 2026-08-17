@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Application;
 use App\Models\DssMatchScore;
 use App\Models\Pet;
+use App\Services\BreedMaskerService;
 use App\Services\DssMatchingService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -57,15 +59,17 @@ class PetController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search): void {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
         $pets = $query->latest('listed_at')->paginate(12)->withQueryString();
 
-        // Anti-breed bias: hide exact breed for standard public browsing
+        // Anti-breed bias: hide breed and mask breed mentions in description
         $pets->getCollection()->transform(function (Pet $pet) {
-            $pet->breed = __('Hidden — unbiased matching');
+            $pet->breed = __('Hidden');
+            $pet->description = BreedMaskerService::mask((string) $pet->description);
+
             return $pet;
         });
 
@@ -98,16 +102,33 @@ class PetController extends Controller
         $dssData = null;
         $isSaved = false;
         $hasActiveApplication = false;
+        $isApproved = false;
 
-        // Anti-breed bias: breed is hidden for public, but visible/hidden based on DSS match detail
+        // Store real breed & description before any masking
         $originalBreed = $pet->breed;
-        $pet->breed = __('Hidden — unbiased matching');
+        $originalDescription = $pet->description;
+
+        // Default: hide breed and mask description
+        $pet->breed = __('Hidden');
+        $pet->description = BreedMaskerService::mask((string) $originalDescription);
 
         if ($user) {
             $isSaved = $user->savedPets()->where('pet_id', $pet->id)->exists();
             $hasActiveApplication = $user->applications()
                 ->whereIn('status', ['pending', 'under_review', 'mao_audit'])
                 ->exists();
+
+            // Check if this adopter has an approved application for this pet
+            $isApproved = Application::where('user_id', $user->id)
+                ->where('pet_id', $pet->id)
+                ->where('status', 'approved')
+                ->exists();
+
+            if ($isApproved) {
+                // Approved adopter: reveal real breed and unmasked description
+                $pet->breed = $originalBreed;
+                $pet->description = $originalDescription;
+            }
 
             if ($user->lifestyleProfile) {
                 // Fetch or calculate DSS match score details
@@ -135,9 +156,6 @@ class PetController extends Controller
                     'match_reasons' => $score->match_reasons,
                     'mismatch_reasons' => $score->mismatch_reasons,
                 ];
-
-                // If user is logged in and has computed a matching profile, we show the breed (matches details view on proposal)
-                $pet->breed = $originalBreed;
             }
         }
 
@@ -146,6 +164,7 @@ class PetController extends Controller
             'dssData' => $dssData,
             'isSaved' => $isSaved,
             'hasActiveApplication' => $hasActiveApplication,
+            'isApproved' => $isApproved,
         ]);
     }
 }

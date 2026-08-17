@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { FormEvent, useState, ChangeEvent } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -41,6 +41,8 @@ const HOUSING_OPTIONS = [
 
 export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
     const defaultShelterId = shelters.length > 0 ? String(shelters[0].id) : '';
+    const { systemSettings } = usePage().props as any;
+    const pricingEnabled = systemSettings?.pricing_enabled ?? false;
 
     const { data, setData, post, processing, errors } = useForm({
         shelter_id: defaultShelterId,
@@ -252,7 +254,8 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
                                 {errors.size && <p className="text-xs text-red-500">{errors.size}</p>}
                             </div>
 
-                            {/* Adoption Fee */}
+                            {/* Adoption Fee — only shown when pricing is enabled */}
+                            {pricingEnabled && (
                             <div className="space-y-2">
                                 <Label htmlFor="adoption_fee">Adoption Fee (₱) *</Label>
                                 <Input
@@ -267,6 +270,7 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
                                 />
                                 {errors.adoption_fee && <p className="text-xs text-red-500">{errors.adoption_fee}</p>}
                             </div>
+                            )}
                         </CardContent>
                     </Card>
 

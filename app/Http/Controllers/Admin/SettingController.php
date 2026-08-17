@@ -32,20 +32,26 @@ class SettingController extends Controller
         $settings = SystemSetting::all();
 
         foreach ($settings as $setting) {
-            $rules[$setting->key] = $setting->type === 'integer'
-                ? ['required', 'integer']
-                : ['required', 'string'];
+            $rules[$setting->key] = match ($setting->type) {
+                'integer' => ['required', 'integer'],
+                'boolean' => ['nullable'],
+                default => ['required', 'string'],
+            };
         }
 
         $validated = $request->validate($rules);
 
-        foreach ($validated as $key => $value) {
-            SystemSetting::set($key, $value);
+        foreach ($settings as $setting) {
+            $value = $validated[$setting->key] ?? null;
+            if ($setting->type === 'boolean') {
+                $value = $request->has($setting->key) && $request->input($setting->key) ? '1' : '0';
+            }
+            SystemSetting::set($setting->key, $value ?? '');
         }
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => __('System settings updated successfully.')
+            'message' => __('System settings updated successfully.'),
         ]);
 
         return back();

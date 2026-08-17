@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +36,8 @@ export default function PetsIndex({
     savedPetIds: number[];
     dssScores: Record<number, number>;
 }) {
+    const { systemSettings } = usePage().props as any;
+    const pricingEnabled = systemSettings?.pricing_enabled ?? false;
     const [search, setSearch] = useState(filters.search || '');
     const [species, setSpecies] = useState(filters.species || 'All types');
     const [age, setAge] = useState(filters.age || 'All ages');
@@ -140,7 +142,8 @@ export default function PetsIndex({
                                     </Select>
                                 </div>
 
-                                {/* Adoption Fee */}
+                                {/* Adoption Fee — only shown when pricing is enabled */}
+                                {pricingEnabled && (
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-gray-500 uppercase">Adoption Fee</label>
                                     <Select value={fee} onValueChange={val => setFee(val)}>
@@ -152,6 +155,7 @@ export default function PetsIndex({
                                         </SelectContent>
                                     </Select>
                                 </div>
+                                )}
 
                                 <Button 
                                     onClick={applyFilters} 
@@ -227,9 +231,13 @@ export default function PetsIndex({
                                         </div>
 
                                         <div className="p-4 pt-0 border-t border-gray-100 mt-2 pt-3 flex items-center justify-between">
-                                            <span className="text-xs font-semibold text-gray-500">
-                                                {parseFloat(pet.adoption_fee) === 0 ? 'Free adoption' : `₱${parseFloat(pet.adoption_fee).toLocaleString()}`}
-                                            </span>
+                                            {pricingEnabled ? (
+                                                <span className="text-xs font-semibold text-gray-500">
+                                                    {parseFloat(pet.adoption_fee) === 0 ? 'Free adoption' : `₱${parseFloat(pet.adoption_fee).toLocaleString()}`}
+                                                </span>
+                                            ) : (
+                                                <span />
+                                            )}
                                             <Link href={route('pets.show', pet.id)}>
                                                 <Button size="sm" variant="outline" className="text-xs flex items-center gap-1 border-gray-200">
                                                     <Eye className="h-3.5 w-3.5" />

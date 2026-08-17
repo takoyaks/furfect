@@ -1,8 +1,9 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { Settings, ShieldCheck } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 
@@ -39,7 +40,7 @@ export default function AdminSettings({ settings }: { settings: Setting[] }) {
                         <Settings className="h-5 w-5 text-[#D4A017]" />
                         <div>
                             <CardTitle className="text-lg font-bold text-gray-800">System Configuration</CardTitle>
-                            <CardDescription>Adjust limits, cooldown intervals, and DSS compatibility parameters.</CardDescription>
+                            <CardDescription>Adjust limits, cooldown intervals, DSS compatibility parameters, and feature toggles.</CardDescription>
                         </div>
                     </CardHeader>
                     <CardContent className="pt-6">
@@ -48,18 +49,46 @@ export default function AdminSettings({ settings }: { settings: Setting[] }) {
                             <div className="space-y-4">
                                 {settings.map(setting => (
                                     <div key={setting.id} className="space-y-1.5 p-3 rounded border border-gray-100 bg-gray-50/20">
-                                        <div className="flex justify-between items-center">
-                                            <Label htmlFor={setting.key} className="font-bold text-gray-700 text-sm">{setting.label}</Label>
-                                            <Input 
-                                                id={setting.key}
-                                                type={setting.type === 'integer' ? 'number' : 'text'}
-                                                value={data[setting.key] || ''}
-                                                onChange={e => setData(setting.key, e.target.value)}
-                                                className="w-32 text-right focus-visible:ring-[#D4A017]"
-                                                required
-                                            />
-                                        </div>
-                                        <p className="text-xs text-gray-400">{setting.description}</p>
+                                        {setting.type === 'boolean' ? (
+                                            /* Toggle Switch for boolean settings */
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex-1">
+                                                    <Label htmlFor={setting.key} className="font-bold text-gray-700 text-sm cursor-pointer">
+                                                        {setting.label}
+                                                    </Label>
+                                                    <p className="text-xs text-gray-400 mt-0.5">{setting.description}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2 ml-4 shrink-0">
+                                                    <span className="text-xs text-gray-400">
+                                                        {data[setting.key] === '1' ? 'Enabled' : 'Disabled'}
+                                                    </span>
+                                                    <Switch
+                                                        id={setting.key}
+                                                        checked={data[setting.key] === '1'}
+                                                        onCheckedChange={(checked) =>
+                                                            setData(setting.key, checked ? '1' : '0')
+                                                        }
+                                                        className="data-[state=checked]:bg-[#D4A017]"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            /* Input field for string/integer settings */
+                                            <>
+                                                <div className="flex justify-between items-center">
+                                                    <Label htmlFor={setting.key} className="font-bold text-gray-700 text-sm">{setting.label}</Label>
+                                                    <Input 
+                                                        id={setting.key}
+                                                        type={setting.type === 'integer' ? 'number' : 'text'}
+                                                        value={data[setting.key] || ''}
+                                                        onChange={e => setData(setting.key, e.target.value)}
+                                                        className="w-32 text-right focus-visible:ring-[#D4A017]"
+                                                        required
+                                                    />
+                                                </div>
+                                                <p className="text-xs text-gray-400">{setting.description}</p>
+                                            </>
+                                        )}
                                     </div>
                                 ))}
                             </div>

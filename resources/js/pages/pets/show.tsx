@@ -1,8 +1,8 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Check, ShieldAlert, Award, Calendar, Phone, Heart, Sparkles, MapPin } from 'lucide-react';
+import { Check, ShieldAlert, Award, Calendar, Phone, Heart, Sparkles, MapPin, BadgeCheck } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 
@@ -44,17 +44,21 @@ interface DssData {
     mismatch_reasons: string[];
 }
 
-export default function PetShow({ 
-    pet, 
-    dssData, 
+export default function PetShow({
+    pet,
+    dssData,
     isSaved,
-    hasActiveApplication
-}: { 
-    pet: Pet; 
-    dssData: DssData | null; 
+    hasActiveApplication,
+    isApproved = false,
+}: {
+    pet: Pet;
+    dssData: DssData | null;
     isSaved: boolean;
     hasActiveApplication: boolean;
+    isApproved: boolean;
 }) {
+    const { systemSettings } = usePage().props as any;
+    const pricingEnabled = systemSettings?.pricing_enabled ?? false;
     const [selectedPhoto, setSelectedPhoto] = useState(pet.photos[0]?.photo_path || '/placeholder-pet.png');
 
     const handleApply = () => {
@@ -102,6 +106,15 @@ export default function PetShow({
                         {/* Pet Description */}
                         <div className="space-y-2">
                             <h2 className="text-2xl font-bold text-gray-800">Meet {pet.name}</h2>
+
+                            {/* Approved Adoption Badge — reveals breed info */}
+                            {isApproved && (
+                                <div className="inline-flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+                                    <BadgeCheck className="h-3.5 w-3.5 text-green-600" />
+                                    Adoption Approved — Breed & Details Unlocked
+                                </div>
+                            )}
+
                             <div className="flex flex-wrap gap-2 py-2">
                                 {pet.temperament && pet.temperament.map(tag => (
                                     <span key={tag} className="text-xs bg-[#F5EDD7] text-[#D4A017] font-semibold px-3 py-1 rounded-full capitalize">
@@ -214,12 +227,15 @@ export default function PetShow({
                                         <span className="text-gray-500">Health</span>
                                         <span className="font-semibold">{pet.health_status || 'Vaccinated'}</span>
                                     </div>
+                                    {/* Adoption Fee — only show when pricing is enabled */}
+                                    {pricingEnabled && (
                                     <div className="flex justify-between">
                                         <span className="text-gray-500">Adoption Fee</span>
                                         <span className="font-semibold text-[#D4A017]">
                                             {parseFloat(pet.adoption_fee) === 0 ? 'Free' : `₱${parseFloat(pet.adoption_fee).toLocaleString()}`}
                                         </span>
                                     </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>

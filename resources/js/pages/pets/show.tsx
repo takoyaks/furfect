@@ -207,10 +207,13 @@ export default function PetShow({
                                         <span className="text-gray-500">Species</span>
                                         <span className="font-semibold capitalize">{pet.species}</span>
                                     </div>
-                                    <div className="flex justify-between border-b border-gray-50 pb-1">
-                                        <span className="text-gray-500">Breed</span>
-                                        <span className="font-semibold capitalize">{pet.breed}</span>
-                                    </div>
+                                    {/* Breed — only shown when application is approved */}
+                                    {isApproved && pet.breed && pet.breed !== 'Hidden' && (
+                                        <div className="flex justify-between border-b border-gray-50 pb-1">
+                                            <span className="text-gray-500">Breed</span>
+                                            <span className="font-semibold capitalize">{pet.breed}</span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between border-b border-gray-50 pb-1">
                                         <span className="text-gray-500">Age</span>
                                         <span className="font-semibold">{pet.age_years} Year(s)</span>

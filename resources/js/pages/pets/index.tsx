@@ -216,7 +216,9 @@ export default function PetsIndex({
                                             <div className="p-4 space-y-3">
                                                 <div>
                                                     <h4 className="text-lg font-bold text-gray-800">{pet.name}</h4>
-                                                    <span className="text-xs text-gray-500 font-semibold block italic mb-1">{pet.breed}</span>
+                                                    {pet.breed && pet.breed !== 'Hidden' && (
+                                                        <span className="text-xs text-gray-500 font-semibold block italic mb-1">{pet.breed}</span>
+                                                    )}
                                                     <p className="text-xs text-gray-500 capitalize">{pet.age_years} yrs • {pet.gender} • {pet.size}</p>
                                                 </div>
 

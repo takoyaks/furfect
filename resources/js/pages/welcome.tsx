@@ -245,7 +245,7 @@ export default function Welcome({ config, featuredPets = [], announcements = [],
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <h3 className="font-bold text-base text-gray-900">{pet.name}</h3>
-                                                    <p className="text-xs text-gray-500">{pet.breed} &bull; {pet.age_years} yrs</p>
+                                                    <p className="text-xs text-gray-500">{pet.breed && pet.breed !== 'Hidden' ? `${pet.breed} • ` : ''}{pet.age_years} yrs</p>
                                                 </div>
                                                 <span className="text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-0.5 rounded capitalize">
                                                     {pet.size}

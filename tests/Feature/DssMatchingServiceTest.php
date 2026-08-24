@@ -180,8 +180,8 @@ it('deducts for first-time owner with pet requiring experience', function (): vo
     $firstResult = $this->service->computeScore($firstTime, $pet);
     $expResult = $this->service->computeScore($experienced, $pet);
 
-    expect($firstResult['financial_score'])->toBeLessThan($expResult['financial_score']);
-    expect($firstResult['mismatch_reasons'])->toContain('Not ideal for first-time owners');
+    expect($firstResult['experience_score'])->toBeLessThan($expResult['experience_score']);
+    expect($firstResult['mismatch_reasons'])->toContain('This pet requires an experienced handler with previous animal care history.');
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -198,7 +198,7 @@ it('deducts when pet requires no children but adopter has young children', funct
     $noResult = $this->service->computeScore($noChildren, $pet);
 
     expect($withResult['household_score'])->toBeLessThan($noResult['household_score']);
-    expect($withResult['mismatch_reasons'])->toContain('Pet not suitable with young children');
+    expect($withResult['mismatch_reasons'])->toContain('Pet is not suited for homes with children.');
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -212,12 +212,14 @@ it('total score equals weighted sum of factor scores', function (): void {
     $result = $this->service->computeScore($lifestyle, $pet);
 
     $expected = round(
-        ($result['living_score'] * 0.25)
-        + ($result['health_score'] * 0.20)
-        + ($result['financial_score'] * 0.20)
-        + ($result['activity_score'] * 0.15)
-        + ($result['household_score'] * 0.10)
-        + ($result['preference_score'] * 0.10),
+        ($result['lifestyle_score'] * 0.25)
+        + ($result['housing_score'] * 0.20)
+        + ($result['care_capacity_score'] * 0.15)
+        + ($result['experience_score'] * 0.10)
+        + ($result['other_pets_score'] * 0.10)
+        + ($result['family_children_score'] * 0.10)
+        + ($result['age_activity_score'] * 0.05)
+        + ($result['special_requirements_score'] * 0.05),
         2
     );
 

@@ -84,7 +84,7 @@ export default function LifestyleQuiz({
 
     return (
         <OnboardingLayout currentStep={2}>
-            <Head title="Lifestyle Profile — Onboarding" />
+            <Head title="Lifestyle Profile" />
                 {isLocked && (
                     <Alert className="mb-6 bg-amber-50 border-amber-300">
                         <Lock className="h-4 w-4 text-amber-700" />

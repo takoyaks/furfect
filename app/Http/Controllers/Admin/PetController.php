@@ -25,8 +25,13 @@ class PetController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where('name', 'like', "%{$search}%")
-                  ->orWhere('breed', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('breed', 'like', "%{$search}%")
+                    ->orWhere('tag_number', 'like', "%{$search}%")
+                    ->orWhere('microchip_number', 'like', "%{$search}%")
+                    ->orWhere('housing_area', 'like', "%{$search}%");
+            });
         }
 
         $pets = $query->paginate(10)->withQueryString();
@@ -49,7 +54,7 @@ class PetController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'info',
-            'message' => __('Pet listing archived successfully.')
+            'message' => __('Pet listing archived successfully.'),
         ]);
 
         return back();

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Announcement;
+use App\Models\Application;
 use App\Models\LandingPageConfig;
 use App\Models\Pet;
 use App\Models\User;
@@ -39,11 +40,23 @@ class PageController extends Controller
                 : 0,
         ];
 
+        // Pass active application for adopter dashboard banner
+        $activeApplication = null;
+        $user = $request->user();
+        if ($user && $user->hasRole('adopter')) {
+            $activeApplication = Application::where('user_id', $user->id)
+                ->with('pet:id,name')
+                ->whereIn('status', ['pending', 'under_review', 'mao_audit', 'approved'])
+                ->latest('submitted_at')
+                ->first(['id', 'pet_id', 'status', 'dss_score', 'reference_number', 'submitted_at', 'target_sla_at', 'pickup_deadline_at', 'certificate_number']);
+        }
+
         return Inertia::render('dashboard', [
             'config' => $config,
             'featuredPets' => $featuredPets,
             'announcements' => $announcements,
             'stats' => $stats,
+            'activeApplication' => $activeApplication,
         ]);
     }
 

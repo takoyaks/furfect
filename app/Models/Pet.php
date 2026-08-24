@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\PetFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -33,7 +34,7 @@ use Illuminate\Support\Carbon;
  */
 class Pet extends Model
 {
-    /** @use HasFactory<\Database\Factories\PetFactory> */
+    /** @use HasFactory<PetFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -41,6 +42,8 @@ class Pet extends Model
         'name',
         'species',
         'breed',
+        'tag_number',
+        'microchip_number',
         'age_years',
         'gender',
         'size',
@@ -52,6 +55,9 @@ class Pet extends Model
         'requires_no_children',
         'requires_no_other_pets',
         'housing_compatible',
+        'housing_area',
+        'housing_notes',
+        'intake_date',
         'adoption_fee',
         'description',
         'status',
@@ -72,6 +78,7 @@ class Pet extends Model
             'requires_no_other_pets' => 'boolean',
             'adoption_fee' => 'decimal:2',
             'listed_at' => 'datetime',
+            'intake_date' => 'date',
         ];
     }
 

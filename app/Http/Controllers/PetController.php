@@ -147,14 +147,25 @@ class PetController extends Controller
 
                 $dssData = [
                     'total_score' => $score->total_score,
-                    'living_score' => $score->living_score,
-                    'health_score' => $score->health_score,
-                    'financial_score' => $score->financial_score,
-                    'activity_score' => $score->activity_score,
-                    'household_score' => $score->household_score,
-                    'preference_score' => $score->preference_score,
+                    'lifestyle_score' => $score->lifestyle_score,
+                    'housing_score' => $score->housing_score,
+                    'care_capacity_score' => $score->care_capacity_score,
+                    'experience_score' => $score->experience_score,
+                    'other_pets_score' => $score->other_pets_score,
+                    'family_children_score' => $score->family_children_score,
+                    'age_activity_score' => $score->age_activity_score,
+                    'special_requirements_score' => $score->special_requirements_score,
+                    'breakdown_details' => $score->breakdown_details,
+                    'fast_track_eligible' => $score->fast_track_eligible,
                     'match_reasons' => $score->match_reasons,
                     'mismatch_reasons' => $score->mismatch_reasons,
+                    // Legacy support
+                    'living_score' => $score->housing_score ?? $score->living_score,
+                    'health_score' => $score->special_requirements_score ?? $score->health_score,
+                    'financial_score' => $score->care_capacity_score ?? $score->financial_score,
+                    'activity_score' => $score->lifestyle_score ?? $score->activity_score,
+                    'household_score' => $score->family_children_score ?? $score->household_score,
+                    'preference_score' => $score->age_activity_score ?? $score->preference_score,
                 ];
             }
         }

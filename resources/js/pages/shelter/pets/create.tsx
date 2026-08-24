@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Upload, X, Check, Dog, Cat, Sparkles, ShieldAlert, HeartHandshake } from 'lucide-react';
+import { ArrowLeft, Upload, X, Check, Dog, Cat, Sparkles, ShieldAlert, HeartHandshake, Tag, MapPin, Cpu, Calendar } from 'lucide-react';
 
 interface Shelter {
     id: number;
@@ -49,6 +49,8 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
         name: '',
         species: 'dog',
         breed: '',
+        tag_number: '',
+        microchip_number: '',
         age_years: '1',
         gender: 'male',
         size: 'medium',
@@ -60,6 +62,9 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
         requires_no_children: false,
         requires_no_other_pets: false,
         housing_compatible: ['house_with_yard', 'apartment'] as string[],
+        housing_area: '',
+        housing_notes: '',
+        intake_date: new Date().toISOString().split('T')[0],
         adoption_fee: '0',
         description: '',
         photos: [] as File[],
@@ -443,6 +448,98 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
                                         </span>
                                     </div>
                                 </label>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Section 3: Physical Identity & Shelter Facility Location */}
+                    <Card className="border-gray-200 dark:border-neutral-800">
+                        <CardHeader className="border-b border-gray-100 dark:border-neutral-800 pb-3">
+                            <CardTitle className="text-base font-semibold flex items-center gap-2 text-gray-800 dark:text-neutral-200">
+                                <Tag className="w-4 h-4 text-[#D4A017]" /> Physical Identity &amp; Shelter Facility Location
+                            </CardTitle>
+                            <CardDescription>Collar tags, microchip, and housing zone to allow staff and MAO officers to locate the pet quickly.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-6 space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Tag / Collar Code */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="tag_number" className="flex items-center gap-1.5">
+                                        <Tag className="w-3.5 h-3.5 text-gray-500" />
+                                        Physical Tag / Collar Code
+                                    </Label>
+                                    <Input
+                                        id="tag_number"
+                                        placeholder="e.g. TAG-D-2026-089 or Collar C-042"
+                                        value={data.tag_number}
+                                        onChange={e => setData('tag_number', e.target.value)}
+                                    />
+                                    <p className="text-[11px] text-gray-400">Assigned collar tag, ear tag, or intake tag for physical shelter identification.</p>
+                                    {errors.tag_number && <p className="text-xs text-red-500">{errors.tag_number}</p>}
+                                </div>
+
+                                {/* Microchip Number */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="microchip_number" className="flex items-center gap-1.5">
+                                        <Cpu className="w-3.5 h-3.5 text-gray-500" />
+                                        Microchip ID
+                                    </Label>
+                                    <Input
+                                        id="microchip_number"
+                                        placeholder="e.g. 900115800412345 (15-digit ISO)"
+                                        value={data.microchip_number}
+                                        onChange={e => setData('microchip_number', e.target.value)}
+                                    />
+                                    <p className="text-[11px] text-gray-400">Electronic microchip identification if implanted.</p>
+                                    {errors.microchip_number && <p className="text-xs text-red-500">{errors.microchip_number}</p>}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Housing Area / Enclosure Zone */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="housing_area" className="flex items-center gap-1.5">
+                                        <MapPin className="w-3.5 h-3.5 text-gray-500" />
+                                        Shelter Housing Area / Zone *
+                                    </Label>
+                                    <Input
+                                        id="housing_area"
+                                        placeholder="e.g. Kennel Bay A-12, Cattery Pen 3, Quarantine Ward"
+                                        value={data.housing_area}
+                                        onChange={e => setData('housing_area', e.target.value)}
+                                    />
+                                    <p className="text-[11px] text-gray-400">Specific room, bay, cage number, or foster location.</p>
+                                    {errors.housing_area && <p className="text-xs text-red-500">{errors.housing_area}</p>}
+                                </div>
+
+                                {/* Intake Date */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="intake_date" className="flex items-center gap-1.5">
+                                        <Calendar className="w-3.5 h-3.5 text-gray-500" />
+                                        Shelter Intake Date
+                                    </Label>
+                                    <Input
+                                        id="intake_date"
+                                        type="date"
+                                        value={data.intake_date}
+                                        onChange={e => setData('intake_date', e.target.value)}
+                                    />
+                                    <p className="text-[11px] text-gray-400">Date animal was admitted to the shelter facility.</p>
+                                    {errors.intake_date && <p className="text-xs text-red-500">{errors.intake_date}</p>}
+                                </div>
+                            </div>
+
+                            {/* Housing / Handling Notes */}
+                            <div className="space-y-2">
+                                <Label htmlFor="housing_notes">Facility Enclosure Notes &amp; Handling Instructions</Label>
+                                <Textarea
+                                    id="housing_notes"
+                                    rows={2}
+                                    placeholder="e.g. Upper tier cage on left; quiet area needed; feeds separately."
+                                    value={data.housing_notes}
+                                    onChange={e => setData('housing_notes', e.target.value)}
+                                />
+                                {errors.housing_notes && <p className="text-xs text-red-500">{errors.housing_notes}</p>}
                             </div>
                         </CardContent>
                     </Card>

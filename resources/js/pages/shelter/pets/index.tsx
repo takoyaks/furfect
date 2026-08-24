@@ -5,12 +5,16 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { Tag, MapPin } from 'lucide-react';
 
 interface Pet {
     id: number;
     name: string;
     species: string;
     breed: string;
+    tag_number?: string | null;
+    microchip_number?: string | null;
+    housing_area?: string | null;
     age_years: number;
     gender: string;
     size: string;
@@ -48,7 +52,7 @@ export default function ShelterPetsIndex({
                 <div className="flex justify-between items-center flex-wrap gap-4">
                     <div>
                         <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Manage Shelter Pets</h2>
-                        <p className="text-xs text-gray-500 dark:text-neutral-400">View and update pet listings for adoption.</p>
+                        <p className="text-xs text-gray-500 dark:text-neutral-400">View and update pet listings, collar tags, and facility housing areas.</p>
                     </div>
                     <Link href={route('shelter.pets.create')}>
                         <Button className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold flex items-center gap-1.5 shadow-sm">
@@ -61,9 +65,9 @@ export default function ShelterPetsIndex({
                 <Card className="border-gray-200 dark:border-neutral-800">
                     <CardHeader className="pb-4">
                         <form onSubmit={handleSearchSubmit} className="flex gap-4 flex-wrap">
-                            <div className="flex-1 min-w-[200px]">
+                            <div className="flex-1 min-w-[220px]">
                                 <Input 
-                                    placeholder="Search by pet name or breed..." 
+                                    placeholder="Search by name, tag #, microchip, or housing area..." 
                                     value={search} 
                                     onChange={e => setSearch(e.target.value)}
                                 />
@@ -87,6 +91,7 @@ export default function ShelterPetsIndex({
                             <thead className="bg-gray-50/50 dark:bg-neutral-800/50 text-gray-500 font-semibold border-b border-gray-100 dark:border-neutral-800">
                                 <tr>
                                     <th className="p-3">Pet Name</th>
+                                    <th className="p-3">Tag &amp; Facility Location</th>
                                     <th className="p-3">Species</th>
                                     <th className="p-3">Breed</th>
                                     <th className="p-3 text-center">Age</th>
@@ -99,7 +104,28 @@ export default function ShelterPetsIndex({
                             <tbody className="divide-y divide-gray-100 dark:divide-neutral-800 text-gray-700 dark:text-neutral-300">
                                 {pets.data.map(p => (
                                     <tr key={p.id} className="hover:bg-gray-50/20 dark:hover:bg-neutral-800/20">
-                                        <td className="p-3 font-semibold">{p.name}</td>
+                                        <td className="p-3 font-semibold text-gray-900 dark:text-white">
+                                            {p.name}
+                                        </td>
+                                        <td className="p-3">
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-[#B8860B] border border-amber-200">
+                                                        <Tag className="h-3 w-3 shrink-0" />
+                                                        {p.tag_number || 'No Tag'}
+                                                    </span>
+                                                    {p.microchip_number && (
+                                                        <span className="text-[10px] text-gray-400 font-mono" title={`Microchip: ${p.microchip_number}`}>
+                                                            [Chip]
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <span className="text-[11px] text-gray-600 dark:text-neutral-400 flex items-center gap-1 font-medium">
+                                                    <MapPin className="h-3 w-3 shrink-0 text-gray-400" />
+                                                    {p.housing_area || 'Unassigned Area'}
+                                                </span>
+                                            </div>
+                                        </td>
                                         <td className="p-3 text-gray-500 capitalize">{p.species}</td>
                                         <td className="p-3 text-gray-500">{p.breed || '-'}</td>
                                         <td className="p-3 text-center">{p.age_years} yrs</td>
@@ -135,7 +161,7 @@ export default function ShelterPetsIndex({
                                 ))}
                                 {pets.data.length === 0 && (
                                     <tr>
-                                        <td colSpan={8} className="p-6 text-center text-gray-500">
+                                        <td colSpan={9} className="p-6 text-center text-gray-500">
                                             No pet listings found.
                                         </td>
                                     </tr>

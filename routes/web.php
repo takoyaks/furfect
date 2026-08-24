@@ -9,12 +9,14 @@ use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\ShelterController as AdminShelterController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\AdopterHistoryController;
 use App\Http\Controllers\AdopterProfileController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\DssMatchController;
 use App\Http\Controllers\LifestyleProfileController;
 use App\Http\Controllers\Mao\ApplicationController as MaoApplicationController;
 use App\Http\Controllers\Mao\ReportController as MaoReportController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PetController;
 use App\Http\Controllers\SavedPetController;
@@ -42,9 +44,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Adopter Portal Functions
     Route::get('/matches', [DssMatchController::class, 'index'])->name('matches.index');
+    Route::get('/history', [AdopterHistoryController::class, 'index'])->name('history.index');
     Route::post('/saved-pets/toggle', [SavedPetController::class, 'toggle'])->name('saved-pets.toggle');
     Route::get('/application', [ApplicationController::class, 'show'])->name('application.show');
     Route::post('/application', [ApplicationController::class, 'store'])->name('application.store');
+    Route::post('/application/transfer', [ApplicationController::class, 'transfer'])->name('application.transfer');
+    Route::post('/application/withdraw', [ApplicationController::class, 'withdraw'])->name('application.withdraw');
+
+    // Notification Center API
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 
     // Shelter Staff Portal Group
     Route::middleware(['role:shelter_staff|admin'])->prefix('shelter')->name('shelter.')->group(function () {

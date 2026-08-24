@@ -1,9 +1,10 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Sparkles, Heart, ArrowRight, ShieldCheck, Calendar, Users, Home as HomeIcon, CheckCircle2, Megaphone, HelpCircle, FileCheck } from 'lucide-react';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Sparkles, Heart, ArrowRight, ShieldCheck, Calendar, Users, Home as HomeIcon, CheckCircle2, Megaphone, HelpCircle, FileCheck, Clock, Award, AlertCircle } from 'lucide-react';
 import { AppFooter } from '@/components/app-footer';
+import { cn } from '@/lib/utils';
 
 interface Pet {
     id: number;
@@ -51,9 +52,21 @@ interface Props {
         adopted_pets: number;
         total_adopters: number;
     };
+    activeApplication?: {
+        id: number;
+        pet_id: number;
+        status: string;
+        dss_score: number;
+        reference_number: string;
+        submitted_at: string;
+        target_sla_at?: string;
+        pickup_deadline_at?: string;
+        certificate_number?: string;
+        pet?: { id: number; name: string };
+    } | null;
 }
 
-export default function Home({ config, featuredPets = [], announcements = [], stats }: Props) {
+export default function Home({ config, featuredPets = [], announcements = [], stats, activeApplication }: Props) {
     const { auth } = usePage().props;
 
     const sections = (() => {
@@ -104,6 +117,92 @@ export default function Home({ config, featuredPets = [], announcements = [], st
             <Head title="Home — FurFect Match" />
 
             <div className="space-y-12 py-4">
+                {/* ── 0. Live Adoption Application Banner (If Active Application Exists) ── */}
+                {activeApplication && (
+                    <div className={`overflow-hidden rounded-2xl border p-5 shadow-sm transition-all ${
+                        activeApplication.status === 'approved'
+                            ? 'bg-gradient-to-r from-green-50 via-emerald-50 to-green-100/60 border-green-300'
+                            : activeApplication.status === 'mao_audit'
+                            ? 'bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-100/60 border-amber-300'
+                            : 'bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-100/60 border-blue-300'
+                    }`}>
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                            <div className="flex items-start gap-3.5">
+                                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-xs ${
+                                    activeApplication.status === 'approved'
+                                        ? 'bg-green-600 text-white'
+                                        : activeApplication.status === 'mao_audit'
+                                        ? 'bg-amber-600 text-white'
+                                        : 'bg-blue-600 text-white'
+                                }`}>
+                                    {activeApplication.status === 'approved' ? (
+                                        <Award className="h-6 w-6" />
+                                    ) : activeApplication.status === 'mao_audit' ? (
+                                        <ShieldCheck className="h-6 w-6" />
+                                    ) : (
+                                        <Clock className="h-6 w-6" />
+                                    )}
+                                </div>
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${
+                                            activeApplication.status === 'approved'
+                                                ? 'bg-green-200/80 text-green-900'
+                                                : activeApplication.status === 'mao_audit'
+                                                ? 'bg-amber-200/80 text-amber-900'
+                                                : 'bg-blue-200/80 text-blue-900'
+                                        }`}>
+                                            {activeApplication.status === 'approved'
+                                                ? 'Adoption Approved & Pickup Ready'
+                                                : activeApplication.status === 'mao_audit'
+                                                ? 'MAO Compliance Audit in Progress'
+                                                : 'Application Under Shelter Review'}
+                                        </span>
+                                        <span className="text-xs text-gray-500 font-mono">
+                                            #{activeApplication.reference_number}
+                                        </span>
+                                    </div>
+                                    <h2 className="text-base font-bold text-gray-900">
+                                        {activeApplication.status === 'approved'
+                                            ? `Your adoption for ${activeApplication.pet?.name || 'your pet'} is officially approved! (Cert #${activeApplication.certificate_number || 'ISSUED'})`
+                                            : activeApplication.status === 'mao_audit'
+                                            ? `Shelter screening passed for ${activeApplication.pet?.name || 'your pet'}! Currently undergoing MAO municipal verification.`
+                                            : `Application submitted for ${activeApplication.pet?.name || 'your pet'} with a DSS match score of ${Math.round(activeApplication.dss_score)}%.`}
+                                    </h2>
+                                    <p className="text-xs text-gray-600">
+                                        {activeApplication.status === 'approved'
+                                            ? 'Please bring your valid ID to the Virac Animal Shelter to complete pet handover before the 7-day pickup deadline.'
+                                            : 'Track live milestones, reviewer remarks, and compliance status in real time.'}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="shrink-0 w-full md:w-auto flex items-center gap-2">
+                                <Link
+                                    href={route('history.index')}
+                                    className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), "w-full md:w-auto text-xs font-bold border-gray-300 hover:bg-white/80 gap-1.5 shadow-2xs")}
+                                >
+                                    <Award className="h-4 w-4 text-[#D4A017]" />
+                                    Pet History
+                                </Link>
+                                <Link
+                                    href={route('application.show')}
+                                    className={cn(
+                                        buttonVariants({ variant: 'default', size: 'sm' }),
+                                        "w-full md:w-auto text-xs font-bold shadow-xs gap-1.5",
+                                        activeApplication.status === 'approved'
+                                            ? 'bg-green-600 hover:bg-green-700 text-white'
+                                            : 'bg-[#D4A017] hover:bg-[#B8860B] text-white'
+                                    )}
+                                >
+                                    <FileCheck className="h-4 w-4" />
+                                    {activeApplication.status === 'approved' ? 'View Digital Adoption Pass' : 'View Application Tracker'}
+                                    <ArrowRight className="h-3.5 w-3.5" />
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* ── 1. Hero Section ────────────────────────────────────────────── */}
                 {sections.show_hero && (
                     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#FDFBF7] via-[#F5EDD7]/40 to-[#EADAA2]/20 border border-[#D4A017]/20 p-8 md:p-12 shadow-sm">
@@ -120,16 +219,18 @@ export default function Home({ config, featuredPets = [], announcements = [], st
                                     {config.hero_subtitle || 'FurFect Match pairs you with rescued pets using our Decision Support System (DSS) compatibility matching engine.'}
                                 </p>
                                 <div className="flex flex-wrap gap-4 pt-2">
-                                    <Link href={config.hero_cta_link || route('pets.index')}>
-                                        <Button className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-md transition-all gap-2">
-                                            {config.hero_cta_text || 'Browse Available Pets'}
-                                            <ArrowRight className="h-4 w-4" />
-                                        </Button>
+                                    <Link
+                                        href={config.hero_cta_link || route('pets.index')}
+                                        className={cn(buttonVariants({ variant: 'default' }), "bg-[#D4A017] hover:bg-[#B8860B] text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-md transition-all gap-2")}
+                                    >
+                                        {config.hero_cta_text || 'Browse Available Pets'}
+                                        <ArrowRight className="h-4 w-4" />
                                     </Link>
-                                    <Link href={auth?.user ? route('matches.index') : route('how-it-works')}>
-                                        <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-white text-sm px-6 py-2.5 rounded-xl font-semibold">
-                                            {auth?.user ? 'View My DSS Matches' : 'How It Works'}
-                                        </Button>
+                                    <Link
+                                        href={auth?.user ? route('matches.index') : route('how-it-works')}
+                                        className={cn(buttonVariants({ variant: 'outline' }), "border-gray-300 text-gray-700 hover:bg-white text-sm px-6 py-2.5 rounded-xl font-semibold")}
+                                    >
+                                        {auth?.user ? 'View My DSS Matches' : 'How It Works'}
                                     </Link>
                                 </div>
                             </div>

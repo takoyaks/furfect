@@ -1,13 +1,16 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
+import { User, Phone, Calendar, CreditCard, Hash, MapPin, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 
 import OnboardingLayout from '@/layouts/onboarding-layout';
 import { TermsAndPoliciesModal } from '@/components/terms-and-policies-modal';
+import { DEFAULT_AGREEMENT_CONTENT } from '@/config/agreement-content';
 
 interface Profile {
     full_name?: string;
@@ -25,7 +28,17 @@ interface Profile {
 }
 
 export default function PersonalInfo({ profile, userName }: { profile: Profile | null; userName?: string }) {
-    const { auth } = usePage().props as any;
+    const { auth, systemSettings } = usePage().props as any;
+
+    const consentLabel =
+        systemSettings?.consent_agreement_label?.trim() ||
+        DEFAULT_AGREEMENT_CONTENT.personalInfoConsentLabel;
+    const confirmLabel = DEFAULT_AGREEMENT_CONTENT.personalInfoConfirmLabel;
+
+    // Minimum age 18 constraint
+    const maxBirthDate = new Date();
+    maxBirthDate.setFullYear(maxBirthDate.getFullYear() - 18);
+    const maxBirthDateStr = maxBirthDate.toISOString().split('T')[0];
 
     const { data, setData, post, processing, errors } = useForm({
         full_name: profile?.full_name || userName || auth?.user?.name || '',
@@ -68,6 +81,7 @@ export default function PersonalInfo({ profile, userName }: { profile: Profile |
                                         value={data.full_name} 
                                         onChange={e => setData('full_name', e.target.value)} 
                                         required 
+                                        leftIcon={<User className="size-4" />}
                                         className="focus-visible:ring-[#D4A017]"
                                     />
                                     {errors.full_name && <p className="text-red-500 text-xs">{errors.full_name}</p>}
@@ -79,18 +93,24 @@ export default function PersonalInfo({ profile, userName }: { profile: Profile |
                                         value={data.contact_number} 
                                         onChange={e => setData('contact_number', e.target.value)} 
                                         required
+                                        leftIcon={<Phone className="size-4" />}
                                         className="focus-visible:ring-[#D4A017]"
                                     />
                                     {errors.contact_number && <p className="text-red-500 text-xs">{errors.contact_number}</p>}
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="date_of_birth">Date of Birth *</Label>
+                                    <div className="flex items-center justify-between">
+                                        <Label htmlFor="date_of_birth">Date of Birth *</Label>
+                                        <span className="text-[11px] text-muted-foreground">Must be 18+ years</span>
+                                    </div>
                                     <Input 
                                         id="date_of_birth" 
                                         type="date"
+                                        max={maxBirthDateStr}
                                         value={data.date_of_birth} 
                                         onChange={e => setData('date_of_birth', e.target.value)} 
                                         required
+                                        leftIcon={<Calendar className="size-4" />}
                                         className="focus-visible:ring-[#D4A017]"
                                     />
                                     {errors.date_of_birth && <p className="text-red-500 text-xs">{errors.date_of_birth}</p>}
@@ -121,6 +141,7 @@ export default function PersonalInfo({ profile, userName }: { profile: Profile |
                                         value={data.valid_id_number} 
                                         onChange={e => setData('valid_id_number', e.target.value)} 
                                         required
+                                        leftIcon={<Hash className="size-4" />}
                                         className="focus-visible:ring-[#D4A017]"
                                     />
                                     {errors.valid_id_number && <p className="text-red-500 text-xs">{errors.valid_id_number}</p>}
@@ -151,6 +172,7 @@ export default function PersonalInfo({ profile, userName }: { profile: Profile |
                                     value={data.home_address} 
                                     onChange={e => setData('home_address', e.target.value)} 
                                     required
+                                    leftIcon={<MapPin className="size-4" />}
                                     className="focus-visible:ring-[#D4A017]"
                                 />
                                 {errors.home_address && <p className="text-red-500 text-xs">{errors.home_address}</p>}
@@ -223,12 +245,11 @@ export default function PersonalInfo({ profile, userName }: { profile: Profile |
 
                                 <div className="space-y-2">
                                     <Label htmlFor="adoption_reason_text">Tell us about yourself and why you want to adopt *</Label>
-                                    <textarea 
+                                    <Textarea 
                                         id="adoption_reason_text" 
                                         value={data.adoption_reason_text} 
                                         onChange={e => setData('adoption_reason_text', e.target.value)} 
                                         required
-                                        className="w-full min-h-[100px] p-2 border border-input rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A017] text-sm"
                                         placeholder="In your own words, why do you think you'd be a good pet owner?"
                                     />
                                 </div>
@@ -247,7 +268,7 @@ export default function PersonalInfo({ profile, userName }: { profile: Profile |
                                             />
                                             <div className="text-sm text-gray-700">
                                                 <Label htmlFor="terms_read" className="cursor-pointer font-medium">
-                                                    I have read adoption terms and condition *
+                                                    {consentLabel} *
                                                 </Label>{' '}
                                                 <TermsAndPoliciesModal
                                                     trigger={
@@ -273,7 +294,7 @@ export default function PersonalInfo({ profile, userName }: { profile: Profile |
                                                 className="mt-0.5 border-[#D4A017] data-[state=checked]:bg-[#D4A017] data-[state=checked]:border-[#D4A017]"
                                             />
                                             <Label htmlFor="info_confirmed" className="cursor-pointer font-medium text-sm text-gray-700">
-                                                I confirm all information are correct *
+                                                {confirmLabel} *
                                             </Label>
                                         </div>
                                         {errors.info_confirmed && <p className="text-red-500 text-xs pl-7">{errors.info_confirmed}</p>}
@@ -285,9 +306,10 @@ export default function PersonalInfo({ profile, userName }: { profile: Profile |
                                 <Button 
                                     type="submit" 
                                     disabled={processing}
-                                    className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold transition"
+                                    className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold transition flex items-center gap-2"
                                 >
-                                    {processing ? 'Saving...' : 'Next: Lifestyle Quiz →'}
+                                    {processing ? 'Saving...' : 'Next: Lifestyle Quiz'}
+                                    {!processing && <ArrowRight className="size-4" />}
                                 </Button>
                             </div>
                         </form>

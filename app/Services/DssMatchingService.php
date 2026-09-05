@@ -136,6 +136,11 @@ class DssMatchingService
         // 8. Special Requirements (5%)
         $specialRequirementsScore = $this->scoreSpecialRequirements($lifestyle, $pet, $matchReasons, $mismatchReasons, $breakdownDetails);
 
+        // Pet Preference: Gender check note
+        if ($lifestyle->preferred_gender && $lifestyle->preferred_gender !== 'none' && $lifestyle->preferred_gender === $pet->gender) {
+            $matchReasons[] = 'Matches your preferred pet gender ('.ucfirst($pet->gender).').';
+        }
+
         // Weighted total calculation (0–100%)
         $totalScore = round(
             ($lifestyleScore * 25.0) +

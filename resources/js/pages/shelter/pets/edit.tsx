@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Upload, X, Check, Dog, Sparkles, ShieldAlert, HeartHandshake, Tag, MapPin, Cpu, Calendar } from 'lucide-react';
+import { ArrowLeft, Upload, X, Check, Dog, Cat, Sparkles, ShieldAlert, HeartHandshake, Tag, MapPin, Cpu, Calendar, PawPrint, ImagePlus } from 'lucide-react';
 
 interface PetPhoto {
     id: number;
@@ -178,30 +178,30 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                         <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Listing Status */}
                             <div className="space-y-2 col-span-1 md:col-span-2">
-                                <Label htmlFor="status">Listing Status *</Label>
+                                <Label htmlFor="status" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Listing Status *</Label>
                                 <Select
                                     value={data.status}
                                     onValueChange={val => setData('status', val)}
                                 >
-                                    <SelectTrigger id="status">
+                                    <SelectTrigger id="status" className="w-full">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="available">Available for Adoption</SelectItem>
-                                        <SelectItem value="adopted">Adopted</SelectItem>
-                                        <SelectItem value="archived">Archived</SelectItem>
+                                        <SelectItem value="available">🟢 Available for Adoption</SelectItem>
+                                        <SelectItem value="adopted">🎉 Adopted</SelectItem>
+                                        <SelectItem value="archived">📦 Archived</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             {/* Shelter Selection */}
                             <div className="space-y-2 col-span-1 md:col-span-2">
-                                <Label htmlFor="shelter_id">Shelter Location *</Label>
+                                <Label htmlFor="shelter_id" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Shelter Location *</Label>
                                 <Select
                                     value={String(data.shelter_id)}
                                     onValueChange={val => setData('shelter_id', val)}
                                 >
-                                    <SelectTrigger id="shelter_id">
+                                    <SelectTrigger id="shelter_id" className="w-full">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -216,45 +216,61 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
 
                             {/* Pet Name */}
                             <div className="space-y-2">
-                                <Label htmlFor="name">Pet Name *</Label>
+                                <Label htmlFor="name" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Pet Name *</Label>
                                 <Input
                                     id="name"
                                     value={data.name}
                                     onChange={e => setData('name', e.target.value)}
+                                    leftIcon={<Tag className="size-4" />}
                                     required
                                 />
                             </div>
 
-                            {/* Species */}
+                            {/* Species Selection Toggle */}
                             <div className="space-y-2">
-                                <Label htmlFor="species">Species *</Label>
-                                <Select
-                                    value={data.species}
-                                    onValueChange={val => setData('species', val)}
-                                >
-                                    <SelectTrigger id="species">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="dog">Dog</SelectItem>
-                                        <SelectItem value="cat">Cat</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <Label className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Species *</Label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setData('species', 'dog')}
+                                        className={`flex items-center justify-center gap-2 h-10 px-3 rounded-lg border text-sm font-medium transition-all duration-200 ${
+                                            data.species === 'dog'
+                                                ? 'border-[#D4A017] bg-[#D4A017]/10 text-[#8B6508] dark:text-amber-300 shadow-xs ring-1 ring-[#D4A017]'
+                                                : 'border-input hover:border-ring/50 hover:bg-accent/40 text-muted-foreground'
+                                        }`}
+                                    >
+                                        <Dog className="size-4 text-[#D4A017]" />
+                                        Dog / Canine
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setData('species', 'cat')}
+                                        className={`flex items-center justify-center gap-2 h-10 px-3 rounded-lg border text-sm font-medium transition-all duration-200 ${
+                                            data.species === 'cat'
+                                                ? 'border-[#D4A017] bg-[#D4A017]/10 text-[#8B6508] dark:text-amber-300 shadow-xs ring-1 ring-[#D4A017]'
+                                                : 'border-input hover:border-ring/50 hover:bg-accent/40 text-muted-foreground'
+                                        }`}
+                                    >
+                                        <Cat className="size-4 text-[#D4A017]" />
+                                        Cat / Feline
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Breed */}
                             <div className="space-y-2">
-                                <Label htmlFor="breed">Breed</Label>
+                                <Label htmlFor="breed" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Breed</Label>
                                 <Input
                                     id="breed"
                                     value={data.breed}
                                     onChange={e => setData('breed', e.target.value)}
+                                    leftIcon={<PawPrint className="size-4" />}
                                 />
                             </div>
 
                             {/* Age */}
                             <div className="space-y-2">
-                                <Label htmlFor="age_years">Age (Years) *</Label>
+                                <Label htmlFor="age_years" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Age (Years) *</Label>
                                 <Input
                                     id="age_years"
                                     type="number"
@@ -262,35 +278,36 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                                     max="30"
                                     value={data.age_years}
                                     onChange={e => setData('age_years', e.target.value)}
+                                    leftIcon={<Calendar className="size-4" />}
                                     required
                                 />
                             </div>
 
                             {/* Gender */}
                             <div className="space-y-2">
-                                <Label htmlFor="gender">Gender *</Label>
+                                <Label htmlFor="gender" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Gender *</Label>
                                 <Select
                                     value={data.gender}
                                     onValueChange={val => setData('gender', val)}
                                 >
-                                    <SelectTrigger id="gender">
+                                    <SelectTrigger id="gender" className="w-full">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="male">Male</SelectItem>
-                                        <SelectItem value="female">Female</SelectItem>
+                                        <SelectItem value="male">♂ Male</SelectItem>
+                                        <SelectItem value="female">♀ Female</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             {/* Size */}
                             <div className="space-y-2">
-                                <Label htmlFor="size">Size Category *</Label>
+                                <Label htmlFor="size" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Size Category *</Label>
                                 <Select
                                     value={data.size}
                                     onValueChange={val => setData('size', val)}
                                 >
-                                    <SelectTrigger id="size">
+                                    <SelectTrigger id="size" className="w-full">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -303,8 +320,8 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
 
                             {/* Adoption Fee — only shown when pricing is enabled */}
                             {pricingEnabled && (
-                            <div className="space-y-2">
-                                <Label htmlFor="adoption_fee">Adoption Fee (₱) *</Label>
+                            <div className="space-y-2 col-span-1 md:col-span-2">
+                                <Label htmlFor="adoption_fee" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Adoption Fee (₱) *</Label>
                                 <Input
                                     id="adoption_fee"
                                     type="number"
@@ -312,6 +329,7 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                                     step="0.01"
                                     value={data.adoption_fee}
                                     onChange={e => setData('adoption_fee', e.target.value)}
+                                    leftIcon={<span className="font-semibold text-xs text-muted-foreground">₱</span>}
                                     required
                                 />
                             </div>
@@ -329,36 +347,38 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                         <CardContent className="pt-6 space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="energy_level">Energy Level *</Label>
+                                    <Label htmlFor="energy_level" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Energy Level *</Label>
                                     <Select
                                         value={data.energy_level}
                                         onValueChange={val => setData('energy_level', val)}
                                     >
-                                        <SelectTrigger id="energy_level">
+                                        <SelectTrigger id="energy_level" className="w-full">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="low">Low (Lap pet / Calm)</SelectItem>
-                                            <SelectItem value="moderate">Moderate (Regular walks)</SelectItem>
-                                            <SelectItem value="high">High (Active play & runs)</SelectItem>
-                                            <SelectItem value="very_active">Very Active (High endurance)</SelectItem>
+                                            <SelectItem value="low">🟢 Low (Lap pet / Calm)</SelectItem>
+                                            <SelectItem value="moderate">🟡 Moderate (Regular walks)</SelectItem>
+                                            <SelectItem value="high">🟠 High (Active play & runs)</SelectItem>
+                                            <SelectItem value="very_active">🔴 Very Active (High endurance)</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="health_status">Health & Vaccination Status</Label>
+                                    <Label htmlFor="health_status" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Health & Vaccination Status</Label>
                                     <Input
                                         id="health_status"
+                                        placeholder="e.g. Vaccinated, Spayed, Dewormed"
                                         value={data.health_status}
                                         onChange={e => setData('health_status', e.target.value)}
+                                        leftIcon={<HeartHandshake className="size-4" />}
                                     />
                                 </div>
                             </div>
 
                             {/* Temperament Tags */}
                             <div className="space-y-2">
-                                <Label>Temperament / Personality Tags</Label>
+                                <Label className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Temperament / Personality Traits</Label>
                                 <div className="flex flex-wrap gap-2 pt-1">
                                     {TEMPERAMENT_OPTIONS.map(tag => {
                                         const isSelected = data.temperament.includes(tag);
@@ -367,13 +387,17 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                                                 type="button"
                                                 key={tag}
                                                 onClick={() => toggleTemperament(tag)}
-                                                className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-150 flex items-center gap-1.5 ${
                                                     isSelected
-                                                        ? 'bg-[#D4A017] text-white shadow-sm'
-                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-neutral-800 dark:text-neutral-300'
+                                                        ? 'bg-[#D4A017] text-white shadow-xs font-semibold scale-100 ring-2 ring-[#D4A017]/30'
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-neutral-800 dark:text-neutral-300 hover:scale-105 active:scale-95'
                                                 }`}
                                             >
-                                                {isSelected && <Check className="w-3 h-3 inline mr-1" />}
+                                                {isSelected ? (
+                                                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                                                ) : (
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-neutral-500" />
+                                                )}
                                                 {tag}
                                             </button>
                                         );
@@ -392,14 +416,14 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                         </CardHeader>
                         <CardContent className="pt-6 space-y-6">
                             <div className="space-y-2">
-                                <Label>Compatible Housing Types *</Label>
+                                <Label className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Compatible Housing Types *</Label>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-1">
                                     {HOUSING_OPTIONS.map(option => (
                                         <label
                                             key={option.id}
-                                            className={`flex items-center gap-2.5 p-3 rounded-lg border text-xs cursor-pointer transition-all ${
+                                            className={`flex items-center gap-2.5 p-3 rounded-xl border text-xs cursor-pointer transition-all duration-150 ${
                                                 data.housing_compatible.includes(option.id)
-                                                    ? 'border-[#D4A017] bg-[#D4A017]/10 font-semibold text-[#8B6508] dark:text-amber-300'
+                                                    ? 'border-[#D4A017] bg-[#D4A017]/10 font-semibold text-[#8B6508] dark:text-amber-300 shadow-xs ring-1 ring-[#D4A017]'
                                                     : 'border-gray-200 dark:border-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-800/50'
                                             }`}
                                         >
@@ -414,7 +438,7 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-100 dark:border-neutral-800 pt-4">
-                                <label className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-neutral-800 cursor-pointer">
+                                <label className="flex items-start gap-3 p-3.5 rounded-xl border border-gray-200 dark:border-neutral-800 hover:bg-gray-50/50 dark:hover:bg-neutral-800/40 transition-colors cursor-pointer">
                                     <Checkbox
                                         checked={data.requires_yard}
                                         onCheckedChange={checked => setData('requires_yard', !!checked)}
@@ -422,10 +446,11 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                                     />
                                     <div>
                                         <span className="text-xs font-semibold block text-gray-800 dark:text-neutral-200">Requires Fenced Yard</span>
+                                        <span className="text-[11px] text-gray-500 dark:text-neutral-400">Pet needs an outdoor fenced yard space.</span>
                                     </div>
                                 </label>
 
-                                <label className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-neutral-800 cursor-pointer">
+                                <label className="flex items-start gap-3 p-3.5 rounded-xl border border-gray-200 dark:border-neutral-800 hover:bg-gray-50/50 dark:hover:bg-neutral-800/40 transition-colors cursor-pointer">
                                     <Checkbox
                                         checked={data.requires_experience}
                                         onCheckedChange={checked => setData('requires_experience', !!checked)}
@@ -433,28 +458,31 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                                     />
                                     <div>
                                         <span className="text-xs font-semibold block text-gray-800 dark:text-neutral-200">Requires Experienced Owner</span>
+                                        <span className="text-[11px] text-gray-500 dark:text-neutral-400">Best suited for prior pet owners.</span>
                                     </div>
                                 </label>
 
-                                <label className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-neutral-800 cursor-pointer">
+                                <label className="flex items-start gap-3 p-3.5 rounded-xl border border-gray-200 dark:border-neutral-800 hover:bg-gray-50/50 dark:hover:bg-neutral-800/40 transition-colors cursor-pointer">
                                     <Checkbox
                                         checked={data.requires_no_children}
                                         onCheckedChange={checked => setData('requires_no_children', !!checked)}
                                         className="mt-0.5"
                                     />
                                     <div>
-                                        <span className="text-xs font-semibold block text-gray-800 dark:text-neutral-200">No Small Children</span>
+                                        <span className="text-xs font-semibold block text-gray-800 dark:text-neutral-200">No Small Children (&lt; 10 yrs)</span>
+                                        <span className="text-[11px] text-gray-500 dark:text-neutral-400">Pet prefers calm, adult-only environments.</span>
                                     </div>
                                 </label>
 
-                                <label className="flex items-start gap-3 p-3 rounded-lg border border-gray-200 dark:border-neutral-800 cursor-pointer">
+                                <label className="flex items-start gap-3 p-3.5 rounded-xl border border-gray-200 dark:border-neutral-800 hover:bg-gray-50/50 dark:hover:bg-neutral-800/40 transition-colors cursor-pointer">
                                     <Checkbox
                                         checked={data.requires_no_other_pets}
                                         onCheckedChange={checked => setData('requires_no_other_pets', !!checked)}
                                         className="mt-0.5"
                                     />
                                     <div>
-                                        <span className="text-xs font-semibold block text-gray-800 dark:text-neutral-200">No Other Pets</span>
+                                        <span className="text-xs font-semibold block text-gray-800 dark:text-neutral-200">No Other Pets in Household</span>
+                                        <span className="text-[11px] text-gray-500 dark:text-neutral-400">Must be the only pet in the home.</span>
                                     </div>
                                 </label>
                             </div>
@@ -482,6 +510,7 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                                         placeholder="e.g. TAG-D-2026-089 or Collar C-042"
                                         value={data.tag_number}
                                         onChange={e => setData('tag_number', e.target.value)}
+                                        leftIcon={<Tag className="size-4" />}
                                     />
                                     <p className="text-[11px] text-gray-400">Assigned collar tag, ear tag, or intake tag for physical shelter identification.</p>
                                     {errors.tag_number && <p className="text-xs text-red-500">{errors.tag_number}</p>}
@@ -498,6 +527,7 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                                         placeholder="e.g. 900115800412345 (15-digit ISO)"
                                         value={data.microchip_number}
                                         onChange={e => setData('microchip_number', e.target.value)}
+                                        leftIcon={<Cpu className="size-4" />}
                                     />
                                     <p className="text-[11px] text-gray-400">Electronic microchip identification if implanted.</p>
                                     {errors.microchip_number && <p className="text-xs text-red-500">{errors.microchip_number}</p>}
@@ -516,6 +546,7 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                                         placeholder="e.g. Kennel Bay A-12, Cattery Pen 3, Quarantine Ward"
                                         value={data.housing_area}
                                         onChange={e => setData('housing_area', e.target.value)}
+                                        leftIcon={<MapPin className="size-4" />}
                                     />
                                     <p className="text-[11px] text-gray-400">Specific room, bay, cage number, or foster location.</p>
                                     {errors.housing_area && <p className="text-xs text-red-500">{errors.housing_area}</p>}
@@ -523,8 +554,8 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
 
                                 {/* Intake Date */}
                                 <div className="space-y-2">
-                                    <Label htmlFor="intake_date" className="flex items-center gap-1.5">
-                                        <Calendar className="w-3.5 h-3.5 text-gray-500" />
+                                    <Label htmlFor="intake_date" className="font-semibold text-xs text-gray-700 dark:text-neutral-300 flex items-center gap-1.5">
+                                        <Calendar className="w-3.5 h-3.5 text-[#D4A017]" />
                                         Shelter Intake Date
                                     </Label>
                                     <Input
@@ -532,6 +563,7 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                                         type="date"
                                         value={data.intake_date}
                                         onChange={e => setData('intake_date', e.target.value)}
+                                        leftIcon={<Calendar className="size-4" />}
                                     />
                                     <p className="text-[11px] text-gray-400">Date animal was admitted to the shelter facility.</p>
                                     {errors.intake_date && <p className="text-xs text-red-500">{errors.intake_date}</p>}
@@ -540,7 +572,7 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
 
                             {/* Housing / Handling Notes */}
                             <div className="space-y-2">
-                                <Label htmlFor="housing_notes">Facility Enclosure Notes &amp; Handling Instructions</Label>
+                                <Label htmlFor="housing_notes" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Facility Enclosure Notes &amp; Handling Instructions</Label>
                                 <Textarea
                                     id="housing_notes"
                                     rows={2}
@@ -557,15 +589,16 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                     <Card className="border-gray-200 dark:border-neutral-800">
                         <CardHeader className="border-b border-gray-100 dark:border-neutral-800 pb-3">
                             <CardTitle className="text-base font-semibold flex items-center gap-2 text-gray-800 dark:text-neutral-200">
-                                <Upload className="w-4 h-4 text-[#D4A017]" /> Description & Photos
+                                <ImagePlus className="w-4 h-4 text-[#D4A017]" /> Description & Photos
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-6 space-y-4">
+                        <CardContent className="pt-6 space-y-5">
                             <div className="space-y-2">
-                                <Label htmlFor="description">Bio / Description</Label>
+                                <Label htmlFor="description" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Bio / Description</Label>
                                 <Textarea
                                     id="description"
                                     rows={4}
+                                    placeholder="Describe pet's background, personality, favorite activities, or backstory..."
                                     value={data.description}
                                     onChange={e => setData('description', e.target.value)}
                                 />
@@ -574,14 +607,14 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                             {/* Existing Photos */}
                             {pet.photos && pet.photos.length > 0 && (
                                 <div className="space-y-2">
-                                    <Label>Existing Photos</Label>
+                                    <Label className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Current Photos</Label>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                         {pet.photos.map(p => (
-                                            <div key={p.id} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-neutral-700">
-                                                <img src={p.photo_path} alt="Pet photo" className="size-full object-cover" />
+                                            <div key={p.id} className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 dark:border-neutral-700 shadow-xs group">
+                                                <img src={p.photo_path} alt="Pet photo" className="size-full object-cover group-hover:scale-105 transition-transform duration-200" />
                                                 {p.is_primary && (
-                                                    <span className="absolute top-1 left-1 bg-[#D4A017] text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow">
-                                                        Primary
+                                                    <span className="absolute top-2 left-2 bg-[#D4A017] text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm flex items-center gap-1">
+                                                        <Sparkles className="size-3" /> Primary
                                                     </span>
                                                 )}
                                             </div>
@@ -592,8 +625,8 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
 
                             {/* New Photos Upload */}
                             <div className="space-y-2 pt-2">
-                                <Label>Add More Photos</Label>
-                                <div className="border-2 border-dashed border-gray-300 dark:border-neutral-700 rounded-xl p-6 text-center hover:border-[#D4A017] transition-colors relative bg-gray-50/50 dark:bg-neutral-800/30">
+                                <Label className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Add More Photos</Label>
+                                <div className="border-2 border-dashed border-gray-300 dark:border-neutral-700 rounded-2xl p-8 text-center hover:border-[#D4A017] hover:bg-[#D4A017]/5 group transition-all duration-200 relative bg-gray-50/50 dark:bg-neutral-800/20 cursor-pointer">
                                     <input
                                         type="file"
                                         multiple
@@ -601,23 +634,29 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                                         onChange={handlePhotoChange}
                                         className="absolute inset-0 size-full opacity-0 cursor-pointer"
                                     />
-                                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                    <p className="text-xs font-medium text-gray-700 dark:text-neutral-300">
-                                        Click to upload additional photos
+                                    <div className="size-12 rounded-full bg-[#D4A017]/10 text-[#D4A017] flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-200">
+                                        <ImagePlus className="size-6" />
+                                    </div>
+                                    <p className="text-sm font-semibold text-gray-800 dark:text-neutral-200">
+                                        Click or drag &amp; drop photos here to add
+                                    </p>
+                                    <p className="text-xs text-gray-400 dark:text-neutral-400 mt-1">
+                                        PNG, JPG, WEBP up to 4MB each.
                                     </p>
                                 </div>
 
                                 {previewUrls.length > 0 && (
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3">
                                         {previewUrls.map((url, idx) => (
-                                            <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 dark:border-neutral-700">
-                                                <img src={url} alt={`Preview ${idx}`} className="size-full object-cover" />
+                                            <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 dark:border-neutral-700 shadow-xs group">
+                                                <img src={url} alt={`Preview ${idx}`} className="size-full object-cover group-hover:scale-105 transition-transform duration-200" />
                                                 <button
                                                     type="button"
                                                     onClick={() => removeNewPhoto(idx)}
-                                                    className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full opacity-90 hover:opacity-100"
+                                                    className="absolute top-2 right-2 bg-red-600/90 hover:bg-red-600 text-white p-1.5 rounded-full shadow-sm opacity-90 hover:opacity-100 hover:scale-110 transition-all"
+                                                    title="Remove photo"
                                                 >
-                                                    <X className="w-3 h-3" />
+                                                    <X className="w-3.5 h-3.5" />
                                                 </button>
                                             </div>
                                         ))}
@@ -639,6 +678,7 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                             disabled={processing}
                             className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold min-w-[140px]"
                         >
+                            <PawPrint className="size-4 mr-2" />
                             {processing ? 'Saving...' : 'Update Pet Listing'}
                         </Button>
                     </div>

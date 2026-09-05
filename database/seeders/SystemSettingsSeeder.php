@@ -76,6 +76,27 @@ class SystemSettingsSeeder extends Seeder
                 'label' => 'Enable Adoption Fee / Pricing Display',
                 'description' => 'When disabled, adoption fees and pricing inputs will be hidden across the public catalog, pet details, shelter forms, and application views.',
             ],
+            [
+                'key' => 'consent_agreement_label',
+                'value' => 'I agree to the terms and conditions of FurFect Match and the Virac Animal Shelter Adoption policies.',
+                'type' => 'string',
+                'label' => 'Agreement Consent Checkbox Label',
+                'description' => 'The consent checkbox disclaimer text displayed during registration and onboarding.',
+            ],
+            [
+                'key' => 'terms_and_conditions_content',
+                'value' => '',
+                'type' => 'text',
+                'label' => 'Terms & Conditions Content (Leave empty for default)',
+                'description' => 'Custom text/markdown for the FurFect Match Terms and Conditions. If empty, the default platform placeholder content is used.',
+            ],
+            [
+                'key' => 'shelter_policies_content',
+                'value' => '',
+                'type' => 'text',
+                'label' => 'Adoption Policies Content (Leave empty for default)',
+                'description' => 'Custom text/markdown for the Shelter Adoption Policies. If empty, the default platform placeholder content is used.',
+            ],
         ];
 
         foreach ($settings as $setting) {

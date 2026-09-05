@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
-import { Tag, MapPin } from 'lucide-react';
+import { Tag, MapPin, Search, Filter, Plus } from 'lucide-react';
 
 interface Pet {
     id: number;
@@ -56,7 +56,7 @@ export default function AdminPets({
                     </div>
                     <Link href={route('shelter.pets.create')}>
                         <Button className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold flex items-center gap-1.5 shadow-sm">
-                            + Add New Pet
+                            <Plus className="size-4" /> Add New Pet
                         </Button>
                     </Link>
                 </div>
@@ -70,6 +70,7 @@ export default function AdminPets({
                                     placeholder="Search by name, tag #, microchip, or housing area..." 
                                     value={search} 
                                     onChange={e => setSearch(e.target.value)}
+                                    leftIcon={<Search className="size-4 text-gray-500" />}
                                 />
                             </div>
                             <div className="w-48">
@@ -83,7 +84,7 @@ export default function AdminPets({
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <Button type="submit" variant="secondary">Filter</Button>
+                            <Button type="submit" variant="secondary" className="flex items-center gap-1.5"><Filter className="size-4" /> Filter</Button>
                         </form>
                     </CardHeader>
                     <CardContent className="p-0 border-t border-gray-100 overflow-x-auto">

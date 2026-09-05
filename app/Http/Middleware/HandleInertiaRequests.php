@@ -89,6 +89,9 @@ class HandleInertiaRequests extends Middleware
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'systemSettings' => [
                 'pricing_enabled' => SystemSetting::get('pricing_enabled', false),
+                'terms_and_conditions_content' => SystemSetting::get('terms_and_conditions_content'),
+                'shelter_policies_content' => SystemSetting::get('shelter_policies_content'),
+                'consent_agreement_label' => SystemSetting::get('consent_agreement_label'),
             ],
             'notifications' => $notificationData,
         ];

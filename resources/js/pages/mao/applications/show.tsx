@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, ShieldCheck, Check, X, FileText, User, Zap, Building, Clock, FileCheck, Tag, MapPin } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Sparkles, ShieldCheck, Check, X, FileText, User, Zap, Building, Clock, FileCheck, Tag, MapPin, CheckCircle2, XCircle } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { DssScoreCard } from '@/components/dss-score-card';
 import { ApplicationTimelineCard, TimelineEvent } from '@/components/application-timeline-card';
@@ -504,11 +505,11 @@ export default function MaoApplicationShow({ application, dssMatch, defaultCheck
                                             <Label htmlFor="remarks" className="text-xs font-bold text-gray-800 uppercase tracking-wider">
                                                 Official Audit Remarks / Certificate Notes
                                             </Label>
-                                            <textarea
+                                            <Textarea
                                                 id="remarks"
                                                 value={data.remarks}
                                                 onChange={e => setData('remarks', e.target.value)}
-                                                className="w-full min-h-[90px] p-2.5 border border-gray-200 rounded-xl text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
+                                                className="min-h-[90px]"
                                                 placeholder="Enter audit findings, statutory notes, or reason for disapproval..."
                                             />
                                         </div>
@@ -516,10 +517,11 @@ export default function MaoApplicationShow({ application, dssMatch, defaultCheck
                                         <Button
                                             type="submit"
                                             disabled={processing}
-                                            className={`w-full font-bold text-white py-2.5 rounded-xl transition shadow-xs ${
+                                            className={`w-full font-bold text-white py-2.5 rounded-xl transition shadow-xs flex items-center gap-2 ${
                                                 data.decision === 'approved' ? 'bg-purple-700 hover:bg-purple-800' : 'bg-red-600 hover:bg-red-700'
                                             }`}
                                         >
+                                            {data.decision === 'approved' ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
                                             {processing ? 'Processing Final Audit...' : data.decision === 'approved' ? 'Execute Approval & Issue Certificate' : 'Execute Disapproval'}
                                         </Button>
                                     </form>

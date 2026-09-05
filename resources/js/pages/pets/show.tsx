@@ -23,6 +23,7 @@ interface Pet {
     energy_level: string;
     adoption_fee: string;
     health_status: string;
+    status?: string;
     temperament: string[];
     description: string;
     photos: Photo[];

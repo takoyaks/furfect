@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import OnboardingLayout from '@/layouts/onboarding-layout';
+import { Home, Activity, Users, Briefcase, Heart, PawPrint, ArrowRight, Lock } from 'lucide-react';
 
 interface Lifestyle {
     housing_type?: string;
@@ -109,7 +110,7 @@ export default function LifestyleQuiz({
                             {/* Section 1: Living Situation */}
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
-                                    <h3 className="font-semibold text-lg text-[#D4A017]">Section 1: Living Situation</h3>
+                                    <h3 className="font-semibold text-lg text-[#D4A017] flex items-center gap-2"><Home className="size-5" /> Section 1: Living Situation</h3>
                                     <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold uppercase">High Weight</span>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -156,7 +157,7 @@ export default function LifestyleQuiz({
                             {/* Section 2: Daily Lifestyle */}
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
-                                    <h3 className="font-semibold text-lg text-[#D4A017]">Section 2: Daily Lifestyle</h3>
+                                    <h3 className="font-semibold text-lg text-[#D4A017] flex items-center gap-2"><Activity className="size-5" /> Section 2: Daily Lifestyle</h3>
                                     <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold uppercase">High Weight</span>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -190,7 +191,7 @@ export default function LifestyleQuiz({
                             {/* Section 3: Household */}
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
-                                    <h3 className="font-semibold text-lg text-[#D4A017]">Section 3: Household</h3>
+                                    <h3 className="font-semibold text-lg text-[#D4A017]"><Users className="size-5" /> Section 3: Household</h3>
                                     <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-bold uppercase">Medium Weight</span>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -246,7 +247,7 @@ export default function LifestyleQuiz({
                             {/* Section 4: Financial Capacity */}
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
-                                    <h3 className="font-semibold text-lg text-[#D4A017]">Section 4: Financial Capacity</h3>
+                                    <h3 className="font-semibold text-lg text-[#D4A017]"><Briefcase className="size-5" /> Section 4: Financial Capacity</h3>
                                     <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold uppercase">High Weight</span>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -292,7 +293,7 @@ export default function LifestyleQuiz({
                             {/* Section 5: Health Considerations */}
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
-                                    <h3 className="font-semibold text-lg text-[#D4A017]">Section 5: Health Considerations</h3>
+                                    <h3 className="font-semibold text-lg text-[#D4A017]"><Heart className="size-5" /> Section 5: Health Considerations</h3>
                                     <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold uppercase">High Weight</span>
                                 </div>
                                 <div className="space-y-2">
@@ -323,24 +324,39 @@ export default function LifestyleQuiz({
                             {/* Section 6: Soft Preferences */}
                             <div className="space-y-4">
                                 <div className="flex items-center gap-2 border-b border-gray-100 pb-2">
-                                    <h3 className="font-semibold text-lg text-[#D4A017]">Section 6: Pet Preferences</h3>
+                                    <h3 className="font-semibold text-lg text-[#D4A017] flex items-center gap-2"><PawPrint className="size-5" /> Section 6: Pet Preferences</h3>
                                     <span className="text-[10px] bg-gray-100 text-gray-700 px-2 py-0.5 rounded font-bold uppercase">Low Weight</span>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div className="space-y-2">
-                                        <Label>Preferred pet type</Label>
+                                        <Label htmlFor="preferred_type">Preferred Pet Type</Label>
                                         <Select disabled={isLocked} value={data.preferred_type} onValueChange={val => setData('preferred_type', val)}>
-                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectTrigger id="preferred_type" className="focus:ring-[#D4A017]"><SelectValue /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="dog">Dog</SelectItem>
                                                 <SelectItem value="cat">Cat</SelectItem>
                                                 <SelectItem value="none">No preference</SelectItem>
                                             </SelectContent>
                                         </Select>
+                                        {errors.preferred_type && <p className="text-destructive text-xs">{errors.preferred_type}</p>}
                                     </div>
+
                                     <div className="space-y-2">
-                                        <Label>Preferred size</Label>
-                                        <div className="flex gap-4 mt-2">
+                                        <Label htmlFor="preferred_gender">Preferred Pet Gender</Label>
+                                        <Select disabled={isLocked} value={data.preferred_gender} onValueChange={val => setData('preferred_gender', val)}>
+                                            <SelectTrigger id="preferred_gender" className="focus:ring-[#D4A017]"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">No preference / Any</SelectItem>
+                                                <SelectItem value="male">Male</SelectItem>
+                                                <SelectItem value="female">Female</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        {errors.preferred_gender && <p className="text-destructive text-xs">{errors.preferred_gender}</p>}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label>Preferred Size</Label>
+                                        <div className="flex gap-4 mt-2.5">
                                             {['small', 'medium', 'large'].map(sz => (
                                                 <div key={sz} className="flex items-center space-x-2">
                                                     <Checkbox 
@@ -348,8 +364,9 @@ export default function LifestyleQuiz({
                                                         disabled={isLocked}
                                                         checked={data.preferred_size.includes(sz)}
                                                         onCheckedChange={checked => handlePreferredSize(sz, !!checked)}
+                                                        className="border-amber-400 data-[state=checked]:bg-[#D4A017] data-[state=checked]:border-[#D4A017]"
                                                     />
-                                                    <Label htmlFor={`sz-${sz}`} className="cursor-pointer font-normal capitalize">{sz}</Label>
+                                                    <Label htmlFor={`sz-${sz}`} className="cursor-pointer font-normal capitalize text-sm">{sz}</Label>
                                                 </div>
                                             ))}
                                         </div>
@@ -368,9 +385,9 @@ export default function LifestyleQuiz({
                                 <Button 
                                     type="submit" 
                                     disabled={processing || isLocked}
-                                    className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold transition"
+                                    className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold transition flex items-center gap-2"
                                 >
-                                    {processing ? 'Saving...' : 'Submit & View My Matches →'}
+                                    {processing ? 'Saving...' : <>Submit & View My Matches <ArrowRight className="size-4" /></>}
                                 </Button>
                             </div>
                         </form>

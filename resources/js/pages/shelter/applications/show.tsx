@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Check, ShieldAlert, Award, FileText, UserCheck, Home, Phone, Mail, MapPin, Zap, Building, Tag, Cpu, Calendar, Users, ArrowRight } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Sparkles, Check, ShieldAlert, Award, FileText, UserCheck, Home, Phone, Mail, MapPin, Zap, Building, Tag, Cpu, Calendar, Users, ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { DssScoreCard } from '@/components/dss-score-card';
 import { ApplicationTimelineCard, TimelineEvent } from '@/components/application-timeline-card';
@@ -437,7 +438,7 @@ export default function ShelterApplicationShow({
                                                         className="text-[#D4A017] mt-0.5"
                                                     />
                                                     <div className="text-xs space-y-0.5">
-                                                        <span className="font-bold text-green-900 block">Endorse as Suitable</span>
+                                                        <span className="font-bold text-green-900 flex items-center gap-1.5"><CheckCircle2 className="size-4" /> Endorse as Suitable</span>
                                                         <span className="text-green-700 block">Passes initial check. Automatically forwards to MAO compliance queue.</span>
                                                     </div>
                                                 </label>
@@ -452,7 +453,7 @@ export default function ShelterApplicationShow({
                                                         className="text-[#D4A017] mt-0.5"
                                                     />
                                                     <div className="text-xs space-y-0.5">
-                                                        <span className="font-bold text-red-900 block">Mark as Not Suitable</span>
+                                                        <span className="font-bold text-red-900 flex items-center gap-1.5"><XCircle className="size-4" /> Mark as Not Suitable</span>
                                                         <span className="text-red-700 block">Disapproves application and releases pet back to catalog.</span>
                                                     </div>
                                                 </label>
@@ -463,11 +464,11 @@ export default function ShelterApplicationShow({
                                             <Label htmlFor="notes" className="text-xs font-bold text-gray-700">
                                                 Staff Screening Remarks / Notes
                                             </Label>
-                                            <textarea 
+                                            <Textarea 
                                                 id="notes" 
                                                 value={data.notes} 
                                                 onChange={e => setData('notes', e.target.value)}
-                                                className="w-full min-h-[110px] p-3 border border-gray-200 rounded-xl text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A017]"
+                                                className="w-full min-h-[110px] text-xs"
                                                 placeholder="Add assessment notes for the Municipal Agriculture Office or constructive rejection feedback..."
                                             />
                                         </div>

@@ -2,7 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ClipboardList } from 'lucide-react';
+import { ClipboardList, Filter } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 
@@ -62,9 +62,10 @@ export default function ShelterApplicationIndex({
                             Review and process adoption applications for your shelter.
                         </p>
                     </div>
-                    <div className="w-44">
+                    <div className="w-48 flex items-center gap-2">
+                        <Filter className="size-4 text-gray-500 shrink-0" />
                         <Select value={status} onValueChange={applyFilter}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectTrigger size="sm"><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All statuses</SelectItem>
                                 <SelectItem value="pending">Pending</SelectItem>

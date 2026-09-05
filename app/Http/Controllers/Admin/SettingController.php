@@ -35,7 +35,7 @@ class SettingController extends Controller
             $rules[$setting->key] = match ($setting->type) {
                 'integer' => ['required', 'integer'],
                 'boolean' => ['nullable'],
-                default => ['required', 'string'],
+                default => ['nullable', 'string'],
             };
         }
 

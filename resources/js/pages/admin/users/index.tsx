@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { Search, User as UserIcon, Mail, Lock, Shield, Filter, Plus } from 'lucide-react';
 
 interface User {
     id: number;
@@ -81,9 +82,9 @@ export default function AdminUsers({
                     </div>
                     
                     <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold">
-                                + Add User
+                        <DialogTrigger>
+                            <Button className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold flex items-center gap-1.5">
+                                <Plus className="size-4" /> Add User
                             </Button>
                         </DialogTrigger>
                         <DialogContent>
@@ -94,17 +95,17 @@ export default function AdminUsers({
                             <form onSubmit={handleAddUser} className="space-y-4">
                                 <div className="space-y-1">
                                     <Label htmlFor="add-name">Full Name</Label>
-                                    <Input id="add-name" value={data.name} onChange={e => setData('name', e.target.value)} required />
+                                    <Input id="add-name" value={data.name} onChange={e => setData('name', e.target.value)} required leftIcon={<UserIcon className="size-4 text-gray-500" />} />
                                     {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
                                 </div>
                                 <div className="space-y-1">
                                     <Label htmlFor="add-email">Email</Label>
-                                    <Input id="add-email" type="email" value={data.email} onChange={setData => setData('email', setData.target.value)} required />
+                                    <Input id="add-email" type="email" value={data.email} onChange={e => setData('email', e.target.value)} required leftIcon={<Mail className="size-4 text-gray-500" />} />
                                     {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
                                 </div>
                                 <div className="space-y-1">
                                     <Label htmlFor="add-password">Password</Label>
-                                    <Input id="add-password" type="password" value={data.password} onChange={setData => setData('password', setData.target.value)} required />
+                                    <Input id="add-password" type="password" value={data.password} onChange={e => setData('password', e.target.value)} required leftIcon={<Lock className="size-4 text-gray-500" />} />
                                     {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
                                 </div>
                                 <div className="space-y-1">
@@ -133,6 +134,7 @@ export default function AdminUsers({
                                     placeholder="Search users..." 
                                     value={search} 
                                     onChange={e => setSearch(e.target.value)}
+                                    leftIcon={<Search className="size-4 text-gray-500" />}
                                 />
                             </div>
                             <div className="w-48">
@@ -146,7 +148,7 @@ export default function AdminUsers({
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <Button type="submit" variant="secondary">Filter</Button>
+                            <Button type="submit" variant="secondary" className="flex items-center gap-1.5"><Filter className="size-4" /> Filter</Button>
                         </form>
                     </CardHeader>
                     <CardContent className="p-0 border-t border-gray-100 overflow-x-auto">
@@ -220,12 +222,12 @@ export default function AdminUsers({
                         <form onSubmit={handleEditUser} className="space-y-4">
                             <div className="space-y-1">
                                 <Label htmlFor="edit-name">Full Name</Label>
-                                <Input id="edit-name" value={data.name} onChange={e => setData('name', e.target.value)} required />
+                                <Input id="edit-name" value={data.name} onChange={e => setData('name', e.target.value)} required leftIcon={<UserIcon className="size-4 text-gray-500" />} />
                                 {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
                             </div>
                             <div className="space-y-1">
                                 <Label htmlFor="edit-email">Email</Label>
-                                <Input id="edit-email" type="email" value={data.email} onChange={setData => setData('email', setData.target.value)} required />
+                                <Input id="edit-email" type="email" value={data.email} onChange={e => setData('email', e.target.value)} required leftIcon={<Mail className="size-4 text-gray-500" />} />
                                 {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
                             </div>
                             <div className="space-y-1">

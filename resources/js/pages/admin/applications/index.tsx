@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { Search, Filter } from 'lucide-react';
 
 interface Application {
     id: number;
@@ -58,6 +59,7 @@ export default function AdminApplications({
                                     placeholder="Search by reference number or adopter name..." 
                                     value={search} 
                                     onChange={e => setSearch(e.target.value)}
+                                    leftIcon={<Search className="size-4 text-gray-500" />}
                                 />
                             </div>
                             <div className="w-48">
@@ -73,7 +75,7 @@ export default function AdminApplications({
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <Button type="submit" variant="secondary">Filter</Button>
+                            <Button type="submit" variant="secondary" className="flex items-center gap-1.5"><Filter className="size-4" /> Filter</Button>
                         </form>
                     </CardHeader>
                     <CardContent className="p-0 border-t border-gray-100 overflow-x-auto">

@@ -2,7 +2,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Filter } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 
@@ -68,12 +68,32 @@ export default function MaoApplicationIndex({
                     </div>
                     <div className="w-44">
                         <Select value={status} onValueChange={applyFilter}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="bg-white border-gray-200 shadow-sm h-9">
+                                <div className="flex items-center gap-2">
+                                    <Filter className="h-4 w-4 text-gray-500" />
+                                    <SelectValue placeholder="Filter status" />
+                                </div>
+                            </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All statuses</SelectItem>
-                                <SelectItem value="mao_audit">Pending Audit</SelectItem>
-                                <SelectItem value="approved">Approved</SelectItem>
-                                <SelectItem value="rejected">Rejected</SelectItem>
+                                <SelectItem value="mao_audit">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                                        Pending Audit
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="approved">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                        Approved
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="rejected">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                        Rejected
+                                    </div>
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

@@ -9,6 +9,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -30,13 +31,41 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $validated = $request->validated();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        // Handle avatar removal
+        if ($request->boolean('remove_avatar')) {
+            $rawAvatar = $user->getRawOriginal('avatar');
+            if ($rawAvatar && Storage::disk('public')->exists($rawAvatar)) {
+                Storage::disk('public')->delete($rawAvatar);
+            }
+            $user->avatar = null;
         }
 
-        $request->user()->save();
+        // Handle avatar upload
+        if ($request->hasFile('avatar')) {
+            $rawAvatar = $user->getRawOriginal('avatar');
+            if ($rawAvatar && Storage::disk('public')->exists($rawAvatar)) {
+                Storage::disk('public')->delete($rawAvatar);
+            }
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $user->avatar = $path;
+        }
+
+        $user->fill([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
+            'address' => $validated['address'] ?? null,
+            'bio' => $validated['bio'] ?? null,
+        ]);
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
 

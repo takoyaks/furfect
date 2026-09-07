@@ -9,7 +9,7 @@ Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', '/settings/profile');
 
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::match(['patch', 'post'], 'settings/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -23,5 +23,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:6,1')
         ->name('user-password.update');
 
-    Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
+    Route::redirect('settings/appearance', '/settings/profile')->name('appearance.edit');
 });

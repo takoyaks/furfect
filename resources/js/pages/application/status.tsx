@@ -6,6 +6,8 @@ import { Check, X, ClipboardList, ShieldAlert, Award, FileCheck, Clock, MapPin, 
 import AppLayout from '@/layouts/app-layout';
 import { ApplicationTimelineCard, TimelineEvent } from '@/components/application-timeline-card';
 import { DssScoreCard } from '@/components/dss-score-card';
+import { AdoptionPickupPass } from '@/components/adoption-pickup-pass';
+import { AdoptionPassModal } from '@/components/adoption-pass-modal';
 import { cn } from '@/lib/utils';
 
 interface PetRecommendation {
@@ -148,7 +150,7 @@ export default function ApplicationStatus({
         <AppLayout breadcrumbs={[{ title: 'My Application', href: '#' }]}>
             <Head title={`Application Status — ${application.reference_number}`} />
 
-            <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 space-y-8">
+            <div className="max-w-5xl mx-auto py-8 px-4 sm:px-6 space-y-8 print:hidden">
                 {/* ── 1. Pet & Application Banner ────────────────────────────────── */}
                 <div className="rounded-3xl bg-white border border-[#D4A017]/20 p-6 shadow-sm overflow-hidden relative">
                     <div className="flex items-center justify-between gap-6 flex-wrap md:flex-nowrap">
@@ -332,15 +334,7 @@ export default function ApplicationStatus({
                                             <span className="font-mono font-black text-sm text-green-800">{application.certificate_number}</span>
                                         </div>
                                     )}
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => window.print()}
-                                        className="text-xs border-green-300 text-green-800 hover:bg-green-50 h-9 gap-1.5 font-bold shadow-2xs"
-                                    >
-                                        <Printer className="h-4 w-4" />
-                                        Print Pass
-                                    </Button>
+                                    <AdoptionPassModal application={application as any} />
                                 </div>
                             </div>
                         </CardHeader>
@@ -582,6 +576,13 @@ export default function ApplicationStatus({
                     certificateNumber={application.certificate_number}
                 />
             </div>
+
+            {/* ── 7. Clean Print-Only Formal Adoption Pass ─────────────────────── */}
+            {application.status === 'approved' && (
+                <div className="hidden print:block w-full">
+                    <AdoptionPickupPass application={application as any} />
+                </div>
+            )}
         </AppLayout>
     );
 }

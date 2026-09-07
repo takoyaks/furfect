@@ -5,7 +5,6 @@ use App\Models\Pet;
 use App\Models\Shelter;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Role;
 
 beforeEach(function (): void {
     // Seed roles and permissions
@@ -126,4 +125,56 @@ it('allows MAO officer to approve application updating pet status to adopted', f
         'id' => $this->pet->id,
         'status' => 'adopted',
     ]);
+});
+
+it('displays approved adoption status page with pass and certificate data', function (): void {
+    $this->adopter->adopterProfile()->create([
+        'full_name' => 'Maria Cielo',
+        'contact_number' => '09501234567',
+        'date_of_birth' => '1995-03-15',
+        'home_address' => 'Virac, Catanduanes',
+        'valid_id_type' => 'National ID',
+        'valid_id_number' => '1234-5678-9012',
+        'adoption_reason' => 'companionship',
+        'profile_completed_at' => now(),
+    ]);
+
+    $this->adopter->lifestyleProfile()->create([
+        'housing_type' => 'apartment',
+        'has_aircon' => 'stable',
+        'outdoor_access' => 'none',
+        'activity_level' => 'moderate',
+        'work_schedule' => 'office',
+        'household_size' => 2,
+        'household_agrees' => true,
+        'has_children' => 'none',
+        'other_pets' => 'none',
+        'monthly_income' => '20001_40000',
+        'pet_experience' => 'had_before',
+        'submitted_at' => now(),
+    ]);
+
+    $application = Application::factory()->create([
+        'user_id' => $this->adopter->id,
+        'pet_id' => $this->pet->id,
+        'status' => 'approved',
+        'certificate_number' => 'CERT-MAO-2026-0099',
+        'pickup_deadline_at' => now()->addDays(7),
+        'resolved_at' => now(),
+    ]);
+
+    $response = $this->actingAs($this->adopter)
+        ->get(route('application.show', ['id' => $application->id]));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('application/status')
+        ->has('application', fn ($app) => $app
+            ->where('id', $application->id)
+            ->where('status', 'approved')
+            ->where('certificate_number', 'CERT-MAO-2026-0099')
+            ->has('user.adopter_profile')
+            ->etc()
+        )
+    );
 });

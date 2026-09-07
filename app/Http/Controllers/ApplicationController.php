@@ -25,8 +25,11 @@ class ApplicationController extends Controller
 
         $query = Application::where('user_id', $user->id)
             ->with([
+                'user.adopterProfile',
                 'pet.photos',
                 'pet.shelter',
+                'staff',
+                'maoOfficer',
                 'timelines.actor',
             ]);
 

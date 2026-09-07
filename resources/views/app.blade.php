@@ -1,24 +1,18 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'light') == 'dark'])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        {{-- Inline script to apply theme preference immediately --}}
+        {{-- Inline script to enforce light theme --}}
         <script>
             (function() {
-                const appearance = '{{ $appearance ?? "light" }}';
-
-                if (appearance === 'dark') {
-                    document.documentElement.classList.add('dark');
-                } else if (appearance === 'light') {
-                    document.documentElement.classList.remove('dark');
-                } else if (appearance === 'system') {
-                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                    if (prefersDark) {
-                        document.documentElement.classList.add('dark');
-                    }
-                }
+                document.documentElement.classList.remove('dark');
+                document.documentElement.style.colorScheme = 'light';
+                try {
+                    localStorage.setItem('appearance', 'light');
+                    document.cookie = 'appearance=light;path=/;max-age=31536000;SameSite=Lax';
+                } catch (e) {}
             })();
         </script>
 

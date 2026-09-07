@@ -25,7 +25,7 @@ class UserController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search): void {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -66,7 +66,7 @@ class UserController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => __('User account created successfully!')
+            'message' => __('User account created successfully!'),
         ]);
 
         return back();
@@ -94,7 +94,30 @@ class UserController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => __('User account updated successfully.')
+            'message' => __('User account updated successfully.'),
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Reset the specified user's password.
+     */
+    public function resetPassword(Request $request, int $id): RedirectResponse
+    {
+        $user = User::findOrFail($id);
+
+        $validated = $request->validate([
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Password for :name has been successfully reset.', ['name' => $user->name]),
         ]);
 
         return back();
@@ -110,8 +133,9 @@ class UserController extends Controller
         if ($user->id === auth()->id()) {
             Inertia::flash('toast', [
                 'type' => 'error',
-                'message' => __('You cannot delete your own admin account.')
+                'message' => __('You cannot delete your own admin account.'),
             ]);
+
             return back();
         }
 
@@ -119,7 +143,7 @@ class UserController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'info',
-            'message' => __('User account deactivated successfully.')
+            'message' => __('User account deactivated successfully.'),
         ]);
 
         return back();

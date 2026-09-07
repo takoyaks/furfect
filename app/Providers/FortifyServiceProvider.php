@@ -50,7 +50,7 @@ class FortifyServiceProvider extends ServiceProvider
                         }
 
                         if ($user->hasRole('mao_officer')) {
-                            return redirect()->route('mao.applications.index');
+                            return redirect()->route('mao.dashboard');
                         }
 
                         if (! $user->hasAnyRole(['admin', 'shelter_staff', 'mao_officer']) && ! $user->adopterProfile?->profile_completed_at) {

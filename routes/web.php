@@ -16,6 +16,7 @@ use App\Http\Controllers\Auth\EmailAvailabilityController;
 use App\Http\Controllers\DssMatchController;
 use App\Http\Controllers\LifestyleProfileController;
 use App\Http\Controllers\Mao\ApplicationController as MaoApplicationController;
+use App\Http\Controllers\Mao\DashboardController;
 use App\Http\Controllers\Mao\ReportController as MaoReportController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PageController;
@@ -72,15 +73,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/pets/{id}', [ShelterPetController::class, 'destroy'])->name('pets.destroy');
 
         Route::get('/reports', [ShelterReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/pdf', [ShelterReportController::class, 'downloadPdf'])->name('reports.pdf');
+        Route::get('/reports/excel', [ShelterReportController::class, 'downloadExcel'])->name('reports.excel');
     });
 
     // MAO Officer Portal Group
     Route::middleware(['role:mao_officer|admin'])->prefix('mao')->name('mao.')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/applications', [MaoApplicationController::class, 'index'])->name('applications.index');
         Route::get('/applications/{id}', [MaoApplicationController::class, 'show'])->name('applications.show');
         Route::patch('/applications/{id}', [MaoApplicationController::class, 'update'])->name('applications.update');
 
         Route::get('/reports', [MaoReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/pdf', [MaoReportController::class, 'downloadPdf'])->name('reports.pdf');
+        Route::get('/reports/excel', [MaoReportController::class, 'downloadExcel'])->name('reports.excel');
     });
 
     // Admin Panel Group
@@ -97,6 +103,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
         Route::patch('/users/{id}', [AdminUserController::class, 'update'])->name('users.update');
+        Route::post('/users/{id}/reset-password', [AdminUserController::class, 'resetPassword'])->name('users.reset-password');
         Route::delete('/users/{id}', [AdminUserController::class, 'destroy'])->name('users.destroy');
 
         Route::get('/shelters', [AdminShelterController::class, 'index'])->name('shelters.index');

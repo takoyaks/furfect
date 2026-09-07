@@ -148,6 +148,7 @@ export default function MaoApplicationShow({ application, dssMatch, defaultCheck
 
     return (
         <AppLayout breadcrumbs={[
+            { title: 'Dashboard', href: route('mao.dashboard') },
             { title: 'Compliance Audits', href: route('mao.applications.index') },
             { title: application.reference_number, href: '#' },
         ]}>

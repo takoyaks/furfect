@@ -78,6 +78,11 @@ export function AppSidebar() {
                             icon: Home,
                         },
                         {
+                            title: 'MAO Dashboard',
+                            href: route('mao.dashboard'),
+                            icon: LayoutGrid,
+                        },
+                        {
                             title: 'MAO Audit',
                             href: route('mao.applications.index'),
                             icon: ShieldCheck,
@@ -154,7 +159,7 @@ export function AppSidebar() {
                     items: [
                         {
                             title: 'Dashboard',
-                            href: dashboard(),
+                            href: route('mao.dashboard'),
                             icon: LayoutGrid,
                         },
                         {
@@ -216,6 +221,12 @@ export function AppSidebar() {
     const getLogoLink = () => {
         if (roles.includes('admin')) {
             return route('admin.dashboard');
+        }
+        if (roles.includes('mao_officer')) {
+            return route('mao.dashboard');
+        }
+        if (roles.includes('shelter_staff')) {
+            return route('shelter.pets.index');
         }
         return dashboard();
     };

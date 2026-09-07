@@ -4,10 +4,36 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { 
+    DropdownMenu, 
+    DropdownMenuContent, 
+    DropdownMenuGroup, 
+    DropdownMenuItem, 
+    DropdownMenuLabel, 
+    DropdownMenuSeparator, 
+    DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
-import { Search, User as UserIcon, Mail, Lock, Shield, Filter, Plus } from 'lucide-react';
+import { 
+    Search, 
+    User as UserIcon, 
+    Mail, 
+    Lock, 
+    Shield, 
+    Filter, 
+    Plus, 
+    Menu, 
+    KeyRound, 
+    UserCog, 
+    Trash2, 
+    Eye, 
+    EyeOff, 
+    Sparkles,
+    Copy,
+    Check 
+} from 'lucide-react';
 
 interface User {
     id: number;
@@ -30,6 +56,9 @@ export default function AdminUsers({
     const [role, setRole] = useState(filters.role || 'All roles');
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [resettingUser, setResettingUser] = useState<User | null>(null);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [copiedPassword, setCopiedPassword] = useState(false);
 
     const { data, setData, post, patch, processing, reset, errors } = useForm({
         name: '',
@@ -37,6 +66,51 @@ export default function AdminUsers({
         password: '',
         role: roles[0] || 'adopter',
     });
+
+    const passwordForm = useForm({
+        password: '',
+        password_confirmation: '',
+    });
+
+    const openResetPassword = (u: User) => {
+        setResettingUser(u);
+        passwordForm.reset();
+        passwordForm.clearErrors();
+        setShowNewPassword(false);
+        setCopiedPassword(false);
+    };
+
+    const handleResetPassword = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!resettingUser) return;
+        passwordForm.post(route('admin.users.reset-password', resettingUser.id), {
+            onSuccess: () => {
+                setResettingUser(null);
+                passwordForm.reset();
+            },
+        });
+    };
+
+    const generateSecurePassword = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%&*';
+        let generated = '';
+        for (let i = 0; i < 12; i++) {
+            generated += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        passwordForm.setData({
+            password: generated,
+            password_confirmation: generated,
+        });
+        setShowNewPassword(true);
+    };
+
+    const copyGeneratedPassword = () => {
+        if (passwordForm.data.password) {
+            navigator.clipboard.writeText(passwordForm.data.password);
+            setCopiedPassword(true);
+            setTimeout(() => setCopiedPassword(false), 2000);
+        }
+    };
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -160,7 +234,7 @@ export default function AdminUsers({
                                     <th className="p-3">Role</th>
                                     <th className="p-3">Date Registered</th>
                                     {/* <th className="p-3">Status</th> */}
-                                    <th className="p-3">Action</th>
+                                    <th className="p-3 text-right">Settings</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 text-gray-700">
@@ -174,36 +248,57 @@ export default function AdminUsers({
                                             </span>
                                         </td>
                                         <td className="p-3 text-gray-500">{new Date(u.created_at).toLocaleDateString()}</td>
-                                        {/* <td className="p-3">
-                                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-green-100 text-green-700">
-                                                Available
-                                            </span>
-                                        </td> */}
-                                        <td className="p-3 space-x-2">
-                                            <Button 
-                                                variant="ghost" 
-                                                size="sm" 
-                                                className="text-xs text-[#D4A017]"
-                                                onClick={() => {
-                                                    setEditingUser(u);
-                                                    setData({
-                                                        name: u.name,
-                                                        email: u.email,
-                                                        password: '',
-                                                        role: u.roles[0]?.name || 'adopter',
-                                                    });
-                                                }}
-                                            >
-                                                Edit
-                                            </Button>
-                                            <Button 
-                                                variant="ghost" 
-                                                size="sm" 
-                                                className="text-xs text-red-500"
-                                                onClick={() => handleDeactivate(u.id)}
-                                            >
-                                                Deactivate
-                                            </Button>
+                                        <td className="p-3 text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        className="size-8 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-amber-50 focus-visible:ring-1 focus-visible:ring-[#D4A017]"
+                                                        title="User settings"
+                                                    >
+                                                        <Menu className="size-4" />
+                                                        <span className="sr-only">User settings for {u.name}</span>
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-48">
+                                                    <DropdownMenuGroup>
+                                                        <DropdownMenuLabel className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                                                            User Settings
+                                                        </DropdownMenuLabel>
+                                                        <DropdownMenuItem
+                                                            className="cursor-pointer flex items-center gap-2 text-xs py-2"
+                                                            onClick={() => {
+                                                                setEditingUser(u);
+                                                                setData({
+                                                                    name: u.name,
+                                                                    email: u.email,
+                                                                    password: '',
+                                                                    role: u.roles[0]?.name || 'adopter',
+                                                                });
+                                                            }}
+                                                        >
+                                                            <UserCog className="size-4 text-amber-600" />
+                                                            <span>Edit Account</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            className="cursor-pointer flex items-center gap-2 text-xs py-2"
+                                                            onClick={() => openResetPassword(u)}
+                                                        >
+                                                            <KeyRound className="size-4 text-blue-600" />
+                                                            <span>Reset Password</span>
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuGroup>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem
+                                                        className="cursor-pointer flex items-center gap-2 text-xs py-2 text-red-600 focus:text-red-600 focus:bg-red-50"
+                                                        onClick={() => handleDeactivate(u.id)}
+                                                    >
+                                                        <Trash2 className="size-4 text-red-600" />
+                                                        <span>Deactivate</span>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </td>
                                     </tr>
                                 ))}
@@ -242,6 +337,146 @@ export default function AdminUsers({
                                 </Select>
                             </div>
                             <Button type="submit" disabled={processing} className="w-full bg-[#D4A017] hover:bg-[#B8860B] text-white">Save Changes</Button>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Reset Password Dialog */}
+                <Dialog 
+                    open={resettingUser !== null} 
+                    onOpenChange={open => {
+                        if (!open) {
+                            setResettingUser(null);
+                            passwordForm.reset();
+                            passwordForm.clearErrors();
+                        }
+                    }}
+                >
+                    <DialogContent className="sm:max-w-[440px]">
+                        <DialogHeader>
+                            <div className="flex items-center gap-2">
+                                <div className="flex size-9 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                                    <KeyRound className="size-5" />
+                                </div>
+                                <div>
+                                    <DialogTitle className="text-base font-bold text-gray-900">Reset User Password</DialogTitle>
+                                    <DialogDescription className="text-xs text-gray-500">
+                                        Set a new password for this account.
+                                    </DialogDescription>
+                                </div>
+                            </div>
+                        </DialogHeader>
+
+                        {resettingUser && (
+                            <div className="my-1 rounded-lg border border-gray-100 bg-gray-50/80 p-3 text-xs space-y-1">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-500 font-medium">User:</span>
+                                    <span className="font-semibold text-gray-800">{resettingUser.name}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-500 font-medium">Email:</span>
+                                    <span className="text-gray-700">{resettingUser.email}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-500 font-medium">Role:</span>
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-50 text-amber-700 border border-amber-200">
+                                        {resettingUser.roles[0]?.name?.replace('_', ' ') || 'User'}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleResetPassword} className="space-y-4">
+                            <div className="flex justify-end">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={generateSecurePassword}
+                                    className="text-xs h-7 px-2.5 text-amber-700 border-amber-200 bg-amber-50 hover:bg-amber-100 hover:text-amber-800 flex items-center gap-1.5"
+                                >
+                                    <Sparkles className="size-3.5" />
+                                    Generate Strong Password
+                                </Button>
+                            </div>
+
+                            <div className="space-y-1">
+                                <Label htmlFor="reset-password">New Password</Label>
+                                <div className="relative">
+                                    <Input
+                                        id="reset-password"
+                                        type={showNewPassword ? 'text' : 'password'}
+                                        value={passwordForm.data.password}
+                                        onChange={e => passwordForm.setData('password', e.target.value)}
+                                        required
+                                        placeholder="At least 8 characters"
+                                        leftIcon={<Lock className="size-4 text-gray-500" />}
+                                        className="pr-20"
+                                    />
+                                    <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                        {passwordForm.data.password && (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="size-7 text-gray-500 hover:text-gray-700"
+                                                onClick={copyGeneratedPassword}
+                                                title={copiedPassword ? "Copied!" : "Copy password"}
+                                            >
+                                                {copiedPassword ? <Check className="size-3.5 text-green-600" /> : <Copy className="size-3.5" />}
+                                            </Button>
+                                        )}
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="size-7 text-gray-500 hover:text-gray-700"
+                                            onClick={() => setShowNewPassword(!showNewPassword)}
+                                            title={showNewPassword ? "Hide password" : "Show password"}
+                                        >
+                                            {showNewPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                                        </Button>
+                                    </div>
+                                </div>
+                                {passwordForm.errors.password && (
+                                    <p className="text-red-500 text-xs mt-1">{passwordForm.errors.password}</p>
+                                )}
+                            </div>
+
+                            <div className="space-y-1">
+                                <Label htmlFor="reset-password-confirm">Confirm Password</Label>
+                                <Input
+                                    id="reset-password-confirm"
+                                    type={showNewPassword ? 'text' : 'password'}
+                                    value={passwordForm.data.password_confirmation}
+                                    onChange={e => passwordForm.setData('password_confirmation', e.target.value)}
+                                    required
+                                    placeholder="Repeat new password"
+                                    leftIcon={<Lock className="size-4 text-gray-500" />}
+                                />
+                                {passwordForm.errors.password_confirmation && (
+                                    <p className="text-red-500 text-xs mt-1">{passwordForm.errors.password_confirmation}</p>
+                                )}
+                            </div>
+
+                            <div className="flex gap-2 pt-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setResettingUser(null)}
+                                    className="flex-1"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={passwordForm.processing}
+                                    className="flex-1 bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold flex items-center justify-center gap-1.5"
+                                >
+                                    <KeyRound className="size-4" />
+                                    {passwordForm.processing ? 'Resetting...' : 'Reset Password'}
+                                </Button>
+                            </div>
                         </form>
                     </DialogContent>
                 </Dialog>

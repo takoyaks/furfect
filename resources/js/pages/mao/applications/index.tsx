@@ -52,7 +52,10 @@ export default function MaoApplicationIndex({
     };
 
     return (
-        <AppLayout breadcrumbs={[{ title: 'Compliance Audits', href: '#' }]}>
+        <AppLayout breadcrumbs={[
+            { title: 'Dashboard', href: route('mao.dashboard') },
+            { title: 'Compliance Audits', href: route('mao.applications.index') },
+        ]}>
             <Head title="Compliance Audits" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
 

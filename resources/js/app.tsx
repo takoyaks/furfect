@@ -54,10 +54,13 @@ const routesMap: Record<string, string> = {
     'shelter.pets.destroy': '/shelter/pets/{id}',
     'shelter.reports.index': '/shelter/reports',
     
+    'mao.dashboard': '/mao/dashboard',
     'mao.applications.index': '/mao/applications',
     'mao.applications.show': '/mao/applications/{id}',
     'mao.applications.update': '/mao/applications/{id}',
     'mao.reports.index': '/mao/reports',
+    'mao.reports.pdf': '/mao/reports/pdf',
+    'mao.reports.excel': '/mao/reports/excel',
     
     'admin.dashboard': '/admin/dashboard',
     'admin.applications.index': '/admin/applications',
@@ -68,6 +71,7 @@ const routesMap: Record<string, string> = {
     'admin.users.index': '/admin/users',
     'admin.users.store': '/admin/users',
     'admin.users.update': '/admin/users/{id}',
+    'admin.users.reset-password': '/admin/users/{id}/reset-password',
     'admin.users.destroy': '/admin/users/{id}',
     'admin.shelters.index': '/admin/shelters',
     'admin.shelters.store': '/admin/shelters',

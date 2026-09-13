@@ -17,7 +17,10 @@ interface Pet {
     age_years: number;
     gender: string;
     size: string;
+    coat_color?: string;
+    health_status?: string;
     energy_level: string;
+    maintenance_level?: string;
     adoption_fee: string;
     temperament: string[];
     description: string;
@@ -43,6 +46,8 @@ export default function PetsIndex({
     const [age, setAge] = useState(filters.age || 'All ages');
     const [size, setSize] = useState(filters.size || 'Any');
     const [gender, setGender] = useState(filters.gender || 'Any');
+    const [maintenance, setMaintenance] = useState(filters.maintenance || 'Any');
+    const [color, setColor] = useState(filters.color || 'Any');
     const [fee, setFee] = useState(filters.fee || 'all');
 
     const applyFilters = () => {
@@ -52,6 +57,8 @@ export default function PetsIndex({
             age,
             size,
             gender,
+            maintenance,
+            color,
             fee
         }, { preserveState: true });
     };
@@ -142,6 +149,37 @@ export default function PetsIndex({
                                     </Select>
                                 </div>
 
+                                {/* Maintenance Level */}
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-gray-500 uppercase">Maintenance</label>
+                                    <Select value={maintenance} onValueChange={val => setMaintenance(val)}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Any">Any</SelectItem>
+                                            <SelectItem value="low">Low Maintenance</SelectItem>
+                                            <SelectItem value="medium">Medium Maintenance</SelectItem>
+                                            <SelectItem value="high">High Maintenance</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Color / Coat */}
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-gray-500 uppercase">Color / Coat</label>
+                                    <Select value={color} onValueChange={val => setColor(val)}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Any">Any</SelectItem>
+                                            <SelectItem value="black">Black</SelectItem>
+                                            <SelectItem value="white">White</SelectItem>
+                                            <SelectItem value="brown">Brown</SelectItem>
+                                            <SelectItem value="mixed">Mixed</SelectItem>
+                                            <SelectItem value="golden">Golden / Cream</SelectItem>
+                                            <SelectItem value="other">Other</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
                                 {/* Adoption Fee — only shown when pricing is enabled */}
                                 {pricingEnabled && (
                                 <div className="space-y-2">
@@ -192,21 +230,31 @@ export default function PetsIndex({
                                 return (
                                     <Card key={pet.id} className="border-gray-200 overflow-hidden shadow hover:shadow-md transition flex flex-col justify-between">
                                         <div>
-                                            <div className="relative h-44 bg-gray-100">
-                                                <img 
-                                                    src={photo} 
-                                                    alt={pet.name} 
-                                                    className="w-full h-full object-cover"
-                                                />
+                                            <div className="relative h-44 bg-gray-100 overflow-hidden group">
+                                                <Link 
+                                                    href={route('pets.show', pet.id)} 
+                                                    className="block w-full h-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#D4A017] focus:ring-inset"
+                                                    title={`View ${pet.name}'s details`}
+                                                >
+                                                    <img 
+                                                        src={photo} 
+                                                        alt={pet.name} 
+                                                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                    />
+                                                </Link>
                                                 <button 
-                                                    onClick={() => handleSaveToggle(pet.id)}
-                                                    className="absolute top-3 right-3 p-1.5 bg-white/80 hover:bg-white rounded-full transition shadow"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleSaveToggle(pet.id);
+                                                    }}
+                                                    className="absolute top-3 right-3 p-1.5 bg-white/80 hover:bg-white rounded-full transition shadow z-10 cursor-pointer"
+                                                    title={isSaved ? "Remove from Favorites" : "Save to Favorites"}
                                                 >
                                                     <Heart className={`h-4.5 w-4.5 ${isSaved ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
                                                 </button>
 
                                                 {score !== undefined && (
-                                                    <div className="absolute bottom-3 left-3 bg-[#D4A017] text-white text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
+                                                    <div className="absolute bottom-3 left-3 bg-[#D4A017] text-white text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 shadow-xs pointer-events-none">
                                                         <Sparkles className="h-3 w-3" />
                                                         {Math.round(score)}% Match
                                                     </div>
@@ -215,15 +263,36 @@ export default function PetsIndex({
 
                                             <div className="p-4 space-y-3">
                                                 <div>
-                                                    <h4 className="text-lg font-bold text-gray-800">{pet.name}</h4>
+                                                    <Link href={route('pets.show', pet.id)} className="hover:text-[#D4A017] transition-colors">
+                                                        <h4 className="text-lg font-bold text-gray-800 hover:text-[#D4A017] transition-colors">{pet.name}</h4>
+                                                    </Link>
                                                     {pet.breed && pet.breed !== 'Hidden' && (
                                                         <span className="text-xs text-gray-500 font-semibold block italic mb-1">{pet.breed}</span>
                                                     )}
-                                                    <p className="text-xs text-gray-500 capitalize">{pet.age_years} yrs • {pet.gender} • {pet.size}</p>
+                                                    <p className="text-xs text-gray-500 capitalize">
+                                                        {pet.age_years} yrs • {pet.gender} • {pet.size}
+                                                        {pet.coat_color ? ` • ${pet.coat_color}` : ''}
+                                                    </p>
                                                 </div>
 
                                                 <div className="flex flex-wrap gap-1">
-                                                    {pet.temperament && pet.temperament.slice(0, 3).map(tag => (
+                                                    {pet.maintenance_level && (
+                                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                                                            pet.maintenance_level === 'low'
+                                                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                                : pet.maintenance_level === 'high'
+                                                                ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                                                                : 'bg-blue-50 text-blue-700 border border-blue-200'
+                                                        }`}>
+                                                            {pet.maintenance_level === 'low' ? 'Low Maint.' : pet.maintenance_level === 'high' ? 'High Maint.' : 'Med Maint.'}
+                                                        </span>
+                                                    )}
+                                                    {pet.health_status && (pet.health_status.toLowerCase().includes('rabies') || pet.health_status.toLowerCase().includes('neutered') || pet.health_status.toLowerCase().includes('spayed')) && (
+                                                        <span className="text-[10px] bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">
+                                                            {pet.health_status.toLowerCase().includes('rabies') ? 'Anti-Rabies' : 'Altered'}
+                                                        </span>
+                                                    )}
+                                                    {pet.temperament && pet.temperament.slice(0, 2).map(tag => (
                                                         <span key={tag} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full capitalize">
                                                             {tag}
                                                         </span>

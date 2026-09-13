@@ -1,13 +1,15 @@
+import { useState } from 'react';
 import { Head, useForm, Link } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Sparkles, Check, ShieldAlert, Award, FileText, UserCheck, Home, Phone, Mail, MapPin, Zap, Building, Tag, Cpu, Calendar, Users, ArrowRight, CheckCircle2, XCircle } from 'lucide-react';
+import { Sparkles, Check, ShieldAlert, Award, FileText, UserCheck, Home, Phone, Mail, MapPin, Zap, Building, Tag, Cpu, Calendar, Users, ArrowRight, CheckCircle2, XCircle, ExternalLink, Eye } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { DssScoreCard } from '@/components/dss-score-card';
 import { ApplicationTimelineCard, TimelineEvent } from '@/components/application-timeline-card';
+import { IdDocumentInspectorModal } from '@/components/id-document-inspector-modal';
 
 interface CompetingApp {
     id: number;
@@ -48,12 +50,18 @@ interface Application {
         name: string;
         email: string;
         adopter_profile?: {
+            id?: number;
+            user_id?: number;
             full_name: string;
             contact_number: string;
             date_of_birth: string;
             home_address: string;
             valid_id_type: string;
             valid_id_number: string;
+            id_document_path?: string | null;
+            id_document_name?: string | null;
+            id_document_back_path?: string | null;
+            id_document_back_name?: string | null;
             had_pets_before: string;
             previous_pet_notes?: string;
             surrendered_pet: boolean;
@@ -135,6 +143,11 @@ export default function ShelterApplicationShow({
     const isProcessed = application.status !== 'pending' && application.status !== 'under_review';
     const profile = application.adopter.adopter_profile;
     const lifestyle = application.adopter.lifestyle_profile;
+
+    const [activeIdModal, setActiveIdModal] = useState<{ open: boolean; side: 'front' | 'back' }>({
+        open: false,
+        side: 'front',
+    });
 
     return (
         <AppLayout
@@ -258,10 +271,32 @@ export default function ShelterApplicationShow({
                                             <span className="text-gray-400 block">Complete Address:</span>
                                             <span className="font-bold text-gray-900 text-sm">{profile.home_address}</span>
                                         </div>
-                                        <div className="space-y-0.5">
-                                            <span className="text-gray-400 block">Government ID ({profile.valid_id_type}):</span>
-                                            <span className="font-mono font-bold text-gray-900">{profile.valid_id_number}</span>
-                                        </div>
+                                         <div className="space-y-0.5">
+                                             <span className="text-gray-400 block">Government ID ({profile.valid_id_type}):</span>
+                                             <div className="flex items-center gap-2 flex-wrap">
+                                                 <span className="font-mono font-bold text-gray-900">{profile.valid_id_number}</span>
+                                                 {profile.id_document_path && (
+                                                     <button
+                                                         type="button"
+                                                         onClick={() => setActiveIdModal({ open: true, side: 'front' })}
+                                                         className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#8B6508] bg-[#F5EDD7] hover:bg-[#D4A017]/30 px-2.5 py-1 rounded-full border border-[#D4A017]/30 transition cursor-pointer shadow-2xs"
+                                                     >
+                                                         <Eye className="size-3 text-[#D4A017]" />
+                                                         Inspect Front ID
+                                                     </button>
+                                                 )}
+                                                 {profile.id_document_back_path && (
+                                                     <button
+                                                         type="button"
+                                                         onClick={() => setActiveIdModal({ open: true, side: 'back' })}
+                                                         className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#8B6508] bg-[#F5EDD7] hover:bg-[#D4A017]/30 px-2.5 py-1 rounded-full border border-[#D4A017]/30 transition cursor-pointer shadow-2xs"
+                                                     >
+                                                         <Eye className="size-3 text-[#D4A017]" />
+                                                         Inspect Back ID
+                                                     </button>
+                                                 )}
+                                             </div>
+                                         </div>
                                         <div className="space-y-0.5">
                                             <span className="text-gray-400 block">Adoption Reason:</span>
                                             <span className="font-bold text-gray-900">{profile.adoption_reason}</span>
@@ -488,6 +523,24 @@ export default function ShelterApplicationShow({
                 </div>
 
             </div>
+
+            {/* ID Document Inspector Modal */}
+            {profile && (
+                <IdDocumentInspectorModal
+                    open={activeIdModal.open}
+                    onOpenChange={(open) => setActiveIdModal(prev => ({ ...prev, open }))}
+                    title="Applicant Government ID"
+                    applicantName={profile.full_name}
+                    idType={profile.valid_id_type}
+                    idNumber={profile.valid_id_number}
+                    side={activeIdModal.side}
+                    documentUrl={
+                        activeIdModal.side === 'front'
+                            ? (profile.id_document_path ? route('adopter.id-document.show', { profile: profile.id || application.adopter.id, side: 'front' }) : null)
+                            : (profile.id_document_back_path ? route('adopter.id-document.show', { profile: profile.id || application.adopter.id, side: 'back' }) : null)
+                    }
+                />
+            )}
         </AppLayout>
     );
 }

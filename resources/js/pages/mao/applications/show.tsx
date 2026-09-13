@@ -1,13 +1,15 @@
+import { useState } from 'react';
 import { Head, useForm, Link } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Sparkles, ShieldCheck, Check, X, FileText, User, Zap, Building, Clock, FileCheck, Tag, MapPin, CheckCircle2, XCircle } from 'lucide-react';
+import { Sparkles, ShieldCheck, Check, X, FileText, User, Zap, Building, Clock, FileCheck, Tag, MapPin, CheckCircle2, XCircle, ExternalLink, Eye } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { DssScoreCard } from '@/components/dss-score-card';
 import { ApplicationTimelineCard, TimelineEvent } from '@/components/application-timeline-card';
+import { IdDocumentInspectorModal } from '@/components/id-document-inspector-modal';
 
 interface ChecklistItem {
     label: string;
@@ -32,16 +34,24 @@ interface Application {
     mao_checklist: Record<string, boolean> | null;
     submitted_at: string;
     resolved_at: string | null;
+    user_id: number;
     adopter: {
+        id: number;
         name: string;
         email: string;
         adopter_profile?: {
+            id?: number;
+            user_id?: number;
             full_name: string;
             contact_number: string;
             date_of_birth: string;
             home_address: string;
             valid_id_type: string;
             valid_id_number: string;
+            id_document_path?: string | null;
+            id_document_name?: string | null;
+            id_document_back_path?: string | null;
+            id_document_back_name?: string | null;
             had_pets_before: string;
             previous_pet_notes: string;
             adoption_reason: string;
@@ -145,6 +155,11 @@ export default function MaoApplicationShow({ application, dssMatch, defaultCheck
     };
 
     const allChecked = Object.values(data.checklist).every(Boolean);
+
+    const [activeIdModal, setActiveIdModal] = useState<{ open: boolean; side: 'front' | 'back' }>({
+        open: false,
+        side: 'front',
+    });
 
     return (
         <AppLayout breadcrumbs={[
@@ -272,7 +287,29 @@ export default function MaoApplicationShow({ application, dssMatch, defaultCheck
                                         </div>
                                         <div>
                                             <span className="text-gray-400 block">Government Identification:</span>
-                                            <span className="font-mono font-bold text-gray-900">{profile.valid_id_type} — {profile.valid_id_number}</span>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="font-mono font-bold text-gray-900">{profile.valid_id_type} — {profile.valid_id_number}</span>
+                                                {profile.id_document_path && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setActiveIdModal({ open: true, side: 'front' })}
+                                                        className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#8B6508] bg-[#F5EDD7] hover:bg-[#D4A017]/30 px-2.5 py-1 rounded-full border border-[#D4A017]/30 transition cursor-pointer shadow-2xs"
+                                                    >
+                                                        <Eye className="size-3 text-[#D4A017]" />
+                                                        Inspect Front ID
+                                                    </button>
+                                                )}
+                                                {profile.id_document_back_path && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setActiveIdModal({ open: true, side: 'back' })}
+                                                        className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#8B6508] bg-[#F5EDD7] hover:bg-[#D4A017]/30 px-2.5 py-1 rounded-full border border-[#D4A017]/30 transition cursor-pointer shadow-2xs"
+                                                    >
+                                                        <Eye className="size-3 text-[#D4A017]" />
+                                                        Inspect Back ID
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                         <div>
                                             <span className="text-gray-400 block">Adoption Purpose:</span>
@@ -540,6 +577,24 @@ export default function MaoApplicationShow({ application, dssMatch, defaultCheck
                 </div>
 
             </div>
+
+            {/* ID Document Inspector Modal */}
+            {profile && (
+                <IdDocumentInspectorModal
+                    open={activeIdModal.open}
+                    onOpenChange={(open) => setActiveIdModal(prev => ({ ...prev, open }))}
+                    title="Applicant Verified ID Document"
+                    applicantName={profile.full_name}
+                    idType={profile.valid_id_type}
+                    idNumber={profile.valid_id_number}
+                    side={activeIdModal.side}
+                    documentUrl={
+                        activeIdModal.side === 'front'
+                            ? (profile.id_document_path ? route('adopter.id-document.show', { profile: profile.id || application.adopter.id, side: 'front' }) : null)
+                            : (profile.id_document_back_path ? route('adopter.id-document.show', { profile: profile.id || application.adopter.id, side: 'back' }) : null)
+                    }
+                />
+            )}
         </AppLayout>
     );
 }

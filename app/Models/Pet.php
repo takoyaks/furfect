@@ -19,9 +19,11 @@ use Illuminate\Support\Carbon;
  * @property int $age_years
  * @property string $gender
  * @property string $size
+ * @property string|null $coat_color
  * @property string|null $health_status
  * @property array<string>|null $temperament
  * @property string $energy_level
+ * @property string $maintenance_level
  * @property bool $requires_experience
  * @property bool $requires_yard
  * @property bool $requires_no_children
@@ -47,9 +49,11 @@ class Pet extends Model
         'age_years',
         'gender',
         'size',
+        'coat_color',
         'health_status',
         'temperament',
         'energy_level',
+        'maintenance_level',
         'requires_experience',
         'requires_yard',
         'requires_no_children',

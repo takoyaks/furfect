@@ -2,10 +2,11 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, ShieldAlert, Award, Calendar, Phone, Heart, Sparkles, MapPin, BadgeCheck, Zap, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Check, ShieldAlert, Award, Calendar, Phone, Heart, Sparkles, MapPin, BadgeCheck, Zap, CheckCircle2, ArrowRight, ZoomIn, X } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { DssScoreCard } from '@/components/dss-score-card';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
 interface Photo {
     id: number;
@@ -20,7 +21,9 @@ interface Pet {
     age_years: number;
     gender: string;
     size: string;
+    coat_color?: string | null;
     energy_level: string;
+    maintenance_level?: string;
     adoption_fee: string;
     health_status: string;
     status?: string;
@@ -66,6 +69,7 @@ export default function PetShow({
     const { systemSettings } = usePage().props as any;
     const pricingEnabled = systemSettings?.pricing_enabled ?? false;
     const [selectedPhoto, setSelectedPhoto] = useState(pet.photos[0]?.photo_path || '/placeholder-pet.png');
+    const [isZoomOpen, setIsZoomOpen] = useState(false);
 
     const handleApply = () => {
         router.post(route('application.store'), { pet_id: pet.id });
@@ -86,13 +90,22 @@ export default function PetShow({
                     {/* ── Left Column: Media, Description & 8-Factor DSS Score Card ── */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="space-y-4">
-                            {/* Primary photo preview */}
-                            <div className="h-[420px] bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 shadow-xs">
+                            {/* Primary photo preview with Zoom */}
+                            <div 
+                                onClick={() => setIsZoomOpen(true)}
+                                className="group relative h-[420px] bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 shadow-xs cursor-zoom-in"
+                                title="Click to zoom image"
+                            >
                                 <img 
                                     src={selectedPhoto} 
                                     alt={pet.name} 
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                 />
+                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                    <div className="bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 backdrop-blur-xs shadow-lg">
+                                        <ZoomIn className="size-4" /> Click to Zoom
+                                    </div>
+                                </div>
                             </div>
                             
                             {/* Thumbnails list */}
@@ -117,7 +130,11 @@ export default function PetShow({
                                 <div className="flex justify-between items-start flex-wrap gap-3">
                                     <div>
                                         <h2 className="text-2xl font-bold text-gray-900">Meet {pet.name}</h2>
-                                        <p className="text-xs text-gray-500 capitalize">{pet.gender} &bull; {pet.age_years} Year(s) old &bull; {pet.shelter.name}</p>
+                                        <p className="text-xs text-gray-500 capitalize">
+                                            {pet.gender} &bull; {pet.age_years} Year(s) old
+                                            {pet.coat_color ? ` \u2022 ${pet.coat_color} Color` : ''}
+                                            {` \u2022 ${pet.shelter.name}`}
+                                        </p>
                                     </div>
 
                                     {/* Approved Adoption Badge — reveals breed info */}
@@ -130,6 +147,11 @@ export default function PetShow({
                                 </div>
 
                                 <div className="flex flex-wrap gap-2 pt-1">
+                                    {pet.coat_color && (
+                                        <span className="text-xs bg-amber-50 text-amber-800 border border-[#D4A017]/30 font-semibold px-3 py-1 rounded-full capitalize">
+                                            Color: {pet.coat_color}
+                                        </span>
+                                    )}
                                     {pet.temperament && pet.temperament.map(tag => (
                                         <span key={tag} className="text-xs bg-[#F5EDD7] text-[#B8860B] font-semibold px-3 py-1 rounded-full capitalize">
                                             {tag}
@@ -259,9 +281,21 @@ export default function PetShow({
                                     <span className="text-gray-500">Size Category</span>
                                     <span className="font-semibold capitalize text-gray-900">{pet.size}</span>
                                 </div>
+                                {pet.coat_color && (
+                                    <div className="flex justify-between border-b border-gray-50 pb-2">
+                                        <span className="text-gray-500">Coat / Color</span>
+                                        <span className="font-semibold capitalize text-gray-900">{pet.coat_color}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between border-b border-gray-50 pb-2">
                                     <span className="text-gray-500">Energy Level</span>
                                     <span className="font-semibold capitalize text-gray-900">{pet.energy_level?.replace(/_/g, ' ')}</span>
+                                </div>
+                                <div className="flex justify-between border-b border-gray-50 pb-2">
+                                    <span className="text-gray-500">Maintenance Level</span>
+                                    <span className="font-semibold capitalize text-gray-900">
+                                        {pet.maintenance_level === 'low' ? '🟢 Low' : pet.maintenance_level === 'high' ? '🟠 High' : '🟡 Medium'}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between pt-0.5">
                                     <span className="text-gray-500">Health &amp; Vaccine</span>
@@ -293,6 +327,41 @@ export default function PetShow({
                     </div>
                 </div>
             </div>
+
+            {/* ── High-Resolution Photo Zoom Modal ── */}
+            <Dialog open={isZoomOpen} onOpenChange={setIsZoomOpen}>
+                <DialogContent 
+                    className="sm:max-w-4xl max-h-[92vh] p-3 bg-black/95 border-neutral-800 text-white flex flex-col items-center justify-center overflow-hidden" 
+                    showCloseButton={true}
+                >
+                    <div className="sr-only">
+                        <DialogTitle>{pet.name} - Photo Zoom View</DialogTitle>
+                    </div>
+
+                    <div className="relative w-full max-h-[82vh] flex items-center justify-center overflow-auto rounded-lg">
+                        <img 
+                            src={selectedPhoto} 
+                            alt={pet.name} 
+                            className="max-h-[80vh] w-auto max-w-full object-contain rounded-md shadow-2xl transition-all"
+                        />
+                    </div>
+
+                    {/* Modal bottom thumbnails */}
+                    {pet.photos.length > 1 && (
+                        <div className="flex gap-2 overflow-x-auto pt-2 pb-1 max-w-full">
+                            {pet.photos.map(p => (
+                                <button 
+                                    key={p.id} 
+                                    onClick={() => setSelectedPhoto(p.photo_path)}
+                                    className={`h-14 w-14 rounded-lg border-2 overflow-hidden shrink-0 transition-all ${selectedPhoto === p.photo_path ? 'border-[#D4A017] ring-2 ring-[#D4A017]/40' : 'border-neutral-700 opacity-60 hover:opacity-100'}`}
+                                >
+                                    <img src={p.photo_path} alt="" className="w-full h-full object-cover" />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

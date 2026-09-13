@@ -136,9 +136,32 @@ class DssMatchingService
         // 8. Special Requirements (5%)
         $specialRequirementsScore = $this->scoreSpecialRequirements($lifestyle, $pet, $matchReasons, $mismatchReasons, $breakdownDetails);
 
-        // Pet Preference: Gender check note
+        // Pet Preferences Matching Checks (Transparent Adopter Alignment)
+        if ($lifestyle->preferred_type && $lifestyle->preferred_type !== 'none' && $lifestyle->preferred_type === $pet->species) {
+            $matchReasons[] = 'Matches your preferred pet species ('.ucfirst($pet->species).').';
+        }
+
         if ($lifestyle->preferred_gender && $lifestyle->preferred_gender !== 'none' && $lifestyle->preferred_gender === $pet->gender) {
             $matchReasons[] = 'Matches your preferred pet gender ('.ucfirst($pet->gender).').';
+        }
+
+        if (! empty($lifestyle->preferred_size) && in_array($pet->size, $lifestyle->preferred_size)) {
+            $matchReasons[] = 'Matches your preferred pet size ('.ucfirst($pet->size).').';
+        }
+
+        if (! empty($lifestyle->preferred_coat) && $pet->coat_color && in_array($pet->coat_color, $lifestyle->preferred_coat)) {
+            $matchReasons[] = 'Matches your preferred coat/color ('.ucfirst($pet->coat_color).').';
+        }
+
+        // Health Status Highlights
+        if ($pet->health_status) {
+            $healthLower = strtolower($pet->health_status);
+            if (str_contains($healthLower, 'neutered') || str_contains($healthLower, 'spayed')) {
+                $matchReasons[] = 'Pet is altered (Spayed/Neutered) ensuring reproductive health and calm behavior.';
+            }
+            if (str_contains($healthLower, 'rabies')) {
+                $matchReasons[] = 'Protected with Anti-Rabies vaccination compliant with RA 9482.';
+            }
         }
 
         // Weighted total calculation (0–100%)
@@ -366,12 +389,25 @@ class DssMatchingService
             }
         }
 
+        // Maintenance Level Adjustment
+        $maintenance = $pet->maintenance_level ?? 'medium';
+        if ($maintenance === 'high') {
+            if ($incomeTier <= 2) {
+                $score = max(0.25, $score - 0.25);
+                $mismatchReasons[] = 'High-maintenance pet requires elevated grooming, specialized diet, and healthcare expenditures.';
+            } else {
+                $matchReasons[] = 'Well-prepared to support high-maintenance pet grooming and specialized care routines.';
+            }
+        } elseif ($maintenance === 'low') {
+            $matchReasons[] = 'Low-maintenance pet fits effortlessly into daily household commitments.';
+        }
+
         $breakdownDetails['care_capacity'] = [
             'score' => $score,
             'weight' => 15,
             'label' => 'Pet Needs & Care Capacity',
             'assessment' => $score >= 1.0 ? 'High Capacity' : ($score >= 0.75 ? 'Adequate Capacity' : 'Limited Capacity'),
-            'details' => "Monthly Income Tier: {$lifestyle->monthly_income}, Pet Size: {$pet->size}",
+            'details' => "Monthly Income Tier: {$lifestyle->monthly_income}, Pet Size: {$pet->size}, Maintenance Level: ".ucfirst($maintenance),
         ];
 
         return $score;

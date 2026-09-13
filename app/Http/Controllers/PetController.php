@@ -33,6 +33,14 @@ class PetController extends Controller
             $query->where('size', strtolower($request->input('size')));
         }
 
+        if ($request->filled('maintenance') && $request->input('maintenance') !== 'Any') {
+            $query->where('maintenance_level', strtolower($request->input('maintenance')));
+        }
+
+        if ($request->filled('color') && $request->input('color') !== 'Any') {
+            $query->where('coat_color', strtolower($request->input('color')));
+        }
+
         if ($request->filled('age') && $request->input('age') !== 'All ages') {
             $age = $request->input('age');
             if ($age === 'Puppy/Kitten (Under 1 yr)') {
@@ -85,7 +93,7 @@ class PetController extends Controller
 
         return Inertia::render('pets/index', [
             'pets' => $pets,
-            'filters' => $request->only(['species', 'gender', 'size', 'age', 'fee', 'search']),
+            'filters' => $request->only(['species', 'gender', 'size', 'maintenance', 'color', 'age', 'fee', 'search']),
             'savedPetIds' => $savedPetIds,
             'dssScores' => $dssScores,
         ]);

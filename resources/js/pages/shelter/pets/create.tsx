@@ -16,18 +16,26 @@ interface Shelter {
 }
 
 const TEMPERAMENT_OPTIONS = [
-    'Friendly',
-    'Playful',
     'Calm',
     'Gentle',
-    'Intelligent',
+    'Playful',
+    'Energetic',
+    'Friendly',
     'Affectionate',
+    'Intelligent',
     'Protective',
     'Independent',
     'House-trained',
-    'Vocal',
-    'Energetic',
     'Shy',
+    'Vocal',
+];
+
+const HEALTH_STATUS_PRESETS = [
+    'Neutered',
+    'Spayed',
+    'Anti-Rabies Vaccinated',
+    'Fully Vaccinated',
+    'Dewormed',
 ];
 
 const HOUSING_OPTIONS = [
@@ -54,9 +62,11 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
         age_years: '1',
         gender: 'male',
         size: 'medium',
+        coat_color: 'mixed',
         health_status: 'Vaccinated & Healthy',
         temperament: [] as string[],
         energy_level: 'moderate',
+        maintenance_level: 'medium',
         requires_experience: false,
         requires_yard: false,
         requires_no_children: false,
@@ -276,6 +286,28 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
                                 {errors.size && <p className="text-xs text-red-500">{errors.size}</p>}
                             </div>
 
+                            {/* Coat / Color */}
+                            <div className="space-y-2">
+                                <Label htmlFor="coat_color" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Coat / Color *</Label>
+                                <Select
+                                    value={data.coat_color}
+                                    onValueChange={val => setData('coat_color', val)}
+                                >
+                                    <SelectTrigger id="coat_color" className="w-full">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="black">Black</SelectItem>
+                                        <SelectItem value="white">White</SelectItem>
+                                        <SelectItem value="brown">Brown</SelectItem>
+                                        <SelectItem value="mixed">Mixed / Bi-color / Tri-color</SelectItem>
+                                        <SelectItem value="golden">Golden / Cream / Tan</SelectItem>
+                                        <SelectItem value="other">Other / Unique</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                {errors.coat_color && <p className="text-xs text-red-500">{errors.coat_color}</p>}
+                            </div>
+
                             {/* Adoption Fee — only shown when pricing is enabled */}
                             {pricingEnabled && (
                             <div className="space-y-2 col-span-1 md:col-span-2">
@@ -303,10 +335,10 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
                             <CardTitle className="text-base font-semibold flex items-center gap-2 text-gray-800 dark:text-neutral-200">
                                 <HeartHandshake className="w-4 h-4 text-[#D4A017]" /> Health & Behavioral Profile
                             </CardTitle>
-                            <CardDescription>Energy level, health status, and temperament traits used for DSS matching.</CardDescription>
+                            <CardDescription>Energy level, maintenance needs, health status, and temperament traits used for DSS matching.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6 space-y-4">
-                            {/* Energy Level & Health */}
+                            {/* Energy Level & Maintenance Level */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="energy_level" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Energy Level *</Label>
@@ -328,16 +360,69 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="health_status" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Health & Vaccination Status</Label>
-                                    <Input
-                                        id="health_status"
-                                        placeholder="e.g. Vaccinated, Spayed, Dewormed"
-                                        value={data.health_status}
-                                        onChange={e => setData('health_status', e.target.value)}
-                                        leftIcon={<HeartHandshake className="size-4" />}
-                                    />
-                                    {errors.health_status && <p className="text-xs text-red-500">{errors.health_status}</p>}
+                                    <Label htmlFor="maintenance_level" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Maintenance Level *</Label>
+                                    <Select
+                                        value={data.maintenance_level}
+                                        onValueChange={val => setData('maintenance_level', val)}
+                                    >
+                                        <SelectTrigger id="maintenance_level" className="w-full">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="low">🟢 Low Maintenance (Easy grooming, independent)</SelectItem>
+                                            <SelectItem value="medium">🟡 Medium Maintenance (Regular brushing, standard care)</SelectItem>
+                                            <SelectItem value="high">🟠 High Maintenance (Frequent grooming, strict medical/diet routine)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.maintenance_level && <p className="text-xs text-red-500">{errors.maintenance_level}</p>}
                                 </div>
+                            </div>
+
+                            {/* Health & Vaccination Status */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="health_status" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Health & Vaccination Status</Label>
+                                    <span className="text-[11px] text-muted-foreground">Click presets to quickly toggle notes</span>
+                                </div>
+                                
+                                {/* Quick Presets */}
+                                <div className="flex flex-wrap gap-1.5 pb-1">
+                                    {HEALTH_STATUS_PRESETS.map(preset => {
+                                        const isActive = data.health_status.toLowerCase().includes(preset.toLowerCase());
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={preset}
+                                                onClick={() => {
+                                                    let current = data.health_status.trim();
+                                                    if (isActive) {
+                                                        const regex = new RegExp(`(,\\s*)?${preset}|${preset}(,\\s*)?`, 'gi');
+                                                        current = current.replace(regex, '').replace(/^,\s*|,\s*$/g, '').trim();
+                                                    } else {
+                                                        current = current ? `${current}, ${preset}` : preset;
+                                                    }
+                                                    setData('health_status', current);
+                                                }}
+                                                className={`text-[11px] px-2.5 py-1 rounded-full border transition-all ${
+                                                    isActive 
+                                                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold'
+                                                        : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                                                }`}
+                                            >
+                                                {isActive ? `✓ ${preset}` : `+ ${preset}`}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                <Input
+                                    id="health_status"
+                                    placeholder="e.g. Neutered, Spayed, Anti-Rabies Vaccinated, Dewormed"
+                                    value={data.health_status}
+                                    onChange={e => setData('health_status', e.target.value)}
+                                    leftIcon={<HeartHandshake className="size-4" />}
+                                />
+                                {errors.health_status && <p className="text-xs text-red-500">{errors.health_status}</p>}
                             </div>
 
                             {/* Temperament Tags */}

@@ -34,6 +34,8 @@ class PetFactory extends Factory
             'gender' => $this->faker->randomElement(['male', 'female']),
             'size' => $this->faker->randomElement(['small', 'medium', 'large']),
             'health_status' => $this->faker->randomElement(['Vaccinated', 'Vaccinated, Neutered', 'Vaccinated, Spayed', null]),
+            'maintenance_level' => $this->faker->randomElement(['low', 'medium', 'high']),
+            'coat_color' => $this->faker->randomElement(['black', 'white', 'brown', 'mixed', 'golden', 'other']),
             'temperament' => $selectedTemperaments,
             'energy_level' => $this->faker->randomElement(['low', 'moderate', 'high', 'very_active']),
             'requires_experience' => $this->faker->boolean(20),

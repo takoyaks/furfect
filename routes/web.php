@@ -42,6 +42,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Onboarding (Adopter Role)
     Route::get('/onboarding/personal', [AdopterProfileController::class, 'edit'])->name('onboarding.personal.edit');
     Route::post('/onboarding/personal', [AdopterProfileController::class, 'store'])->name('onboarding.personal.store');
+    Route::get('/adopter/{profile}/id-document', [AdopterProfileController::class, 'viewIdDocument'])->name('adopter.id-document.show');
     Route::get('/onboarding/lifestyle', [LifestyleProfileController::class, 'edit'])->name('onboarding.lifestyle.edit');
     Route::post('/onboarding/lifestyle', [LifestyleProfileController::class, 'store'])->name('onboarding.lifestyle.store');
 

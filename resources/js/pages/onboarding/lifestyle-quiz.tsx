@@ -78,6 +78,16 @@ export default function LifestyleQuiz({
         setData('preferred_size', list);
     };
 
+    const handlePreferredCoat = (val: string, checked: boolean) => {
+        let list = [...data.preferred_coat];
+        if (checked) {
+            list.push(val);
+        } else {
+            list = list.filter(item => item !== val);
+        }
+        setData('preferred_coat', list);
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         post(route('onboarding.lifestyle.store'));
@@ -371,6 +381,32 @@ export default function LifestyleQuiz({
                                             ))}
                                         </div>
                                     </div>
+                                </div>
+
+                                {/* Preferred Coat / Color */}
+                                <div className="space-y-2 pt-2 border-t border-gray-50">
+                                    <Label>Preferred Coat / Color</Label>
+                                    <div className="flex flex-wrap gap-4 mt-2">
+                                        {[
+                                            { val: 'black', label: 'Black' },
+                                            { val: 'white', label: 'White' },
+                                            { val: 'brown', label: 'Brown' },
+                                            { val: 'mixed', label: 'Mixed / Multi-color' },
+                                            { val: 'golden', label: 'Golden / Cream' },
+                                        ].map(color => (
+                                            <div key={color.val} className="flex items-center space-x-2">
+                                                <Checkbox 
+                                                    id={`color-${color.val}`} 
+                                                    disabled={isLocked}
+                                                    checked={data.preferred_coat.includes(color.val)}
+                                                    onCheckedChange={checked => handlePreferredCoat(color.val, !!checked)}
+                                                    className="border-amber-400 data-[state=checked]:bg-[#D4A017] data-[state=checked]:border-[#D4A017]"
+                                                />
+                                                <Label htmlFor={`color-${color.val}`} className="cursor-pointer font-normal text-sm">{color.label}</Label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {errors.preferred_coat && <p className="text-destructive text-xs">{errors.preferred_coat}</p>}
                                 </div>
                             </div>
 

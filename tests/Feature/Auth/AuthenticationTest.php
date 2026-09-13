@@ -81,7 +81,7 @@ test('mao officers are redirected to mao applications index upon login without o
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('mao.applications.index', absolute: false));
+    $response->assertRedirect(route('mao.dashboard', absolute: false));
 });
 
 test('users with two factor enabled are redirected to two factor challenge', function () {

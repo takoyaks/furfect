@@ -114,7 +114,7 @@ export default function Home({ config, featuredPets = [], announcements = [], st
 
     return (
         <AppLayout breadcrumbs={[{ title: 'Home', href: route('dashboard') }]}>
-            <Head title="Home — FurFect Match" />
+            <Head title="Home" />
 
             <div className="space-y-12 py-4">
                 {/* ── 0. Live Adoption Application Banner (If Active Application Exists) ── */}

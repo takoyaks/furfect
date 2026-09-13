@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Check, X } from 'lucide-react';
+import { Sparkles, Check, X, ExternalLink, Eye } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
+import { IdDocumentInspectorModal } from '@/components/id-document-inspector-modal';
 
 const CHECKLIST_LABELS: Record<string, { label: string; description: string }> = {
     identity_verified:   { label: 'Applicant identity verified',       description: 'Name, address, and contact details match submitted ID document.' },
@@ -26,15 +28,22 @@ interface Application {
     resolved_at: string | null;
     submitted_at: string;
     adopter: {
+        id: number;
         name: string;
         email: string;
         adopter_profile?: {
+            id?: number;
+            user_id?: number;
             full_name: string;
             contact_number: string;
             date_of_birth: string;
             home_address: string;
             valid_id_type: string;
             valid_id_number: string;
+            id_document_path?: string | null;
+            id_document_name?: string | null;
+            id_document_back_path?: string | null;
+            id_document_back_name?: string | null;
         };
         lifestyle_profile?: {
             housing_type: string;
@@ -60,6 +69,11 @@ interface Application {
 export default function AdminApplicationShow({ application }: { application: Application }) {
     const profile = application.adopter.adopter_profile;
     const lifestyle = application.adopter.lifestyle_profile;
+
+    const [activeIdModal, setActiveIdModal] = useState<{ open: boolean; side: 'front' | 'back' }>({
+        open: false,
+        side: 'front',
+    });
 
     return (
         <AppLayout breadcrumbs={[
@@ -132,7 +146,29 @@ export default function AdminApplicationShow({ application }: { application: App
                                         </div>
                                         <div>
                                             <span className="text-gray-400 block">Valid ID Verification</span>
-                                            <span className="font-semibold text-gray-700">{profile.valid_id_type} — {profile.valid_id_number}</span>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="font-semibold text-gray-700">{profile.valid_id_type} — {profile.valid_id_number}</span>
+                                                {profile.id_document_path && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setActiveIdModal({ open: true, side: 'front' })}
+                                                        className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#8B6508] bg-[#F5EDD7] hover:bg-[#D4A017]/30 px-2.5 py-1 rounded-full border border-[#D4A017]/30 transition cursor-pointer shadow-2xs"
+                                                    >
+                                                        <Eye className="size-3 text-[#D4A017]" />
+                                                        Inspect Front ID
+                                                    </button>
+                                                )}
+                                                {profile.id_document_back_path && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setActiveIdModal({ open: true, side: 'back' })}
+                                                        className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#8B6508] bg-[#F5EDD7] hover:bg-[#D4A017]/30 px-2.5 py-1 rounded-full border border-[#D4A017]/30 transition cursor-pointer shadow-2xs"
+                                                    >
+                                                        <Eye className="size-3 text-[#D4A017]" />
+                                                        Inspect Back ID
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -268,6 +304,24 @@ export default function AdminApplicationShow({ application }: { application: App
                 </div>
 
             </div>
+
+            {/* ID Document Inspector Modal */}
+            {profile && (
+                <IdDocumentInspectorModal
+                    open={activeIdModal.open}
+                    onOpenChange={(open) => setActiveIdModal(prev => ({ ...prev, open }))}
+                    title="Applicant Verified ID Document"
+                    applicantName={profile.full_name}
+                    idType={profile.valid_id_type}
+                    idNumber={profile.valid_id_number}
+                    side={activeIdModal.side}
+                    documentUrl={
+                        activeIdModal.side === 'front'
+                            ? (profile.id_document_path ? route('adopter.id-document.show', { profile: profile.id || application.adopter.id, side: 'front' }) : null)
+                            : (profile.id_document_back_path ? route('adopter.id-document.show', { profile: profile.id || application.adopter.id, side: 'back' }) : null)
+                    }
+                />
+            )}
         </AppLayout>
     );
 }

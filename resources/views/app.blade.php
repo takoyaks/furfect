@@ -3,6 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="app-version" content="{{ config('app.version', 'furfect_v2.0.5') }}">
 
         {{-- Inline script to enforce light theme --}}
         <script>

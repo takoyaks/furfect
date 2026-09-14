@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import AppLogo from '@/components/app-logo';
 import { Heart, Cat, MapPin, Phone, Mail, Clock, ShieldCheck } from 'lucide-react';
 import { login, register } from '@/routes';
@@ -15,6 +15,7 @@ interface AppFooterProps {
 }
 
 export function AppFooter({ user, config }: AppFooterProps) {
+    const { version } = usePage().props as { version?: string };
     return (
         <footer className="mt-16 bg-gradient-to-b from-[#FAF8F5] to-[#F3EEE3] border-t border-[#D4A017]/20 text-gray-700">
             <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
@@ -92,12 +93,17 @@ export function AppFooter({ user, config }: AppFooterProps) {
 
                 {/* Bottom Bar */}
                 <div className="mt-8 pt-6 border-t border-gray-200/80 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-500 gap-4">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                         <span>&copy; {new Date().getFullYear()} FurFect Match. Made with</span>
                         <Cat className="h-3.5 w-3.5 fill-yellow-500 text-black-500" />
                         <span>for Virac Animal Welfare.</span>
+                        {version && (
+                            <span className="inline-flex items-center ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#D4A017]/15 text-[#8B6508] border border-[#D4A017]/25">
+                                {version}
+                            </span>
+                        )}
                     </div>
-                    <div className="flex gap-4">
+                    <div className="flex gap-4 flex-wrap items-center">
                         <span>Anti-Rabies Act (RA 9482)</span>
                         <span>&bull;</span>
                         <span>Animal Welfare Act (RA 8485)</span>

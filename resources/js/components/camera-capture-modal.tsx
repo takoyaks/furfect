@@ -14,6 +14,10 @@ interface CameraCaptureModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     title?: string;
+    description?: string;
+    showGuideOverlay?: boolean;
+    fileNamePrefix?: string;
+    aspectRatio?: number | string;
     onCapture: (file: File) => void;
 }
 
@@ -21,6 +25,9 @@ export function CameraCaptureModal({
     open,
     onOpenChange,
     title = 'Capture ID Document',
+    description,
+    showGuideOverlay = true,
+    fileNamePrefix = 'capture',
     onCapture,
 }: CameraCaptureModalProps) {
     const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -126,7 +133,7 @@ export function CameraCaptureModal({
             u8arr[n] = bstr.charCodeAt(n);
         }
 
-        const fileName = `id_capture_${Date.now()}.jpg`;
+        const fileName = `${fileNamePrefix}_${Date.now()}.jpg`;
         const file = new File([u8arr], fileName, { type: mime });
 
         onCapture(file);
@@ -142,7 +149,7 @@ export function CameraCaptureModal({
                         {title}
                     </DialogTitle>
                     <DialogDescription className="text-xs text-slate-400">
-                        Position your ID card clearly within the frame. Ensure good lighting and readable text.
+                        {description || 'Position your subject clearly within the frame. Ensure good lighting.'}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -163,7 +170,7 @@ export function CameraCaptureModal({
                     ) : capturedDataUrl ? (
                         <img
                             src={capturedDataUrl}
-                            alt="Captured ID"
+                            alt="Captured Photo"
                             className="w-full h-full object-contain"
                         />
                     ) : (
@@ -175,12 +182,14 @@ export function CameraCaptureModal({
                                 muted
                                 className="w-full h-full object-cover"
                             />
-                            {/* Visual guide overlay for ID card */}
-                            <div className="absolute inset-x-8 inset-y-6 pointer-events-none border-2 border-dashed border-[#D4A017]/80 rounded-xl flex items-end justify-center pb-2 bg-black/10">
-                                <span className="text-[11px] font-medium text-[#F5EDD7] bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-xs">
-                                    Align ID Card Here
-                                </span>
-                            </div>
+                            {/* Visual guide overlay */}
+                            {showGuideOverlay && (
+                                <div className="absolute inset-x-8 inset-y-6 pointer-events-none border-2 border-dashed border-[#D4A017]/80 rounded-xl flex items-end justify-center pb-2 bg-black/10">
+                                    <span className="text-[11px] font-medium text-[#F5EDD7] bg-black/60 px-2 py-0.5 rounded-md backdrop-blur-xs">
+                                        Align Subject Here
+                                    </span>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>

@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { LogOut, Settings, Award } from 'lucide-react';
 import {
     DropdownMenuGroup,
@@ -18,6 +18,7 @@ type Props = {
 
 export function UserMenuContent({ user }: Props) {
     const cleanup = useMobileNavigation();
+    const { version } = usePage().props as { version?: string };
 
     const handleLogout = () => {
         cleanup();
@@ -71,6 +72,15 @@ export function UserMenuContent({ user }: Props) {
                     Log out
                 </Link>
             </DropdownMenuItem>
+            {version && (
+                <>
+                    <DropdownMenuSeparator />
+                    <div className="px-2 py-1 text-[10px] font-mono text-muted-foreground/60 flex items-center justify-between select-none">
+                        <span>FurFect</span>
+                        <span>{version}</span>
+                    </div>
+                </>
+            )}
         </>
     );
 }

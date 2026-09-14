@@ -29,7 +29,7 @@ class UserController extends Controller
             });
         }
 
-        if ($request->filled('role') && $request->input('role') !== 'All roles') {
+        if ($request->filled('role') && ! in_array($request->input('role'), ['all', 'All roles'], true)) {
             $query->role($request->input('role'));
         }
 

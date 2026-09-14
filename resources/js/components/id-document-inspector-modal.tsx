@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, RotateCw, ZoomIn, ZoomOut, AlertCircle, ShieldCheck } from 'lucide-react';
@@ -27,6 +27,12 @@ export function IdDocumentInspectorModal({
     const [zoom, setZoom] = useState<number>(1);
     const [rotation, setRotation] = useState<number>(0);
     const [loadError, setLoadError] = useState<boolean>(false);
+
+    useEffect(() => {
+        setLoadError(false);
+        setZoom(1);
+        setRotation(0);
+    }, [documentUrl, side, open]);
 
     const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.25, 3));
     const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.25, 0.5));

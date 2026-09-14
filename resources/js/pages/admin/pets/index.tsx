@@ -31,11 +31,30 @@ export default function AdminPets({
     filters: any;
 }) {
     const [search, setSearch] = useState(filters.search || '');
-    const [status, setStatus] = useState(filters.status || 'All statuses');
+    const [status, setStatus] = useState(filters.status || 'all');
+
+    const applyStatusFilter = (val: string) => {
+        setStatus(val);
+        router.get(
+            route('admin.pets.index'),
+            {
+                search: search || undefined,
+                status: val === 'all' ? '' : val,
+            },
+            { preserveState: true, replace: true }
+        );
+    };
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        router.get(route('admin.pets.index'), { search, status }, { preserveState: true });
+        router.get(
+            route('admin.pets.index'),
+            {
+                search: search || undefined,
+                status: status === 'all' ? '' : status,
+            },
+            { preserveState: true }
+        );
     };
 
     const handleArchive = (petId: number) => {
@@ -64,7 +83,7 @@ export default function AdminPets({
                 {/* Filters and Catalog Table */}
                 <Card className="border-gray-200">
                     <CardHeader className="pb-4">
-                        <form onSubmit={handleSearchSubmit} className="flex gap-4 flex-wrap">
+                        <form onSubmit={handleSearchSubmit} className="flex gap-4 flex-wrap items-center">
                             <div className="flex-1 min-w-[220px]">
                                 <Input 
                                     placeholder="Search by name, tag #, microchip, or housing area..." 
@@ -73,18 +92,37 @@ export default function AdminPets({
                                     leftIcon={<Search className="size-4 text-gray-500" />}
                                 />
                             </div>
-                            <div className="w-48">
-                                <Select value={status} onValueChange={val => setStatus(val)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                            <div className="w-52">
+                                <Select value={status} onValueChange={applyStatusFilter}>
+                                    <SelectTrigger className="bg-white border-gray-200 shadow-xs h-9">
+                                        <div className="flex items-center gap-2 truncate">
+                                            <Filter className="h-4 w-4 text-gray-500 shrink-0" />
+                                            <SelectValue placeholder="Filter status" />
+                                        </div>
+                                    </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="All statuses">All statuses</SelectItem>
-                                        <SelectItem value="available">Available</SelectItem>
-                                        <SelectItem value="adopted">Adopted</SelectItem>
-                                        <SelectItem value="archived">Archived</SelectItem>
+                                        <SelectItem value="all">All statuses</SelectItem>
+                                        <SelectItem value="available">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                                Available
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="adopted">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                                Adopted
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="archived">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                                                Archived
+                                            </div>
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <Button type="submit" variant="secondary" className="flex items-center gap-1.5"><Filter className="size-4" /> Filter</Button>
                         </form>
                     </CardHeader>
                     <CardContent className="p-0 border-t border-gray-100 overflow-x-auto">

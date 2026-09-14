@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { home } from '@/routes';
@@ -10,6 +10,8 @@ export default function AuthSimpleLayout({
     description,
     greeting,
 }: AuthLayoutProps) {
+    const { version } = usePage().props as { version?: string };
+
     // Resolve dynamic greeting heading
     const resolvedGreeting = greeting || (() => {
         const lowerTitle = (title || '').toLowerCase();
@@ -54,9 +56,16 @@ export default function AuthSimpleLayout({
                     </CardContent>
                 </Card>
 
-                <p className="mt-6 text-center text-xs text-muted-foreground">
-                    Virac Animal Shelter &amp; Municipal Agriculture Office &bull; Adoption Platform
-                </p>
+                <div className="mt-6 text-center space-y-1">
+                    <p className="text-xs text-muted-foreground">
+                        Virac Animal Shelter &amp; Municipal Agriculture Office &bull; Adoption Platform
+                    </p>
+                    {version && (
+                        <p className="text-[11px] font-mono text-muted-foreground/70">
+                            {version}
+                        </p>
+                    )}
+                </div>
             </div>
         </div>
     );

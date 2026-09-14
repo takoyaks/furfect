@@ -22,7 +22,9 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PetController;
 use App\Http\Controllers\SavedPetController;
+use App\Http\Controllers\Shelter\AnnouncementController as ShelterAnnouncementController;
 use App\Http\Controllers\Shelter\ApplicationController as ShelterApplicationController;
+use App\Http\Controllers\Shelter\DashboardController as ShelterDashboardController;
 use App\Http\Controllers\Shelter\PetController as ShelterPetController;
 use App\Http\Controllers\Shelter\ReportController as ShelterReportController;
 use Illuminate\Support\Facades\Route;
@@ -62,6 +64,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Shelter Staff Portal Group
     Route::middleware(['role:shelter_staff|admin'])->prefix('shelter')->name('shelter.')->group(function () {
+        Route::get('/dashboard', [ShelterDashboardController::class, 'index'])->name('dashboard');
+
         Route::get('/applications', [ShelterApplicationController::class, 'index'])->name('applications.index');
         Route::get('/applications/{id}', [ShelterApplicationController::class, 'show'])->name('applications.show');
         Route::patch('/applications/{id}', [ShelterApplicationController::class, 'update'])->name('applications.update');
@@ -76,6 +80,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/reports', [ShelterReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/pdf', [ShelterReportController::class, 'downloadPdf'])->name('reports.pdf');
         Route::get('/reports/excel', [ShelterReportController::class, 'downloadExcel'])->name('reports.excel');
+
+        // Content & Pages - Announcements
+        Route::get('/cms/announcements', [ShelterAnnouncementController::class, 'index'])->name('cms.announcements.index');
+        Route::post('/cms/announcements', [ShelterAnnouncementController::class, 'store'])->name('cms.announcements.store');
+        Route::post('/cms/announcements/{id}', [ShelterAnnouncementController::class, 'update'])->name('cms.announcements.update');
+        Route::delete('/cms/announcements/{id}', [ShelterAnnouncementController::class, 'destroy'])->name('cms.announcements.destroy');
     });
 
     // MAO Officer Portal Group

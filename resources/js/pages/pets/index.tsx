@@ -50,8 +50,17 @@ export default function PetsIndex({
     const [color, setColor] = useState(filters.color || 'Any');
     const [fee, setFee] = useState(filters.fee || 'all');
 
-    const applyFilters = () => {
-        router.get(route('pets.index'), {
+    const updateFilter = (newFilters: Partial<{
+        search: string;
+        species: string;
+        age: string;
+        size: string;
+        gender: string;
+        maintenance: string;
+        color: string;
+        fee: string;
+    }>) => {
+        const nextFilters = {
             search,
             species,
             age,
@@ -59,13 +68,37 @@ export default function PetsIndex({
             gender,
             maintenance,
             color,
-            fee
-        }, { preserveState: true });
+            fee,
+            ...newFilters,
+        };
+
+        router.get(route('pets.index'), {
+            search: nextFilters.search || undefined,
+            species: nextFilters.species === 'All types' ? undefined : nextFilters.species,
+            age: nextFilters.age === 'All ages' ? undefined : nextFilters.age,
+            size: nextFilters.size === 'Any' ? undefined : nextFilters.size,
+            gender: nextFilters.gender === 'Any' ? undefined : nextFilters.gender,
+            maintenance: nextFilters.maintenance === 'Any' ? undefined : nextFilters.maintenance,
+            color: nextFilters.color === 'Any' ? undefined : nextFilters.color,
+            fee: nextFilters.fee === 'all' ? undefined : nextFilters.fee,
+        }, { preserveState: true, replace: true });
     };
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        applyFilters();
+        updateFilter({ search });
+    };
+
+    const resetFilters = () => {
+        setSearch('');
+        setSpecies('All types');
+        setAge('All ages');
+        setSize('Any');
+        setGender('Any');
+        setMaintenance('Any');
+        setColor('Any');
+        setFee('all');
+        router.get(route('pets.index'), {}, { preserveState: true, replace: true });
     };
 
     const handleSaveToggle = (petId: number) => {
@@ -97,7 +130,7 @@ export default function PetsIndex({
                                 {/* Pet Type */}
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-gray-500 uppercase">Pet Type</label>
-                                    <Select value={species} onValueChange={val => setSpecies(val)}>
+                                    <Select value={species} onValueChange={val => { setSpecies(val); updateFilter({ species: val }); }}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="All types">All types</SelectItem>
@@ -110,7 +143,7 @@ export default function PetsIndex({
                                 {/* Age Range */}
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-gray-500 uppercase">Age</label>
-                                    <Select value={age} onValueChange={val => setAge(val)}>
+                                    <Select value={age} onValueChange={val => { setAge(val); updateFilter({ age: val }); }}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="All ages">All ages</SelectItem>
@@ -125,7 +158,7 @@ export default function PetsIndex({
                                 {/* Size */}
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-gray-500 uppercase">Size</label>
-                                    <Select value={size} onValueChange={val => setSize(val)}>
+                                    <Select value={size} onValueChange={val => { setSize(val); updateFilter({ size: val }); }}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="Any">Any</SelectItem>
@@ -139,7 +172,7 @@ export default function PetsIndex({
                                 {/* Gender */}
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-gray-500 uppercase">Gender</label>
-                                    <Select value={gender} onValueChange={val => setGender(val)}>
+                                    <Select value={gender} onValueChange={val => { setGender(val); updateFilter({ gender: val }); }}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="Any">Any</SelectItem>
@@ -152,7 +185,7 @@ export default function PetsIndex({
                                 {/* Maintenance Level */}
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-gray-500 uppercase">Maintenance</label>
-                                    <Select value={maintenance} onValueChange={val => setMaintenance(val)}>
+                                    <Select value={maintenance} onValueChange={val => { setMaintenance(val); updateFilter({ maintenance: val }); }}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="Any">Any</SelectItem>
@@ -166,7 +199,7 @@ export default function PetsIndex({
                                 {/* Color / Coat */}
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-gray-500 uppercase">Color / Coat</label>
-                                    <Select value={color} onValueChange={val => setColor(val)}>
+                                    <Select value={color} onValueChange={val => { setColor(val); updateFilter({ color: val }); }}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="Any">Any</SelectItem>
@@ -184,7 +217,7 @@ export default function PetsIndex({
                                 {pricingEnabled && (
                                 <div className="space-y-2">
                                     <label className="text-xs font-semibold text-gray-500 uppercase">Adoption Fee</label>
-                                    <Select value={fee} onValueChange={val => setFee(val)}>
+                                    <Select value={fee} onValueChange={val => { setFee(val); updateFilter({ fee: val }); }}>
                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="all">All pets</SelectItem>
@@ -196,10 +229,12 @@ export default function PetsIndex({
                                 )}
 
                                 <Button 
-                                    onClick={applyFilters} 
-                                    className="w-full bg-[#D4A017] hover:bg-[#B8860B] text-white"
+                                    type="button"
+                                    variant="outline"
+                                    onClick={resetFilters} 
+                                    className="w-full text-gray-600 hover:text-gray-800"
                                 >
-                                    Apply Filters
+                                    Reset Filters
                                 </Button>
                             </CardContent>
                         </Card>

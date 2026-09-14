@@ -11,9 +11,18 @@ return [
     | framework needs to place the application's name in a notification or
     | other UI elements where an application name needs to be displayed.
     |
+    'name' => env('APP_NAME', 'Laravel'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Version
+    |--------------------------------------------------------------------------
+    |
+    | This value is the semantic version of your application.
+    |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'version' => env('APP_VERSION', 'furfect_v2.0.5'),
 
     /*
     |--------------------------------------------------------------------------

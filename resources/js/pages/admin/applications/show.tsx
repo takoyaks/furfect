@@ -311,14 +311,14 @@ export default function AdminApplicationShow({ application }: { application: App
                     open={activeIdModal.open}
                     onOpenChange={(open) => setActiveIdModal(prev => ({ ...prev, open }))}
                     title="Applicant Verified ID Document"
-                    applicantName={profile.full_name}
-                    idType={profile.valid_id_type}
-                    idNumber={profile.valid_id_number}
+                    applicantName={profile.full_name || application.adopter.name}
+                    idType={profile.valid_id_type || 'ID Document'}
+                    idNumber={profile.valid_id_number || ''}
                     side={activeIdModal.side}
                     documentUrl={
                         activeIdModal.side === 'front'
-                            ? (profile.id_document_path ? route('adopter.id-document.show', { profile: profile.id || application.adopter.id, side: 'front' }) : null)
-                            : (profile.id_document_back_path ? route('adopter.id-document.show', { profile: profile.id || application.adopter.id, side: 'back' }) : null)
+                            ? (profile.id_document_path ? route('adopter.id-document.show', { profile: profile.id || profile.user_id || application.adopter.id, side: 'front' }) : null)
+                            : (profile.id_document_back_path ? route('adopter.id-document.show', { profile: profile.id || profile.user_id || application.adopter.id, side: 'back' }) : null)
                     }
                 />
             )}

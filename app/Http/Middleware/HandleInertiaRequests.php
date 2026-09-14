@@ -81,6 +81,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'version' => config('app.version', 'furfect_v2.0.5'),
             'auth' => [
                 'user' => $user ? array_merge($user->toArray(), [
                     'roles' => $user->getRoleNames(),

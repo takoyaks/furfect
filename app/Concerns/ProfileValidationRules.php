@@ -23,6 +23,11 @@ trait ProfileValidationRules
             'bio' => ['nullable', 'string', 'max:500'],
             'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'remove_avatar' => ['nullable', 'boolean'],
+            'date_of_birth' => ['nullable', 'date', 'before:today'],
+            'valid_id_type' => ['nullable', 'string', 'max:150'],
+            'valid_id_number' => ['nullable', 'string', 'max:100'],
+            'id_document' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
+            'id_document_back' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
         ];
     }
 

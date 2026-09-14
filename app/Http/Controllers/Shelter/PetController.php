@@ -21,6 +21,10 @@ class PetController extends Controller
     {
         $query = Pet::with(['photos', 'shelter'])->latest();
 
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
@@ -36,7 +40,7 @@ class PetController extends Controller
 
         return Inertia::render('shelter/pets/index', [
             'pets' => $pets,
-            'filters' => $request->only(['search']),
+            'filters' => $request->only(['status', 'search']),
         ]);
     }
 

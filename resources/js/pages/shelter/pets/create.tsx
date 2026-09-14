@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Upload, X, Check, Dog, Cat, Sparkles, ShieldAlert, HeartHandshake, Tag, MapPin, Cpu, Calendar, PawPrint, ImagePlus } from 'lucide-react';
+import { ArrowLeft, Upload, X, Check, Dog, Cat, Sparkles, ShieldAlert, HeartHandshake, Tag, MapPin, Cpu, Calendar, PawPrint, ImagePlus, Camera } from 'lucide-react';
+import { CameraCaptureModal } from '@/components/camera-capture-modal';
 
 interface Shelter {
     id: number;
@@ -81,6 +82,7 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
     });
 
     const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+    const [cameraOpen, setCameraOpen] = useState(false);
 
     const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files) return;
@@ -90,6 +92,13 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
 
         const newPreviews = selectedFiles.map(file => URL.createObjectURL(file));
         setPreviewUrls(prev => [...prev, ...newPreviews]);
+    };
+
+    const handleCameraCapture = (file: File) => {
+        const updatedPhotos = [...data.photos, file];
+        setData('photos', updatedPhotos);
+        const newPreview = URL.createObjectURL(file);
+        setPreviewUrls(prev => [...prev, newPreview]);
     };
 
     const removePhoto = (index: number) => {
@@ -680,7 +689,20 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
 
                             {/* Photo Upload Zone */}
                             <div className="space-y-2">
-                                <Label className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Pet Photos</Label>
+                                <div className="flex items-center justify-between gap-2">
+                                    <Label className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Pet Photos</Label>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCameraOpen(true)}
+                                        className="text-xs border-[#D4A017]/40 text-[#8B6508] dark:text-amber-300 hover:bg-[#D4A017]/15 flex items-center gap-1.5 cursor-pointer h-7 px-2.5"
+                                        title="Open camera to capture pet picture"
+                                    >
+                                        <Camera className="size-3.5 text-[#D4A017]" />
+                                        <span>Open Camera</span>
+                                    </Button>
+                                </div>
                                 <div className="border-2 border-dashed border-gray-300 dark:border-neutral-700 rounded-2xl p-8 text-center hover:border-[#D4A017] hover:bg-[#D4A017]/5 group transition-all duration-200 relative bg-gray-50/50 dark:bg-neutral-800/20 cursor-pointer">
                                     <input
                                         type="file"
@@ -745,6 +767,17 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
                     </div>
                 </form>
             </div>
+
+            {/* In-Browser Camera Capture Modal */}
+            <CameraCaptureModal
+                open={cameraOpen}
+                onOpenChange={setCameraOpen}
+                title="Take Pet Photo"
+                description="Position the pet clearly in frame with good lighting."
+                showGuideOverlay={false}
+                fileNamePrefix="pet_photo"
+                onCapture={handleCameraCapture}
+            />
         </AppLayout>
     );
 }

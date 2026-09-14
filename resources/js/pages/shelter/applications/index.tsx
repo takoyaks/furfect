@@ -62,17 +62,46 @@ export default function ShelterApplicationIndex({
                             Review and process adoption applications for your shelter.
                         </p>
                     </div>
-                    <div className="w-48 flex items-center gap-2">
-                        <Filter className="size-4 text-gray-500 shrink-0" />
+                    <div className="w-52 flex items-center gap-2">
                         <Select value={status} onValueChange={applyFilter}>
-                            <SelectTrigger size="sm"><SelectValue /></SelectTrigger>
+                            <SelectTrigger size="sm" className="bg-white border-gray-200 shadow-xs h-9">
+                                <div className="flex items-center gap-2 truncate">
+                                    <Filter className="h-4 w-4 text-gray-500 shrink-0" />
+                                    <SelectValue placeholder="Filter status" />
+                                </div>
+                            </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All statuses</SelectItem>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="under_review">Under Review</SelectItem>
-                                <SelectItem value="mao_audit">MAO Audit</SelectItem>
-                                <SelectItem value="approved">Approved</SelectItem>
-                                <SelectItem value="rejected">Rejected</SelectItem>
+                                <SelectItem value="pending">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                                        Pending
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="under_review">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                        Under Review
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="mao_audit">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                                        MAO Audit
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="approved">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                        Approved
+                                    </div>
+                                </SelectItem>
+                                <SelectItem value="rejected">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                        Rejected
+                                    </div>
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

@@ -78,11 +78,6 @@ export function AppSidebar() {
                             icon: Home,
                         },
                         {
-                            title: 'MAO Dashboard',
-                            href: route('mao.dashboard'),
-                            icon: LayoutGrid,
-                        },
-                        {
                             title: 'MAO Audit',
                             href: route('mao.applications.index'),
                             icon: ShieldCheck,
@@ -129,7 +124,7 @@ export function AppSidebar() {
                     items: [
                         {
                             title: 'Dashboard',
-                            href: dashboard(),
+                            href: route('shelter.dashboard'),
                             icon: LayoutGrid,
                         },
                         {
@@ -146,6 +141,16 @@ export function AppSidebar() {
                             title: 'Reports',
                             href: route('shelter.reports.index'),
                             icon: BookOpen,
+                        },
+                    ],
+                },
+                {
+                    title: 'Content & Pages',
+                    items: [
+                        {
+                            title: 'Announcements',
+                            href: route('shelter.cms.announcements.index'),
+                            icon: Megaphone,
                         },
                     ],
                 },
@@ -226,7 +231,7 @@ export function AppSidebar() {
             return route('mao.dashboard');
         }
         if (roles.includes('shelter_staff')) {
-            return route('shelter.pets.index');
+            return route('shelter.dashboard');
         }
         return dashboard();
     };

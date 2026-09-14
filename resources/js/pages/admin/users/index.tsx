@@ -53,12 +53,24 @@ export default function AdminUsers({
     filters: any;
 }) {
     const [search, setSearch] = useState(filters.search || '');
-    const [role, setRole] = useState(filters.role || 'All roles');
+    const [role, setRole] = useState(filters.role || 'all');
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [resettingUser, setResettingUser] = useState<User | null>(null);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [copiedPassword, setCopiedPassword] = useState(false);
+
+    const applyRoleFilter = (val: string) => {
+        setRole(val);
+        router.get(
+            route('admin.users.index'),
+            {
+                search: search || undefined,
+                role: val === 'all' ? '' : val,
+            },
+            { preserveState: true, replace: true }
+        );
+    };
 
     const { data, setData, post, patch, processing, reset, errors } = useForm({
         name: '',
@@ -114,7 +126,14 @@ export default function AdminUsers({
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        router.get(route('admin.users.index'), { search, role }, { preserveState: true });
+        router.get(
+            route('admin.users.index'),
+            {
+                search: search || undefined,
+                role: role === 'all' ? '' : role,
+            },
+            { preserveState: true }
+        );
     };
 
     const handleAddUser = (e: React.FormEvent) => {
@@ -211,18 +230,34 @@ export default function AdminUsers({
                                     leftIcon={<Search className="size-4 text-gray-500" />}
                                 />
                             </div>
-                            <div className="w-48">
-                                <Select value={role} onValueChange={val => setRole(val)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                            <div className="w-52">
+                                <Select value={role} onValueChange={applyRoleFilter}>
+                                    <SelectTrigger className="bg-white border-gray-200 shadow-xs h-9">
+                                        <div className="flex items-center gap-2 truncate">
+                                            <Filter className="h-4 w-4 text-gray-500 shrink-0" />
+                                            <SelectValue placeholder="Filter role" />
+                                        </div>
+                                    </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="All roles">All roles</SelectItem>
-                                        {roles.map(r => (
-                                            <SelectItem key={r} value={r} className="capitalize">{r.replace('_', ' ')}</SelectItem>
-                                        ))}
+                                        <SelectItem value="all">All roles</SelectItem>
+                                        {roles.map(r => {
+                                            const dotColor = 
+                                                r === 'admin' ? 'bg-red-500' :
+                                                r === 'shelter_staff' ? 'bg-blue-500' :
+                                                r === 'mao_officer' ? 'bg-purple-500' :
+                                                r === 'adopter' ? 'bg-amber-500' : 'bg-gray-400';
+                                            return (
+                                                <SelectItem key={r} value={r} className="capitalize">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-2 h-2 rounded-full ${dotColor}`}></div>
+                                                        {r.replace('_', ' ')}
+                                                    </div>
+                                                </SelectItem>
+                                            );
+                                        })}
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <Button type="submit" variant="secondary" className="flex items-center gap-1.5"><Filter className="size-4" /> Filter</Button>
                         </form>
                     </CardHeader>
                     <CardContent className="p-0 border-t border-gray-100 overflow-x-auto">

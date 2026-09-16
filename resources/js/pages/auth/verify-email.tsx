@@ -22,7 +22,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
                     <>
                         <Button
                             disabled={processing}
-                            className="w-full bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold transition shadow-xs"
+                            className="w-full bg-[#FFBF00] hover:bg-[#E5A910] active:bg-[#D99B00] text-[#283F24] font-bold py-2.5 rounded-xl shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer text-sm"
                         >
                             {processing && <Spinner className="size-4" />}
                             {!processing && <RotateCcw className="size-4" />}

@@ -42,6 +42,8 @@ const routesMap: Record<string, string> = {
     
     'pets.index': '/pets',
     'pets.show': '/pets/{id}',
+    'announcements.index': '/announcements',
+    'announcements.show': '/announcements/{id}',
     
     'shelter.applications.index': '/shelter/applications',
     'shelter.applications.show': '/shelter/applications/{id}',
@@ -91,10 +93,9 @@ const routesMap: Record<string, string> = {
 };
 
 // Define global route helper mapping route name to URL string
-(window as any).route = (name: string, params?: any): string => {
+const globalRouteHelper = (name: string, params?: any): string => {
     let url = routesMap[name];
     if (!url) {
-        console.warn(`Route [${name}] not found in routesMap.`);
         return '';
     }
 
@@ -121,6 +122,13 @@ const routesMap: Record<string, string> = {
     }
     return url;
 };
+
+if (typeof globalThis !== 'undefined') {
+    (globalThis as any).route = globalRouteHelper;
+}
+if (typeof window !== 'undefined') {
+    (window as any).route = globalRouteHelper;
+}
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),

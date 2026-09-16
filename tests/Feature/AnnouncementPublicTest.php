@@ -35,13 +35,19 @@ test('guests can search and filter announcements by category', function () {
 
     $response = $this->get(route('announcements.index', ['category' => 'Medical']));
     $response->assertOk();
-    $response->assertSee('Vaccination Drive 2026');
-    $response->assertDontSee('Adoption Day Weekend');
+    $response->assertInertia(fn ($page) => $page
+        ->component('announcements/index')
+        ->has('announcements.data', 1)
+        ->where('announcements.data.0.title', 'Vaccination Drive 2026')
+    );
 
     $responseSearch = $this->get(route('announcements.index', ['search' => 'Weekend']));
     $responseSearch->assertOk();
-    $responseSearch->assertSee('Adoption Day Weekend');
-    $responseSearch->assertDontSee('Vaccination Drive 2026');
+    $responseSearch->assertInertia(fn ($page) => $page
+        ->component('announcements/index')
+        ->has('announcements.data', 1)
+        ->where('announcements.data.0.title', 'Adoption Day Weekend')
+    );
 });
 
 test('guests can view announcement detail page', function () {

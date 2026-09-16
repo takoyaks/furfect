@@ -23,13 +23,14 @@ export default function ConfirmPassword() {
                                 placeholder="Enter your current password"
                                 autoComplete="current-password"
                                 autoFocus
+                                className="rounded-xl focus-visible:ring-[#FFBF00] focus-visible:border-[#FFBF00]"
                             />
                             <InputError message={errors.password} />
                         </div>
 
                         <Button
                             type="submit"
-                            className="w-full bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold transition shadow-xs"
+                            className="w-full bg-[#FFBF00] hover:bg-[#E5A910] active:bg-[#D99B00] text-[#283F24] font-bold py-2.5 rounded-xl shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer text-sm"
                             disabled={processing}
                             data-test="confirm-password-button"
                         >

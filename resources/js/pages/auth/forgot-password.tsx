@@ -34,14 +34,14 @@ export default function ForgotPassword({ status }: { status?: string }) {
                                     autoFocus
                                     placeholder="name@example.com"
                                     leftIcon={<Mail className="size-4 text-muted-foreground" />}
-                                    className="focus-visible:ring-[#D4A017]"
+                                    className="focus-visible:ring-[#D99B00]"
                                 />
                                 <InputError message={errors.email} />
                             </div>
 
                             <Button
                                 type="submit"
-                                className="w-full bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold transition shadow-xs mt-2"
+                                className="w-full bg-[#D99B00] hover:bg-[#C28A00] text-white font-semibold transition shadow-xs mt-2 cursor-pointer"
                                 disabled={processing}
                                 data-test="email-password-reset-link-button"
                             >
@@ -56,7 +56,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                 <div className="text-center text-sm text-muted-foreground pt-2 border-t border-border/60">
                     <TextLink
                         href={login()}
-                        className="inline-flex items-center gap-1.5 font-semibold text-[#D4A017] hover:underline"
+                        className="inline-flex items-center gap-1.5 font-semibold text-[#D99B00] hover:underline"
                     >
                         <ArrowLeft className="size-3.5" /> Return to Log In
                     </TextLink>

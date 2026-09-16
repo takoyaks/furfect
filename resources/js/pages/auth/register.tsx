@@ -80,7 +80,7 @@ export default function Register({ passwordRules }: Props) {
                                     name="name"
                                     placeholder="e.g. Juan dela Cruz"
                                     leftIcon={<User className="size-4 text-muted-foreground" />}
-                                    className="focus-visible:ring-[#D4A017]"
+                                    className="rounded-xl focus-visible:ring-[#FFBF00] focus-visible:border-[#FFBF00]"
                                 />
                                 <InputError message={errors.name} />
                             </div>
@@ -98,7 +98,7 @@ export default function Register({ passwordRules }: Props) {
                                     leftIcon={<Mail className="size-4 text-muted-foreground" />}
                                     onBlur={handleEmailBlur}
                                     onChange={() => setEmailCheck(null)}
-                                    className={`focus-visible:ring-[#D4A017] ${
+                                    className={`rounded-xl focus-visible:ring-[#FFBF00] focus-visible:border-[#FFBF00] ${
                                         emailCheck && !emailCheck.checking && emailCheck.available === false
                                             ? 'border-destructive focus-visible:ring-destructive/20'
                                             : ''
@@ -113,7 +113,7 @@ export default function Register({ passwordRules }: Props) {
                                     <div className="flex items-start gap-1.5 text-xs text-destructive mt-0.5">
                                         <AlertCircle className="size-3.5 shrink-0 mt-0.5" />
                                         <span>
-                                            {emailCheck.message}{' '}
+                                             {emailCheck.message}{' '}
                                             <TextLink href={login()} className="font-semibold underline">
                                                 Log in here
                                             </TextLink>
@@ -138,6 +138,7 @@ export default function Register({ passwordRules }: Props) {
                                     name="password"
                                     placeholder="Enter your password"
                                     passwordrules={passwordRules}
+                                    className="rounded-xl focus-visible:ring-[#FFBF00] focus-visible:border-[#FFBF00]"
                                 />
                                 <InputError message={errors.password} />
                             </div>
@@ -152,6 +153,7 @@ export default function Register({ passwordRules }: Props) {
                                     name="password_confirmation"
                                     placeholder="Re-enter your password"
                                     passwordrules={passwordRules}
+                                    className="rounded-xl focus-visible:ring-[#FFBF00] focus-visible:border-[#FFBF00]"
                                 />
                                 <InputError message={errors.password_confirmation} />
                             </div>
@@ -163,14 +165,14 @@ export default function Register({ passwordRules }: Props) {
                                     name="terms_agreed"
                                     value={termsAgreed ? '1' : ''}
                                 />
-                                <div className="flex items-start space-x-3 rounded-lg border border-amber-200/80 bg-amber-50/60 p-3 dark:border-amber-900/40 dark:bg-amber-950/20">
+                                <div className="flex items-start space-x-3 rounded-xl border border-amber-200/80 bg-amber-50/60 p-3 dark:border-amber-900/40 dark:bg-amber-950/20">
                                     <Checkbox
                                         id="terms_agreed"
                                         checked={termsAgreed}
                                         onCheckedChange={(checked) => {
-                                            setTermsAgreed(Boolean(checked));
+                                             setTermsAgreed(Boolean(checked));
                                         }}
-                                        className="mt-0.5 border-amber-400 data-[state=checked]:bg-[#D4A017] data-[state=checked]:border-[#D4A017]"
+                                        className="mt-0.5 border-[#FFBF00] data-[state=checked]:bg-[#FFBF00] data-[state=checked]:text-[#283F24] data-[state=checked]:border-[#FFBF00] rounded-md"
                                     />
                                     <div className="text-xs text-neutral-700 dark:text-neutral-300 leading-snug">
                                         <label htmlFor="terms_agreed" className="cursor-pointer select-none">
@@ -180,7 +182,7 @@ export default function Register({ passwordRules }: Props) {
                                             trigger={
                                                 <button
                                                     type="button"
-                                                    className="font-semibold text-[#D4A017] underline hover:text-[#B8860B] inline-block"
+                                                    className="font-bold text-[#467235] underline hover:text-[#283F24] inline-block cursor-pointer ml-0.5"
                                                 >
                                                     View Terms &amp; Policies
                                                 </button>
@@ -200,7 +202,7 @@ export default function Register({ passwordRules }: Props) {
                                 />
                                 <Captcha
                                     onVerify={(verified) => {
-                                        setCaptchaVerified(verified);
+                                         setCaptchaVerified(verified);
                                     }}
                                     error={errors.captcha_verified}
                                 />
@@ -208,7 +210,7 @@ export default function Register({ passwordRules }: Props) {
 
                             <Button
                                 type="submit"
-                                className="mt-1 w-full bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold transition shadow-xs"
+                                className="mt-2 w-full bg-[#FFBF00] hover:bg-[#E5A910] active:bg-[#D99B00] text-[#283F24] font-bold py-2.5 rounded-xl shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer text-sm"
                                 tabIndex={5}
                                 disabled={processing || (emailCheck?.available === false)}
                                 data-test="register-user-button"
@@ -219,9 +221,9 @@ export default function Register({ passwordRules }: Props) {
                             </Button>
                         </div>
 
-                        <div className="text-center text-sm text-muted-foreground pt-1 border-t border-border/60">
+                        <div className="text-center text-xs sm:text-sm text-neutral-500 pt-2 border-t border-neutral-100 dark:border-neutral-800">
                             Already have an account?{' '}
-                            <TextLink href={login()} tabIndex={6} className="font-semibold text-[#D4A017] hover:underline">
+                            <TextLink href={login()} tabIndex={6} className="font-bold text-[#283F24] hover:text-[#467235] hover:underline dark:text-amber-400">
                                 Log in
                             </TextLink>
                         </div>

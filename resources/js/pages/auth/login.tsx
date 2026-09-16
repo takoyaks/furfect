@@ -48,7 +48,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     autoComplete="email"
                                     placeholder="name@example.com"
                                     leftIcon={<Mail className="size-4 text-muted-foreground" />}
-                                    className="focus-visible:ring-[#D4A017]"
+                                    className="rounded-xl focus-visible:ring-[#FFBF00] focus-visible:border-[#FFBF00]"
                                 />
                                 <InputError message={errors.email} />
                             </div>
@@ -59,7 +59,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
-                                            className="text-xs text-[#D4A017] hover:underline"
+                                            className="text-xs font-semibold text-[#467235] hover:text-[#283F24] hover:underline"
                                             tabIndex={5}
                                         >
                                             Forgot password?
@@ -73,6 +73,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     tabIndex={2}
                                     autoComplete="current-password"
                                     placeholder="Enter your password"
+                                    className="rounded-xl focus-visible:ring-[#FFBF00] focus-visible:border-[#FFBF00]"
                                 />
                                 <InputError message={errors.password} />
                             </div>
@@ -82,16 +83,16 @@ export default function Login({ status, canResetPassword }: Props) {
                                     id="remember"
                                     name="remember"
                                     tabIndex={3}
-                                    className="border-amber-400 data-[state=checked]:bg-[#D4A017] data-[state=checked]:border-[#D4A017]"
+                                    className="border-[#FFBF00] data-[state=checked]:bg-[#FFBF00] data-[state=checked]:text-[#283F24] data-[state=checked]:border-[#FFBF00] rounded-md"
                                 />
-                                <Label htmlFor="remember" className="text-sm font-normal text-muted-foreground cursor-pointer select-none">
+                                <Label htmlFor="remember" className="text-xs sm:text-sm font-medium text-neutral-600 dark:text-neutral-300 cursor-pointer select-none">
                                     Remember me on this device
                                 </Label>
                             </div>
 
                             <Button
                                 type="submit"
-                                className="mt-1 w-full bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold transition shadow-xs"
+                                className="mt-2 w-full bg-[#FFBF00] hover:bg-[#E5A910] active:bg-[#D99B00] text-[#283F24] font-bold py-2.5 rounded-xl shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer text-sm"
                                 tabIndex={4}
                                 disabled={processing}
                                 data-test="login-button"
@@ -102,9 +103,9 @@ export default function Login({ status, canResetPassword }: Props) {
                             </Button>
                         </div>
 
-                        <div className="text-center text-sm text-muted-foreground pt-1 border-t border-border/60">
+                        <div className="text-center text-xs sm:text-sm text-neutral-500 pt-2 border-t border-neutral-100 dark:border-neutral-800">
                             Don't have an account?{' '}
-                            <TextLink href={register()} tabIndex={6} className="font-semibold text-[#D4A017] hover:underline">
+                            <TextLink href={register()} tabIndex={6} className="font-bold text-[#283F24] hover:text-[#467235] hover:underline dark:text-amber-400">
                                 Sign up
                             </TextLink>
                         </div>

@@ -5,14 +5,19 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="app-version" content="{{ config('app.version', 'furfect_v2.0.5') }}">
 
-        {{-- Inline script to enforce light theme --}}
+        {{-- Inline script to detect and apply theme without flash --}}
         <script>
             (function() {
-                document.documentElement.classList.remove('dark');
-                document.documentElement.style.colorScheme = 'light';
                 try {
-                    localStorage.setItem('appearance', 'light');
-                    document.cookie = 'appearance=light;path=/;max-age=31536000;SameSite=Lax';
+                    const appearance = localStorage.getItem('appearance') || '{{ $appearance ?? "system" }}';
+                    const isDark = appearance === 'dark' || (appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                    if (isDark) {
+                        document.documentElement.classList.add('dark');
+                        document.documentElement.style.colorScheme = 'dark';
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                        document.documentElement.style.colorScheme = 'light';
+                    }
                 } catch (e) {}
             })();
         </script>

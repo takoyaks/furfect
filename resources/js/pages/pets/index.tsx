@@ -301,9 +301,6 @@ export default function PetsIndex({
                                                     <Link href={route('pets.show', pet.id)} className="hover:text-[#D4A017] transition-colors">
                                                         <h4 className="text-lg font-bold text-gray-800 hover:text-[#D4A017] transition-colors">{pet.name}</h4>
                                                     </Link>
-                                                    {pet.breed && pet.breed !== 'Hidden' && (
-                                                        <span className="text-xs text-gray-500 font-semibold block italic mb-1">{pet.breed}</span>
-                                                    )}
                                                     <p className="text-xs text-gray-500 capitalize">
                                                         {pet.age_years} yrs • {pet.gender} • {pet.size}
                                                         {pet.coat_color ? ` • ${pet.coat_color}` : ''}

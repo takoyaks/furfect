@@ -5,6 +5,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Sparkles, Heart, ArrowRight, ShieldCheck, Calendar, Users, Home as HomeIcon, CheckCircle2, Megaphone, HelpCircle, FileCheck, Clock, Award, AlertCircle } from 'lucide-react';
 import { AppFooter } from '@/components/app-footer';
 import { cn } from '@/lib/utils';
+import { getTheme } from '@/lib/theme-templates';
 
 interface Pet {
     id: number;
@@ -68,6 +69,7 @@ interface Props {
 
 export default function Home({ config, featuredPets = [], announcements = [], stats, activeApplication }: Props) {
     const { auth } = usePage().props;
+    const theme = getTheme(config?.template_name);
 
     const sections = (() => {
         const defaults = {
@@ -138,35 +140,29 @@ export default function Home({ config, featuredPets = [], announcements = [], st
                                     {activeApplication.status === 'approved' ? (
                                         <Award className="h-6 w-6" />
                                     ) : activeApplication.status === 'mao_audit' ? (
-                                        <ShieldCheck className="h-6 w-6" />
-                                    ) : (
                                         <Clock className="h-6 w-6" />
+                                    ) : (
+                                        <FileCheck className="h-6 w-6" />
                                     )}
                                 </div>
                                 <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
                                             activeApplication.status === 'approved'
-                                                ? 'bg-green-200/80 text-green-900'
+                                                ? 'bg-green-100 text-green-800'
                                                 : activeApplication.status === 'mao_audit'
-                                                ? 'bg-amber-200/80 text-amber-900'
-                                                : 'bg-blue-200/80 text-blue-900'
+                                                ? 'bg-amber-100 text-amber-800'
+                                                : 'bg-blue-100 text-blue-800'
                                         }`}>
-                                            {activeApplication.status === 'approved'
-                                                ? 'Adoption Approved & Pickup Ready'
-                                                : activeApplication.status === 'mao_audit'
-                                                ? 'MAO Compliance Audit in Progress'
-                                                : 'Application Under Shelter Review'}
+                                            {activeApplication.status.replace('_', ' ')}
                                         </span>
-                                        <span className="text-xs text-gray-500 font-mono">
-                                            #{activeApplication.reference_number}
-                                        </span>
+                                        <span className="text-xs font-mono text-gray-500">Ref: #{activeApplication.reference_number}</span>
                                     </div>
-                                    <h2 className="text-base font-bold text-gray-900">
+                                    <h2 className="text-sm md:text-base font-bold text-gray-900">
                                         {activeApplication.status === 'approved'
-                                            ? `Your adoption for ${activeApplication.pet?.name || 'your pet'} is officially approved! (Cert #${activeApplication.certificate_number || 'ISSUED'})`
+                                            ? `Adoption Approved for ${activeApplication.pet?.name || 'your pet'}! Cert: ${activeApplication.certificate_number || 'Pending'}`
                                             : activeApplication.status === 'mao_audit'
-                                            ? `Shelter screening passed for ${activeApplication.pet?.name || 'your pet'}! Currently undergoing MAO municipal verification.`
+                                            ? `Application for ${activeApplication.pet?.name || 'your pet'} is undergoing MAO Final Compliance Audit.`
                                             : `Application submitted for ${activeApplication.pet?.name || 'your pet'} with a DSS match score of ${Math.round(activeApplication.dss_score)}%.`}
                                     </h2>
                                     <p className="text-xs text-gray-600">
@@ -181,7 +177,7 @@ export default function Home({ config, featuredPets = [], announcements = [], st
                                     href={route('history.index')}
                                     className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), "w-full md:w-auto text-xs font-bold border-gray-300 hover:bg-white/80 gap-1.5 shadow-2xs")}
                                 >
-                                    <Award className="h-4 w-4 text-[#D4A017]" />
+                                    <Award className={`h-4 w-4 ${theme.accentText}`} />
                                     Pet History
                                 </Link>
                                 <Link
@@ -191,7 +187,7 @@ export default function Home({ config, featuredPets = [], announcements = [], st
                                         "w-full md:w-auto text-xs font-bold shadow-xs gap-1.5",
                                         activeApplication.status === 'approved'
                                             ? 'bg-green-600 hover:bg-green-700 text-white'
-                                            : 'bg-[#D4A017] hover:bg-[#B8860B] text-white'
+                                            : theme.primaryButton
                                     )}
                                 >
                                     <FileCheck className="h-4 w-4" />
@@ -205,10 +201,10 @@ export default function Home({ config, featuredPets = [], announcements = [], st
 
                 {/* ── 1. Hero Section ────────────────────────────────────────────── */}
                 {sections.show_hero && (
-                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#FDFBF7] via-[#F5EDD7]/40 to-[#EADAA2]/20 border border-[#D4A017]/20 p-8 md:p-12 shadow-sm">
+                    <div className={`relative overflow-hidden rounded-3xl ${theme.heroGradient} p-8 md:p-12 shadow-sm`}>
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                             <div className="lg:col-span-7 space-y-6">
-                                <div className="inline-flex items-center gap-2 bg-[#F5EDD7] text-[#B8860B] px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
+                                <div className={`inline-flex items-center gap-2 ${theme.heroBadge} px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider`}>
                                     <Sparkles className="h-3.5 w-3.5" />
                                     Virac Animal Shelter Adoption Portal
                                 </div>
@@ -221,7 +217,7 @@ export default function Home({ config, featuredPets = [], announcements = [], st
                                 <div className="flex flex-wrap gap-4 pt-2">
                                     <Link
                                         href={config.hero_cta_link || route('pets.index')}
-                                        className={cn(buttonVariants({ variant: 'default' }), "bg-[#D4A017] hover:bg-[#B8860B] text-white font-bold text-sm px-6 py-2.5 rounded-xl shadow-md transition-all gap-2")}
+                                        className={cn(buttonVariants({ variant: 'default' }), `${theme.primaryButton} font-bold text-sm px-6 py-2.5 rounded-xl shadow-md transition-all gap-2`)}
                                     >
                                         {config.hero_cta_text || 'Browse Available Pets'}
                                         <ArrowRight className="h-4 w-4" />
@@ -244,10 +240,10 @@ export default function Home({ config, featuredPets = [], announcements = [], st
                                         className="w-full max-h-80 object-cover rounded-2xl shadow-lg border border-white"
                                     />
                                 ) : (
-                                    <div className="w-full aspect-video bg-gradient-to-tr from-[#D4A017]/20 to-amber-100 rounded-2xl flex items-center justify-center border border-[#D4A017]/20 shadow-inner p-6 text-center">
+                                    <div className={`w-full aspect-video ${theme.cardHighlightBg} rounded-2xl flex items-center justify-center border ${theme.cardHighlightBorder} shadow-inner p-6 text-center`}>
                                         <div className="space-y-3">
-                                            <div className="w-16 h-16 rounded-full bg-white shadow-md mx-auto flex items-center justify-center text-[#D4A017]">
-                                                <Heart className="h-8 w-8 fill-[#D4A017]" />
+                                            <div className="w-16 h-16 rounded-full bg-white shadow-md mx-auto flex items-center justify-center">
+                                                <Heart className={`h-8 w-8 ${theme.accentText} fill-current`} />
                                             </div>
                                             <h3 className="font-bold text-gray-800 text-lg">Virac Adoption Support</h3>
                                             <p className="text-xs text-gray-500 max-w-xs">Data-driven animal matching for responsible pet ownership.</p>
@@ -309,7 +305,7 @@ export default function Home({ config, featuredPets = [], announcements = [], st
                                 <p className="text-xs text-gray-500">Rescued animals currently seeking loving homes at Virac Shelter.</p>
                             </div>
                             <Link href={route('pets.index')}>
-                                <Button variant="ghost" className="text-xs font-bold text-[#D4A017] hover:text-[#B8860B] gap-1">
+                                <Button variant="ghost" className={`text-xs font-bold ${theme.primaryButtonGhost} gap-1`}>
                                     View All Pets <ArrowRight className="h-3.5 w-3.5" />
                                 </Button>
                             </Link>
@@ -325,7 +321,7 @@ export default function Home({ config, featuredPets = [], announcements = [], st
 
                                     return (
                                         <Card key={pet.id} className="border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden group">
-                                            <div className="aspect-video bg-gray-100 relative overflow-hidden">
+                                            <Link href={route('pets.show', pet.id)} className="block aspect-video bg-gray-100 relative overflow-hidden cursor-pointer">
                                                 {photoUrl ? (
                                                     <img
                                                         src={photoUrl}
@@ -333,19 +329,21 @@ export default function Home({ config, featuredPets = [], announcements = [], st
                                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                     />
                                                 ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs font-semibold bg-amber-50/50">
+                                                    <div className={`w-full h-full flex items-center justify-center text-gray-400 text-xs font-semibold ${theme.cardHighlightBg}`}>
                                                         No Photo Available
                                                     </div>
                                                 )}
                                                 <span className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-0.5 rounded font-bold capitalize">
                                                     {pet.species}
                                                 </span>
-                                            </div>
+                                            </Link>
                                         <CardContent className="p-4 space-y-2">
                                             <div className="flex justify-between items-start">
                                                 <div>
-                                                    <h3 className="font-bold text-base text-gray-900">{pet.name}</h3>
-                                                    <p className="text-xs text-gray-500">{pet.breed && pet.breed !== 'Hidden' ? `${pet.breed} • ` : ''}{pet.age_years} yrs</p>
+                                                    <Link href={route('pets.show', pet.id)}>
+                                                        <h3 className={`font-bold text-base text-gray-900 hover:${theme.accentText} transition-colors`}>{pet.name}</h3>
+                                                    </Link>
+                                                    <p className="text-xs text-gray-500 capitalize">{pet.gender ? `${pet.gender} • ` : ''}{pet.age_years} yrs</p>
                                                 </div>
                                                 <span className="text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-0.5 rounded capitalize">
                                                     {pet.size}
@@ -354,7 +352,7 @@ export default function Home({ config, featuredPets = [], announcements = [], st
                                             <div className="pt-2 flex justify-between items-center border-t border-gray-100">
                                                 <span className="text-[11px] text-gray-400">{pet.shelter?.name || 'Virac Shelter'}</span>
                                                 <Link href={route('pets.show', pet.id)}>
-                                                    <Button size="sm" className="text-xs bg-[#D4A017] hover:bg-[#B8860B] text-white h-7 px-3">
+                                                    <Button size="sm" className={`text-xs ${theme.primaryButton} h-7 px-3`}>
                                                         Meet {pet.name}
                                                     </Button>
                                                 </Link>
@@ -372,10 +370,10 @@ export default function Home({ config, featuredPets = [], announcements = [], st
 
                 {/* ── 4. How It Works Section ────────────────────────────────────── */}
                 {sections.show_how_it_works && (
-                    <div className="space-y-6 bg-[#FDFBF7] border border-[#D4A017]/20 p-8 rounded-3xl">
+                    <div className={`space-y-6 ${theme.cardHighlightBg} border ${theme.cardHighlightBorder} p-8 rounded-3xl`}>
                         <div className="flex items-center justify-between">
                             <div>
-                                <span className="text-[10px] font-bold text-[#B8860B] bg-[#F5EDD7] px-2.5 py-0.5 rounded-full uppercase">
+                                <span className={`text-[10px] font-bold ${theme.secondaryBadge} px-2.5 py-0.5 rounded-full uppercase`}>
                                     Adoption Process
                                 </span>
                                 <h2 className="text-2xl font-bold text-gray-900 mt-1">How It Works</h2>
@@ -393,10 +391,10 @@ export default function Home({ config, featuredPets = [], announcements = [], st
                                 const Icon = icons[idx % icons.length];
                                 return (
                                     <div key={item.step || idx} className="bg-white border border-gray-200 p-5 rounded-2xl space-y-2 relative overflow-hidden shadow-xs">
-                                        <div className="text-3xl font-black text-amber-100 absolute top-2 right-3 select-none">
+                                        <div className={`text-3xl font-black ${theme.stepNumberText} absolute top-2 right-3 select-none`}>
                                             {item.step || `0${idx + 1}`}
                                         </div>
-                                        <div className="w-9 h-9 rounded-lg bg-amber-100 text-[#D4A017] flex items-center justify-center font-bold text-xs">
+                                        <div className={`w-9 h-9 rounded-lg ${theme.stepIconBg} ${theme.stepIconText} flex items-center justify-center font-bold text-xs`}>
                                             <Icon className="h-5 w-5" />
                                         </div>
                                         <h4 className="font-bold text-sm text-gray-900">{item.title}</h4>
@@ -413,36 +411,56 @@ export default function Home({ config, featuredPets = [], announcements = [], st
                     <div className="space-y-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <Megaphone className="h-5 w-5 text-[#D4A017]" />
+                                <Megaphone className={`h-5 w-5 ${theme.accentText}`} />
                                 <h2 className="text-2xl font-bold text-gray-900">Shelter Announcements &amp; Updates</h2>
                             </div>
+                            <Link href={route('announcements.index')}>
+                                <Button variant="ghost" className={`text-xs font-bold ${theme.primaryButtonGhost} gap-1`}>
+                                    View All Updates <ArrowRight className="h-3.5 w-3.5" />
+                                </Button>
+                            </Link>
                         </div>
 
                         {announcements.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {announcements.map((item) => (
-                                    <Card key={item.id} className="border-gray-200 shadow-sm space-y-3 p-5">
-                                        {item.image_path && (
-                                            <img
-                                                src={`/storage/${item.image_path}`}
-                                                alt={item.title}
-                                                className="w-full h-36 object-cover rounded-lg"
-                                            />
-                                        )}
-                                        <div className="space-y-1">
-                                            <span className="text-[10px] font-bold text-[#D4A017] bg-amber-50 border border-amber-200 px-2 py-0.5 rounded uppercase">
-                                                {item.category}
-                                            </span>
-                                            <h3 className="font-bold text-sm text-gray-900">{item.title}</h3>
-                                            <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed">{item.content}</p>
-                                        </div>
-                                        {item.published_at && (
-                                            <div className="text-[10px] text-gray-400 flex items-center gap-1 pt-2 border-t border-gray-100">
-                                                <Calendar className="h-3 w-3" />
-                                                <span>{new Date(item.published_at).toLocaleDateString()}</span>
+                                    <Link
+                                        key={item.id}
+                                        href={route('announcements.show', item.id)}
+                                        className="group block focus:outline-none"
+                                    >
+                                        <Card className={`border-gray-200 shadow-xs hover:shadow-md ${theme.hoverBorder} transition-all rounded-2xl p-5 space-y-3 h-full flex flex-col justify-between group-hover:-translate-y-0.5 duration-200`}>
+                                            <div className="space-y-3">
+                                                {item.image_path && (
+                                                    <div className="w-full h-36 overflow-hidden rounded-lg bg-gray-100">
+                                                        <img
+                                                            src={`/storage/${item.image_path}`}
+                                                            alt={item.title}
+                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                        />
+                                                    </div>
+                                                )}
+                                                <div className="space-y-1">
+                                                    <span className={`text-[10px] font-bold ${theme.announcementBadge} px-2 py-0.5 rounded uppercase`}>
+                                                        {item.category}
+                                                    </span>
+                                                    <h3 className={`font-bold text-sm text-gray-900 group-hover:${theme.accentText} transition-colors`}>{item.title}</h3>
+                                                    <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed">{item.content}</p>
+                                                </div>
                                             </div>
-                                        )}
-                                    </Card>
+                                            {item.published_at && (
+                                                <div className="text-[10px] text-gray-400 flex items-center justify-between pt-2 border-t border-gray-100">
+                                                    <div className="flex items-center gap-1">
+                                                        <Calendar className="h-3 w-3 text-amber-500" />
+                                                        <span>{new Date(item.published_at).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <span className={`text-xs font-semibold ${theme.accentText} group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5`}>
+                                                        Read &rarr;
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </Card>
+                                    </Link>
                                 ))}
                             </div>
                         ) : (

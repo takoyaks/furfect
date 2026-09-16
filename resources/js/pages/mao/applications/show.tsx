@@ -168,7 +168,7 @@ export default function MaoApplicationShow({ application, dssMatch, defaultCheck
             { title: application.reference_number, href: '#' },
         ]}>
             <Head title={`MAO Audit: ${application.reference_number}`} />
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4 max-w-7xl mx-auto w-full">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
 
                 {/* Header Banner */}
                 <div className="flex justify-between items-center flex-wrap gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">

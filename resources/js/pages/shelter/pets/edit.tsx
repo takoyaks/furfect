@@ -85,7 +85,9 @@ const HOUSING_OPTIONS = [
 ];
 
 export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Shelter[] }) {
-    const { systemSettings } = usePage().props as any;
+    const { auth, systemSettings } = usePage().props as any;
+    const roles: string[] = auth?.user?.roles || [];
+    const managePetsRoute = roles.includes('admin') ? route('admin.pets.index') : route('shelter.pets.index');
     const pricingEnabled = systemSettings?.pricing_enabled ?? false;
     const { data, setData, post, processing, errors } = useForm({
         shelter_id: String(pet.shelter_id),
@@ -166,14 +168,14 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
     };
 
     return (
-        <AppLayout breadcrumbs={[{ title: 'Manage Pets', href: route('shelter.pets.index') }, { title: `Edit ${pet.name}`, href: '#' }]}>
+        <AppLayout breadcrumbs={[{ title: 'Manage Pets', href: managePetsRoute }, { title: `Edit ${pet.name}`, href: '#' }]}>
             <Head title={`Edit ${pet.name}`} />
 
             <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
                 {/* Header Section */}
                 <div className="flex items-center gap-4">
                     <Link
-                        href={route('shelter.pets.index')}
+                        href={managePetsRoute}
                         className="p-2 rounded-lg border border-gray-200 hover:bg-gray-100 dark:border-neutral-800 dark:hover:bg-neutral-800 transition-colors"
                     >
                         <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-neutral-300" />

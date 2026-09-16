@@ -4,9 +4,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Sparkles, ShieldCheck, Heart, FileCheck, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { AppFooter } from '@/components/app-footer';
+import { getTheme } from '@/lib/theme-templates';
 
 interface Props {
     config?: {
+        template_name?: string;
         how_it_works_steps?: { step: string; title: string; description: string }[];
         about_location?: string;
         about_hours?: string;
@@ -16,6 +18,8 @@ interface Props {
 }
 
 export default function HowItWorks({ config }: Props) {
+    const theme = getTheme(config?.template_name);
+
     const defaultSteps = [
         {
             step: '01',
@@ -49,7 +53,7 @@ export default function HowItWorks({ config }: Props) {
             <div className="max-w-5xl mx-auto py-8 px-4 space-y-12">
                 {/* Hero Header */}
                 <div className="text-center space-y-4 max-w-3xl mx-auto">
-                    <span className="bg-[#F5EDD7] text-[#B8860B] px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
+                    <span className={`${theme.heroBadge} px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider`}>
                         Adoption Lifecycle
                     </span>
                     <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">
@@ -70,7 +74,7 @@ export default function HowItWorks({ config }: Props) {
                                     {item.step || `0${idx + 1}`}
                                 </div>
                                 <CardContent className="p-6 space-y-3 relative">
-                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-amber-100 text-[#D4A017]">
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${theme.iconBg} ${theme.iconText}`}>
                                         <Icon className="h-6 w-6" />
                                     </div>
                                     <h3 className="text-lg font-bold text-gray-900">{item.title}</h3>
@@ -82,7 +86,7 @@ export default function HowItWorks({ config }: Props) {
                 </div>
 
                 {/* Key Benefits */}
-                <div className="bg-[#FDFBF7] border border-[#D4A017]/20 rounded-2xl p-8 space-y-6">
+                <div className={`${theme.cardHighlightBg} border ${theme.cardHighlightBorder} rounded-2xl p-8 space-y-6`}>
                     <h2 className="text-xl font-bold text-gray-900 text-center">Why Our Matching Process Works</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {[
@@ -100,7 +104,7 @@ export default function HowItWorks({ config }: Props) {
                             },
                         ].map((b, i) => (
                             <div key={i} className="space-y-2">
-                                <div className="flex items-center gap-2 font-semibold text-[#D4A017]">
+                                <div className={`flex items-center gap-2 font-semibold ${theme.accentText}`}>
                                     <CheckCircle2 className="h-5 w-5 shrink-0" />
                                     <span>{b.title}</span>
                                 </div>
@@ -111,19 +115,19 @@ export default function HowItWorks({ config }: Props) {
                 </div>
 
                 {/* CTA Callout */}
-                <div className="text-center bg-[#D4A017] text-white rounded-2xl p-8 space-y-4 shadow-lg">
+                <div className={`text-center ${theme.ctaBannerBg} text-white rounded-2xl p-8 space-y-4 shadow-lg`}>
                     <h2 className="text-2xl font-bold">Ready to Find Your Companion?</h2>
-                    <p className="text-amber-100 text-sm max-w-xl mx-auto">
+                    <p className="text-white/80 text-sm max-w-xl mx-auto">
                         Explore available pets at the Virac Animal Shelter or check your personal DSS compatibility matches today.
                     </p>
                     <div className="flex justify-center gap-4 pt-2">
                         <Link href={route('pets.index')}>
-                            <Button className="bg-white text-[#B8860B] hover:bg-amber-50 font-semibold gap-2">
+                            <Button className={`bg-white ${theme.ctaBannerText} hover:bg-white/90 font-semibold gap-2`}>
                                 Browse Pets <ArrowRight className="h-4 w-4" />
                             </Button>
                         </Link>
                         <Link href={route('matches.index')}>
-                            <Button variant="outline" className="border-white text-white hover:bg-white/10 font-semibold">
+                            <Button variant="outline" className="border-white text-black hover:bg-white/90 font-semibold">
                                 View My Matches
                             </Button>
                         </Link>

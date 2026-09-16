@@ -50,7 +50,9 @@ const HOUSING_OPTIONS = [
 
 export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
     const defaultShelterId = shelters.length > 0 ? String(shelters[0].id) : '';
-    const { systemSettings } = usePage().props as any;
+    const { auth, systemSettings } = usePage().props as any;
+    const roles: string[] = auth?.user?.roles || [];
+    const managePetsRoute = roles.includes('admin') ? route('admin.pets.index') : route('shelter.pets.index');
     const pricingEnabled = systemSettings?.pricing_enabled ?? false;
 
     const { data, setData, post, processing, errors } = useForm({
@@ -130,14 +132,14 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
     };
 
     return (
-        <AppLayout breadcrumbs={[{ title: 'Manage Pets', href: route('admin.pets.index') }, { title: 'Add New Pet', href: '#' }]}>
+        <AppLayout breadcrumbs={[{ title: 'Manage Pets', href: managePetsRoute }, { title: 'Add New Pet', href: '#' }]}>
             <Head title="Add New Pet Listing" />
 
-            <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 {/* Header Section */}
                 <div className="flex items-center gap-4">
                     <Link
-                        href={route('admin.pets.index')}
+                        href={managePetsRoute}
                         className="p-2 rounded-lg border border-gray-200 hover:bg-gray-100 dark:border-neutral-800 dark:hover:bg-neutral-800 transition-colors"
                     >
                         <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-neutral-300" />

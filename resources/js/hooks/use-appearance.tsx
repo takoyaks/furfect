@@ -30,20 +30,47 @@ const setCookie = (name: string, value: string, days = 365): void => {
 };
 
 const getStoredAppearance = (): Appearance => {
-    return 'light';
+    if (typeof window === 'undefined') {
+        return 'system';
+    }
+
+    return (localStorage.getItem('appearance') as Appearance) || 'system';
 };
 
-const isDarkMode = (_appearance: Appearance): boolean => {
-    return false;
+const isDarkMode = (appearance: Appearance): boolean => {
+    if (appearance === 'system') {
+        return prefersDark();
+    }
+
+    return appearance === 'dark';
 };
 
-const applyTheme = (_appearance: Appearance = 'light'): void => {
+const mediaQuery = (): MediaQueryList | null => {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    return window.matchMedia('(prefers-color-scheme: dark)');
+};
+
+const handleSystemThemeChange = (): void => {
+    const current = getStoredAppearance();
+
+    if (current === 'system') {
+        applyTheme('system');
+        notify();
+    }
+};
+
+const applyTheme = (appearance: Appearance = 'system'): void => {
     if (typeof document === 'undefined') {
         return;
     }
 
-    document.documentElement.classList.remove('dark');
-    document.documentElement.style.colorScheme = 'light';
+    const isDark = isDarkMode(appearance);
+
+    document.documentElement.classList.toggle('dark', isDark);
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
 };
 
 const subscribe = (callback: () => void) => {
@@ -59,11 +86,15 @@ export function initializeTheme(): void {
         return;
     }
 
-    localStorage.setItem('appearance', 'light');
-    setCookie('appearance', 'light');
+    currentAppearance = getStoredAppearance();
+    applyTheme(currentAppearance);
 
-    currentAppearance = 'light';
-    applyTheme('light');
+    // Set up media query listener for system theme changes
+    const mq = mediaQuery();
+    if (mq) {
+        mq.removeEventListener('change', handleSystemThemeChange);
+        mq.addEventListener('change', handleSystemThemeChange);
+    }
 }
 
 export function useAppearance(): UseAppearanceReturn {

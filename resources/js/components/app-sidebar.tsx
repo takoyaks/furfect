@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import admin from '@/routes/admin';
+import shelter from '@/routes/shelter';
 import type { NavGroup, NavItem } from '@/types';
 
 export function AppSidebar() {
@@ -124,22 +125,22 @@ export function AppSidebar() {
                     items: [
                         {
                             title: 'Dashboard',
-                            href: route('shelter.dashboard'),
+                            href: shelter.dashboard().url,
                             icon: LayoutGrid,
                         },
                         {
                             title: 'Pets',
-                            href: route('shelter.pets.index'),
+                            href: shelter.pets.index().url,
                             icon: FolderGit2,
                         },
                         {
                             title: 'Application',
-                            href: route('shelter.applications.index'),
+                            href: shelter.applications.index().url,
                             icon: ClipboardList,
                         },
                         {
                             title: 'Reports',
-                            href: route('shelter.reports.index'),
+                            href: shelter.reports.index().url,
                             icon: BookOpen,
                         },
                     ],
@@ -149,7 +150,7 @@ export function AppSidebar() {
                     items: [
                         {
                             title: 'Announcements',
-                            href: route('shelter.cms.announcements.index'),
+                            href: shelter.cms.announcements.index().url,
                             icon: Megaphone,
                         },
                     ],

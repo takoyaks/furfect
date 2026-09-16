@@ -33,6 +33,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [PageController::class, 'home'])->name('home');
 Route::get('/pets', [PetController::class, 'index'])->name('pets.index');
 Route::get('/pets/{id}', [PetController::class, 'show'])->name('pets.show');
+Route::get('/announcements', [PageController::class, 'announcements'])->name('announcements.index');
+Route::get('/announcements/{id}', [PageController::class, 'announcementShow'])->name('announcements.show');
 Route::get('/how-it-works', [PageController::class, 'howItWorks'])->name('how-it-works');
 Route::get('/about', [PageController::class, 'about'])->name('about');
 Route::get('/api/check-email', [EmailAvailabilityController::class, 'check'])->name('email.check');

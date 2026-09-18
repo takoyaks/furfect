@@ -8,14 +8,17 @@ import {
     Award, 
     Cat, 
     PlusCircle, 
-    ArrowRight, 
     FileText, 
     Megaphone, 
-    Sparkles, 
-    Tag, 
-    Eye,
-    CheckCircle2
+    CheckCircle2,
+    BarChart3,
+    PieChart as PieChartIcon,
+    Layers,
+    TrendingUp,
+    Activity
 } from 'lucide-react';
+import ApexChart, { THEME_COLORS } from '@/components/charts/apex-chart';
+import type { ApexOptions } from 'apexcharts';
 
 interface Metric {
     pending_applications: number;
@@ -27,83 +30,321 @@ interface Metric {
     total_pets: number;
 }
 
-interface Application {
-    id: number;
-    reference_number: string;
-    status: string;
-    dss_score: number;
-    submitted_at: string;
-    adopter: { name: string; email: string };
-    pet: { 
-        name: string; 
-        species: string;
-        shelter: { name: string };
-        photos?: { photo_path: string; is_primary: boolean }[];
-    };
+interface MonthlyTrend {
+    month: string;
+    submitted: number;
+    approved: number;
 }
 
-interface PetItem {
-    id: number;
-    name: string;
-    species: string;
-    breed: string;
-    status: string;
-    tag_number?: string | null;
-    microchip_number?: string | null;
-    photos?: { photo_path: string; is_primary: boolean }[];
+interface StatusDistribution {
+    pending: number;
+    under_review: number;
+    mao_audit: number;
+    approved: number;
+    rejected: number;
 }
 
-interface AnnouncementItem {
-    id: number;
-    title: string;
-    category: string;
-    content: string;
-    is_published: boolean;
-    published_at?: string;
+interface SpeciesStats {
+    dogs_available: number;
+    dogs_adopted: number;
+    cats_available: number;
+    cats_adopted: number;
+}
+
+interface PetStatusBreakdown {
+    available: number;
+    adopted: number;
+    pending: number;
+    other: number;
+}
+
+interface DssScoreDistribution {
+    high: number;
+    medium: number;
+    low: number;
+}
+
+interface ShelterDashboardProps {
+    metrics: Metric;
+    monthlyTrends: MonthlyTrend[];
+    statusDistribution: StatusDistribution;
+    speciesStats: SpeciesStats;
+    petStatusBreakdown: PetStatusBreakdown;
+    dssScoreDistribution: DssScoreDistribution;
 }
 
 export default function ShelterDashboard({
     metrics,
-    recentApplications,
-    recentPets,
-    recentAnnouncements,
-}: {
-    metrics: Metric;
-    recentApplications: Application[];
-    recentPets: PetItem[];
-    recentAnnouncements: AnnouncementItem[];
-}) {
+    monthlyTrends = [],
+    statusDistribution,
+    speciesStats,
+    petStatusBreakdown,
+    dssScoreDistribution,
+}: ShelterDashboardProps) {
+    // 1. Monthly Trends Chart Options
+    const monthlyTrendsOptions: ApexOptions = {
+        chart: {
+            type: 'area' as const,
+            toolbar: { show: false },
+            fontFamily: 'inherit',
+        },
+        colors: [THEME_COLORS.vibrantYellow, THEME_COLORS.mutedGreen],
+        dataLabels: { enabled: false },
+        stroke: { curve: 'smooth' as const, width: 3 },
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.45,
+                opacityTo: 0.05,
+                stops: [0, 95, 100],
+            },
+        },
+        xaxis: {
+            categories: monthlyTrends.map(t => t.month),
+            labels: { style: { colors: '#283F24', fontSize: '11px', fontWeight: 500 } },
+            axisBorder: { show: false },
+            axisTicks: { show: false },
+        },
+        yaxis: {
+            labels: { style: { colors: '#283F24', fontSize: '11px' } },
+        },
+        grid: {
+            borderColor: '#f1f1f1',
+            strokeDashArray: 4,
+        },
+        tooltip: {
+            theme: 'light',
+        },
+        legend: {
+            position: 'top' as const,
+            horizontalAlign: 'right' as const,
+            labels: { colors: '#283F24' },
+        },
+    };
+
+    const monthlyTrendsSeries = [
+        {
+            name: 'Inbound Applications',
+            data: monthlyTrends.map(t => t.submitted),
+        },
+        {
+            name: 'Adopted Placements',
+            data: monthlyTrends.map(t => t.approved),
+        },
+    ];
+
+    // 2. Status Pipeline Donut Chart
+    const statusValues = [
+        statusDistribution?.pending || 0,
+        statusDistribution?.under_review || 0,
+        statusDistribution?.mao_audit || 0,
+        statusDistribution?.approved || 0,
+        statusDistribution?.rejected || 0,
+    ];
+    const totalPipeline = statusValues.reduce((a, b) => a + b, 0);
+
+    const statusDonutOptions: ApexOptions = {
+        chart: {
+            type: 'donut' as const,
+            fontFamily: 'inherit',
+        },
+        labels: ['Pending Staff Review', 'Under Assessment', 'Forwarded to MAO', 'Approved Adoption', 'Rejected'],
+        colors: [
+            THEME_COLORS.vibrantYellow,
+            '#5E9447',
+            THEME_COLORS.darkForestGreen,
+            THEME_COLORS.mutedGreen,
+            '#EF4444',
+        ],
+        plotOptions: {
+            pie: {
+                donut: {
+                    size: '70%',
+                    labels: {
+                        show: true,
+                        total: {
+                            show: true,
+                            label: 'Applications',
+                            color: '#283F24',
+                            formatter: () => `${totalPipeline}`,
+                        },
+                    },
+                },
+            },
+        },
+        legend: {
+            position: 'bottom' as const,
+            labels: { colors: '#283F24' },
+        },
+        dataLabels: { enabled: false },
+        stroke: { width: 2, colors: ['#ffffff'] },
+    };
+
+    // 3. Species Inventory Breakdown
+    const speciesChartOptions: ApexOptions = {
+        chart: {
+            type: 'bar' as const,
+            stacked: true,
+            toolbar: { show: false },
+            fontFamily: 'inherit',
+        },
+        plotOptions: {
+            bar: {
+                horizontal: false,
+                columnWidth: '45%',
+                borderRadius: 6,
+            },
+        },
+        colors: [THEME_COLORS.vibrantYellow, THEME_COLORS.mutedGreen],
+        xaxis: {
+            categories: ['Canines (Dogs)', 'Felines (Cats)'],
+            labels: { style: { colors: '#283F24', fontSize: '11px', fontWeight: 600 } },
+        },
+        yaxis: {
+            labels: { style: { colors: '#283F24', fontSize: '11px' } },
+        },
+        grid: {
+            borderColor: '#f1f1f1',
+            strokeDashArray: 4,
+        },
+        legend: {
+            position: 'top' as const,
+            labels: { colors: '#283F24' },
+        },
+    };
+
+    const speciesChartSeries = [
+        {
+            name: 'Available in Shelter',
+            data: [speciesStats?.dogs_available || 0, speciesStats?.cats_available || 0],
+        },
+        {
+            name: 'Adopted from Shelter',
+            data: [speciesStats?.dogs_adopted || 0, speciesStats?.cats_adopted || 0],
+        },
+    ];
+
+    // 4. Pet Status Breakdown Donut
+    const petStatusValues = [
+        petStatusBreakdown?.available || 0,
+        petStatusBreakdown?.adopted || 0,
+        petStatusBreakdown?.pending || 0,
+        petStatusBreakdown?.other || 0,
+    ];
+
+    const petStatusDonutOptions: ApexOptions = {
+        chart: {
+            type: 'donut' as const,
+            fontFamily: 'inherit',
+        },
+        labels: ['Available for Matching', 'Adopted', 'Adoption Pending', 'Other / Treatment'],
+        colors: [
+            THEME_COLORS.vibrantYellow,
+            THEME_COLORS.mutedGreen,
+            THEME_COLORS.darkForestGreen,
+            '#9CA3AF',
+        ],
+        plotOptions: {
+            pie: {
+                donut: {
+                    size: '65%',
+                    labels: {
+                        show: true,
+                        total: {
+                            show: true,
+                            label: 'Total Animals',
+                            color: '#283F24',
+                            formatter: () => `${metrics.total_pets}`,
+                        },
+                    },
+                },
+            },
+        },
+        legend: {
+            position: 'bottom' as const,
+            labels: { colors: '#283F24' },
+        },
+        dataLabels: { enabled: false },
+        stroke: { width: 2, colors: ['#ffffff'] },
+    };
+
+    // 5. DSS Compatibility Score Tiers
+    const dssChartOptions: ApexOptions = {
+        chart: {
+            type: 'bar' as const,
+            toolbar: { show: false },
+            fontFamily: 'inherit',
+        },
+        plotOptions: {
+            bar: {
+                columnWidth: '40%',
+                borderRadius: 6,
+                distributed: true,
+            },
+        },
+        colors: [THEME_COLORS.mutedGreen, THEME_COLORS.vibrantYellow, '#EF4444'],
+        xaxis: {
+            categories: ['High Match (≥80%)', 'Moderate (50-79%)', 'Low Match (<50%)'],
+            labels: { style: { colors: '#283F24', fontSize: '11px', fontWeight: 600 } },
+        },
+        yaxis: {
+            labels: { style: { colors: '#283F24', fontSize: '11px' } },
+        },
+        grid: {
+            borderColor: '#f1f1f1',
+            strokeDashArray: 4,
+        },
+        legend: { show: false },
+    };
+
+    const dssChartSeries = [
+        {
+            name: 'Applications',
+            data: [
+                dssScoreDistribution?.high || 0,
+                dssScoreDistribution?.medium || 0,
+                dssScoreDistribution?.low || 0,
+            ],
+        },
+    ];
+
     return (
         <AppLayout breadcrumbs={[{ title: 'Shelter Staff Dashboard', href: '#' }]}>
-            <Head title="Shelter Staff Dashboard" />
+            <Head title="Shelter Staff Dashboard & Analytics" />
 
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4 md:p-6">
+            <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4 md:p-6 bg-[#FCFDF9]">
                 
                 {/* Welcome Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-neutral-900 dark:to-neutral-900/50 border border-amber-200/60 dark:border-neutral-800 p-6 rounded-2xl shadow-xs">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-[#FFF78D]/40 via-amber-50 to-[#467235]/10 border border-[#FFBF00]/40 p-6 rounded-2xl shadow-xs">
                     <div>
-                        <div className="flex items-center gap-2">
-                            <span className="p-2 bg-[#D4A017] text-white rounded-xl shadow-xs">
+                        <div className="flex items-center gap-3">
+                            <span className="p-2.5 bg-[#FFBF00] text-[#283F24] rounded-xl shadow-xs">
                                 <Cat className="size-6" />
                             </span>
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Shelter Operations Hub</h1>
-                                <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5">
-                                    Manage shelter pets, review inbound adoption applications, and broadcast shelter announcements.
+                                <h1 className="text-2xl font-black text-[#283F24] tracking-tight">Shelter Operations &amp; Analytics Hub</h1>
+                                <p className="text-xs text-[#283F24]/75 mt-0.5">
+                                    Operational metrics, adoption velocity charts, animal intake status, and applicant compatibility distributions.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2.5 flex-wrap">
                         <Link href={route('shelter.pets.create')}>
-                            <Button className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold flex items-center gap-1.5 shadow-sm text-xs">
-                                <PlusCircle className="size-4" /> Add New Pet
+                            <Button className="bg-[#FFBF00] hover:bg-[#E5A900] text-[#283F24] font-bold flex items-center gap-1.5 shadow-sm text-xs border border-[#FFBF00]">
+                                <PlusCircle className="size-4" /> Add Pet Profile
+                            </Button>
+                        </Link>
+                        <Link href={route('shelter.applications.index')}>
+                            <Button variant="outline" className="border-[#467235]/40 text-[#283F24] hover:bg-[#467235]/10 text-xs gap-1.5 bg-white">
+                                <ClipboardList className="size-4 text-[#467235]" /> Review Queue ({metrics.pending_applications})
                             </Button>
                         </Link>
                         <Link href={route('shelter.cms.announcements.index')}>
-                            <Button variant="outline" className="border-amber-300 text-amber-800 hover:bg-amber-100/60 dark:border-neutral-700 dark:text-neutral-200 text-xs gap-1.5">
-                                <Megaphone className="size-4 text-[#D4A017]" /> New Notice
+                            <Button variant="outline" className="border-[#FFBF00] text-[#283F24] hover:bg-[#FFF78D]/50 text-xs gap-1.5 bg-white">
+                                <Megaphone className="size-4 text-[#FFBF00]" /> Notices
                             </Button>
                         </Link>
                     </div>
@@ -115,43 +356,43 @@ export default function ShelterDashboard({
                         {
                             title: 'Needs Review',
                             val: metrics.pending_applications,
-                            sub: 'Pending initial review',
+                            sub: 'Pending initial staff review',
                             icon: ClipboardList,
-                            color: 'text-amber-600',
-                            bgColor: 'bg-amber-50 dark:bg-amber-950/30',
-                            border: 'border-amber-200 dark:border-amber-900/50',
+                            color: 'text-[#FFBF00]',
+                            bgColor: 'bg-[#FFF78D]/40',
+                            border: 'border-[#FFBF00]/50',
                         },
                         {
                             title: 'Under Review',
                             val: metrics.under_review_applications,
-                            sub: 'Staff processing',
+                            sub: 'Active verification in progress',
                             icon: ShieldAlert,
-                            color: 'text-blue-600',
-                            bgColor: 'bg-blue-50 dark:bg-blue-950/30',
-                            border: 'border-blue-200 dark:border-blue-900/50',
+                            color: 'text-[#283F24]',
+                            bgColor: 'bg-[#467235]/15',
+                            border: 'border-[#467235]/40',
                         },
                         {
                             title: 'Pets Available',
                             val: metrics.pets_available,
-                            sub: `${metrics.total_pets} total registered`,
+                            sub: `${metrics.total_pets} total registered pets`,
                             icon: Award,
-                            color: 'text-emerald-600',
-                            bgColor: 'bg-emerald-50 dark:bg-emerald-950/30',
-                            border: 'border-emerald-200 dark:border-emerald-900/50',
+                            color: 'text-[#467235]',
+                            bgColor: 'bg-[#467235]/15',
+                            border: 'border-[#467235]/40',
                         },
                         {
                             title: 'Adoptions Completed',
                             val: metrics.approved_adoptions,
-                            sub: 'Permanently rehomed',
+                            sub: 'Permanently rehomed animals',
                             icon: CheckCircle2,
-                            color: 'text-purple-600',
-                            bgColor: 'bg-purple-50 dark:bg-purple-950/30',
-                            border: 'border-purple-200 dark:border-purple-900/50',
+                            color: 'text-[#283F24]',
+                            bgColor: 'bg-[#FFBF00]/20',
+                            border: 'border-[#FFBF00]/50',
                         },
                     ].map(card => (
-                        <Card key={card.title} className={`border ${card.border} shadow-xs hover:shadow-md transition`}>
+                        <Card key={card.title} className={`border ${card.border} shadow-xs hover:shadow-md transition bg-white`}>
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                <span className="text-xs font-semibold text-gray-500 dark:text-neutral-400 uppercase tracking-wide">
+                                <span className="text-xs font-bold text-[#283F24]/70 uppercase tracking-wide">
                                     {card.title}
                                 </span>
                                 <div className={`p-2 rounded-lg ${card.bgColor}`}>
@@ -159,242 +400,164 @@ export default function ShelterDashboard({
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="text-3xl font-extrabold text-gray-900 dark:text-white">{card.val}</div>
-                                <span className="text-[11px] text-gray-400 dark:text-neutral-500 block mt-1">{card.sub}</span>
+                                <div className="text-3xl font-black text-[#283F24]">{card.val}</div>
+                                <span className="text-[11px] text-[#283F24]/60 block mt-1">{card.sub}</span>
                             </CardContent>
                         </Card>
                     ))}
                 </div>
 
-                {/* Main Content Grid: Recent Applications & Sidebar Widgets */}
+                {/* Primary Graphical Section: Adoption Trajectory & Funnel */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
-                    {/* Recent Applications (Col Span 2) */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <Card className="border-gray-200 dark:border-neutral-800 shadow-xs">
-                            <CardHeader className="flex flex-row items-center justify-between pb-3">
-                                <div>
-                                    <CardTitle className="text-base font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                                        <ClipboardList className="size-4 text-[#D4A017]" />
-                                        Inbound Adoption Requests
-                                    </CardTitle>
-                                    <CardDescription className="text-xs">
-                                        Recent applications submitted to your shelter requiring review and scoring verification.
-                                    </CardDescription>
-                                </div>
-                                <Link href={route('shelter.applications.index')}>
-                                    <Button variant="ghost" size="sm" className="text-xs text-[#D4A017] hover:text-[#B8860B] gap-1">
-                                        View All <ArrowRight className="size-3.5" />
-                                    </Button>
-                                </Link>
-                            </CardHeader>
-                            <CardContent className="p-0 border-t border-gray-100 dark:border-neutral-800 overflow-x-auto">
-                                {recentApplications.length === 0 ? (
-                                    <div className="p-8 text-center text-xs text-gray-400">
-                                        No recent adoption applications found.
-                                    </div>
-                                ) : (
-                                    <div className="divide-y divide-gray-100 dark:divide-neutral-800">
-                                        {recentApplications.map(app => {
-                                            const photo = app.pet.photos?.find(p => p.is_primary)?.photo_path || '/placeholder-pet.png';
-                                            return (
-                                                <div key={app.id} className="p-4 flex items-center justify-between gap-4 hover:bg-gray-50/60 dark:hover:bg-neutral-800/40 transition">
-                                                    <div className="flex items-center gap-3 min-w-0">
-                                                        <img 
-                                                            src={photo} 
-                                                            alt={app.pet.name} 
-                                                            className="size-10 rounded-full object-cover border border-amber-200 shrink-0" 
-                                                        />
-                                                        <div className="truncate">
-                                                            <div className="font-semibold text-xs text-gray-900 dark:text-white truncate">
-                                                                {app.adopter.name}
-                                                            </div>
-                                                            <div className="text-[11px] text-gray-500 dark:text-neutral-400">
-                                                                Adopting: <span className="font-medium text-gray-700 dark:text-neutral-200">{app.pet.name}</span>
-                                                            </div>
-                                                            <div className="text-[10px] text-gray-400 font-mono">
-                                                                Ref: {app.reference_number}
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                    {/* Left 2 Cols: Monthly Adoption & Inflow Velocity */}
+                    <Card className="lg:col-span-2 border-[#467235]/20 shadow-xs bg-white">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-gray-100">
+                            <div>
+                                <CardTitle className="text-base font-bold text-[#283F24] flex items-center gap-2">
+                                    <TrendingUp className="size-4 text-[#FFBF00]" />
+                                    Shelter Adoption &amp; Application Trajectory
+                                </CardTitle>
+                                <CardDescription className="text-xs text-[#283F24]/60">
+                                    Monthly comparison between submitted applications and successfully finalized adoptions.
+                                </CardDescription>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <ApexChart
+                                options={monthlyTrendsOptions}
+                                series={monthlyTrendsSeries}
+                                type="area"
+                                height={280}
+                            />
+                        </CardContent>
+                    </Card>
 
-                                                    <div className="flex items-center gap-3 shrink-0">
-                                                        {app.dss_score !== undefined && (
-                                                            <span className="hidden sm:inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-[#B8860B] border border-amber-200">
-                                                                <Sparkles className="size-3" />
-                                                                {Math.round(app.dss_score)}% DSS
-                                                            </span>
-                                                        )}
+                    {/* Right Col: Application Funnel */}
+                    <Card className="border-[#467235]/20 shadow-xs bg-white">
+                        <CardHeader className="pb-2 border-b border-gray-100">
+                            <CardTitle className="text-base font-bold text-[#283F24] flex items-center gap-2">
+                                <PieChartIcon className="size-4 text-[#467235]" />
+                                Application Pipeline Funnel
+                            </CardTitle>
+                            <CardDescription className="text-xs text-[#283F24]/60">
+                                Processing status of shelter adoption applications.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <ApexChart
+                                options={statusDonutOptions}
+                                series={statusValues}
+                                type="donut"
+                                height={280}
+                            />
+                        </CardContent>
+                    </Card>
 
-                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                                                            app.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                                            app.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                                            app.status === 'under_review' ? 'bg-blue-100 text-blue-700' :
-                                                            app.status === 'mao_audit' ? 'bg-purple-100 text-purple-700' :
-                                                            'bg-amber-100 text-amber-700'
-                                                        }`}>
-                                                            {app.status.replace('_', ' ')}
-                                                        </span>
+                </div>
 
-                                                        <Link href={route('shelter.applications.show', app.id)}>
-                                                            <Button size="sm" variant="secondary" className="h-7 text-xs px-2.5">
-                                                                <Eye className="size-3.5 mr-1" /> Review
-                                                            </Button>
-                                                        </Link>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                {/* Secondary Graphical Section: Inventory Breakdown & DSS Scores */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    {/* Species Inventory Breakdown */}
+                    <Card className="border-[#467235]/20 shadow-xs bg-white">
+                        <CardHeader className="pb-2 border-b border-gray-100">
+                            <CardTitle className="text-sm font-bold text-[#283F24] flex items-center gap-2">
+                                <Layers className="size-4 text-[#FFBF00]" />
+                                Species Demographics
+                            </CardTitle>
+                            <CardDescription className="text-xs text-[#283F24]/60">
+                                Shelter canines vs felines inventory.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <ApexChart
+                                options={speciesChartOptions}
+                                series={speciesChartSeries}
+                                type="bar"
+                                height={250}
+                            />
+                        </CardContent>
+                    </Card>
 
-                        {/* Recent Pets Catalog Quick-Glance */}
-                        <Card className="border-gray-200 dark:border-neutral-800 shadow-xs">
-                            <CardHeader className="flex flex-row items-center justify-between pb-3">
-                                <div>
-                                    <CardTitle className="text-base font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                                        <Cat className="size-4 text-[#D4A017]" />
-                                        Shelter Pet Profiles
-                                    </CardTitle>
-                                    <CardDescription className="text-xs">
-                                        Recently listed animals ready for adoption matching.
-                                    </CardDescription>
-                                </div>
-                                <Link href={route('shelter.pets.index')}>
-                                    <Button variant="ghost" size="sm" className="text-xs text-[#D4A017] hover:text-[#B8860B] gap-1">
-                                        Manage All <ArrowRight className="size-3.5" />
-                                    </Button>
-                                </Link>
-                            </CardHeader>
-                            <CardContent className="p-0 border-t border-gray-100 dark:border-neutral-800">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 dark:divide-neutral-800">
-                                    {recentPets.map(pet => {
-                                        const photo = pet.photos?.find(p => p.is_primary)?.photo_path || '/placeholder-pet.png';
-                                        return (
-                                            <div key={pet.id} className="p-4 flex items-center gap-3 hover:bg-gray-50/50 dark:hover:bg-neutral-800/40 transition">
-                                                <img 
-                                                    src={photo} 
-                                                    alt={pet.name} 
-                                                    className="size-12 rounded-xl object-cover border border-gray-200 shrink-0" 
-                                                />
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center justify-between gap-1">
-                                                        <span className="font-bold text-xs text-gray-900 dark:text-white truncate">
-                                                            {pet.name}
-                                                        </span>
-                                                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded capitalize ${
-                                                            pet.status === 'available' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                                                            pet.status === 'adopted' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
-                                                            'bg-gray-50 text-gray-600 border border-gray-200'
-                                                        }`}>
-                                                            {pet.status}
-                                                        </span>
-                                                    </div>
-                                                    <div className="text-[11px] text-gray-500 dark:text-neutral-400 capitalize">
-                                                        {pet.species} &bull; {pet.breed || 'Mixed'}
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 mt-1">
-                                                        {pet.tag_number && (
-                                                            <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-700 font-mono">
-                                                                <Tag className="size-2.5" /> {pet.tag_number}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </CardContent>
-                        </Card>
+                    {/* Shelter Pet Status Distribution Donut */}
+                    <Card className="border-[#467235]/20 shadow-xs bg-white">
+                        <CardHeader className="pb-2 border-b border-gray-100">
+                            <CardTitle className="text-sm font-bold text-[#283F24] flex items-center gap-2">
+                                <Award className="size-4 text-[#467235]" />
+                                Animal Status Distribution
+                            </CardTitle>
+                            <CardDescription className="text-xs text-[#283F24]/60">
+                                Current availability and placement breakdown.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <ApexChart
+                                options={petStatusDonutOptions}
+                                series={petStatusValues}
+                                type="donut"
+                                height={250}
+                            />
+                        </CardContent>
+                    </Card>
+
+                    {/* DSS Compatibility Distribution */}
+                    <Card className="border-[#467235]/20 shadow-xs bg-white">
+                        <CardHeader className="pb-2 border-b border-gray-100">
+                            <CardTitle className="text-sm font-bold text-[#283F24] flex items-center gap-2">
+                                <BarChart3 className="size-4 text-[#283F24]" />
+                                DSS Match Score Tiers
+                            </CardTitle>
+                            <CardDescription className="text-xs text-[#283F24]/60">
+                                Compatibility score ratings of applicants.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                            <ApexChart
+                                options={dssChartOptions}
+                                series={dssChartSeries}
+                                type="bar"
+                                height={250}
+                            />
+                        </CardContent>
+                    </Card>
+
+                </div>
+
+                {/* Operations Quick Tasks Panel */}
+                <div className="bg-white border border-[#467235]/20 rounded-xl p-4 shadow-2xs">
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                        <span className="text-xs font-bold text-[#283F24] uppercase tracking-wider flex items-center gap-1.5">
+                            <Activity className="size-4 text-[#FFBF00]" /> Staff Tasks &amp; Fast Navigation
+                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <Link href={route('shelter.pets.create')}>
+                                <Button variant="ghost" size="sm" className="text-xs text-[#283F24] hover:bg-[#FFF78D]/40">
+                                    <PlusCircle className="size-3.5 mr-1 text-[#FFBF00]" /> Add New Pet
+                                </Button>
+                            </Link>
+                            <Link href={route('shelter.applications.index')}>
+                                <Button variant="ghost" size="sm" className="text-xs text-[#283F24] hover:bg-[#FFF78D]/40">
+                                    <ClipboardList className="size-3.5 mr-1 text-[#467235]" /> Manage Applications ({metrics.pending_applications})
+                                </Button>
+                            </Link>
+                            <Link href={route('shelter.pets.index')}>
+                                <Button variant="ghost" size="sm" className="text-xs text-[#283F24] hover:bg-[#FFF78D]/40">
+                                    <Cat className="size-3.5 mr-1 text-[#283F24]" /> Manage Pets ({metrics.total_pets})
+                                </Button>
+                            </Link>
+                            <Link href={route('shelter.reports.index')}>
+                                <Button variant="ghost" size="sm" className="text-xs text-[#283F24] hover:bg-[#FFF78D]/40">
+                                    <FileText className="size-3.5 mr-1 text-[#467235]" /> Reports &amp; Analytics
+                                </Button>
+                            </Link>
+                            <Link href={route('shelter.cms.announcements.index')}>
+                                <Button variant="ghost" size="sm" className="text-xs text-[#283F24] hover:bg-[#FFF78D]/40">
+                                    <Megaphone className="size-3.5 mr-1 text-[#FFBF00]" /> Announcements
+                                </Button>
+                            </Link>
+                        </div>
                     </div>
-
-                    {/* Right Column: Quick Links & Shelter Announcements */}
-                    <div className="space-y-6">
-                        {/* Quick Actions Panel */}
-                        <Card className="border-gray-200 dark:border-neutral-800 shadow-xs">
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-sm font-bold text-gray-800 dark:text-white">Quick Tasks</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-2">
-                                <Link href={route('shelter.pets.create')} className="block">
-                                    <Button variant="outline" className="w-full justify-start text-xs h-9 gap-2">
-                                        <PlusCircle className="size-4 text-[#D4A017]" />
-                                        Register New Pet
-                                    </Button>
-                                </Link>
-                                <Link href={route('shelter.applications.index')} className="block">
-                                    <Button variant="outline" className="w-full justify-start text-xs h-9 gap-2">
-                                        <ClipboardList className="size-4 text-blue-500" />
-                                        Review Applications ({metrics.pending_applications})
-                                    </Button>
-                                </Link>
-                                <Link href={route('shelter.reports.index')} className="block">
-                                    <Button variant="outline" className="w-full justify-start text-xs h-9 gap-2">
-                                        <FileText className="size-4 text-emerald-500" />
-                                        Adoption Analytics &amp; Reports
-                                    </Button>
-                                </Link>
-                                <Link href={route('shelter.cms.announcements.index')} className="block">
-                                    <Button variant="outline" className="w-full justify-start text-xs h-9 gap-2">
-                                        <Megaphone className="size-4 text-purple-500" />
-                                        Manage Announcements
-                                    </Button>
-                                </Link>
-                            </CardContent>
-                        </Card>
-
-                        {/* Recent Announcements Widget */}
-                        <Card className="border-gray-200 dark:border-neutral-800 shadow-xs">
-                            <CardHeader className="flex flex-row items-center justify-between pb-3">
-                                <div>
-                                    <CardTitle className="text-sm font-bold text-gray-800 dark:text-white flex items-center gap-1.5">
-                                        <Megaphone className="size-4 text-[#D4A017]" />
-                                        Public Announcements
-                                    </CardTitle>
-                                    <CardDescription className="text-xs">
-                                        Broadcasted on the public portal
-                                    </CardDescription>
-                                </div>
-                                <Link href={route('shelter.cms.announcements.index')}>
-                                    <Button variant="ghost" size="sm" className="text-xs text-[#D4A017]">
-                                        Edit
-                                    </Button>
-                                </Link>
-                            </CardHeader>
-                            <CardContent className="p-0 border-t border-gray-100 dark:border-neutral-800">
-                                {recentAnnouncements.length === 0 ? (
-                                    <div className="p-6 text-center text-xs text-gray-400">
-                                        No announcements published yet.
-                                    </div>
-                                ) : (
-                                    <div className="divide-y divide-gray-100 dark:divide-neutral-800">
-                                        {recentAnnouncements.map(notice => (
-                                            <div key={notice.id} className="p-3.5 space-y-1 hover:bg-gray-50/50 transition">
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
-                                                        {notice.category}
-                                                    </span>
-                                                    <span className="text-[10px] text-gray-400">
-                                                        {notice.published_at ? new Date(notice.published_at).toLocaleDateString() : 'Draft'}
-                                                    </span>
-                                                </div>
-                                                <h4 className="text-xs font-semibold text-gray-800 dark:text-neutral-200 line-clamp-1">
-                                                    {notice.title}
-                                                </h4>
-                                                <p className="text-[11px] text-gray-500 dark:text-neutral-400 line-clamp-2">
-                                                    {notice.content}
-                                                </p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-
                 </div>
 
             </div>

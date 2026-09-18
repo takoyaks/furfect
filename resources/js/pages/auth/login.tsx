@@ -37,16 +37,16 @@ export default function Login({ status, canResetPassword }: Props) {
                     <>
                         <div className="grid gap-4">
                             <div className="grid gap-1.5">
-                                <Label htmlFor="email">Email Address</Label>
+                                <Label htmlFor="email">Email or Username</Label>
                                 <Input
                                     id="email"
-                                    type="email"
+                                    type="text"
                                     name="email"
                                     required
                                     autoFocus
                                     tabIndex={1}
-                                    autoComplete="email"
-                                    placeholder="name@example.com"
+                                    autoComplete="username"
+                                    placeholder="kerbie or name@example.com"
                                     leftIcon={<Mail className="size-4 text-muted-foreground" />}
                                     className="rounded-xl focus-visible:ring-[#FFBF00] focus-visible:border-[#FFBF00]"
                                 />

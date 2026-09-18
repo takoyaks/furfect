@@ -44,6 +44,7 @@ class ApplicationController extends Controller
     {
         $application = Application::with([
             'adopter.adopterProfile',
+            'adopter.latestDiditVerification',
             'adopter.lifestyleProfile',
             'pet.photos',
             'pet.shelter',
@@ -62,17 +63,17 @@ class ApplicationController extends Controller
     public function destroy(int $id): RedirectResponse
     {
         $application = Application::findOrFail($id);
-        
+
         // Re-enable pet status if deleting active application
         if (in_array($application->status, ['pending', 'under_review', 'mao_audit'])) {
             $application->pet->update(['status' => 'available']);
         }
-        
+
         $application->delete();
 
         Inertia::flash('toast', [
             'type' => 'info',
-            'message' => __('Application deleted successfully.')
+            'message' => __('Application deleted successfully.'),
         ]);
 
         return back();

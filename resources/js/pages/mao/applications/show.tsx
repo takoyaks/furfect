@@ -10,6 +10,8 @@ import AppLayout from '@/layouts/app-layout';
 import { DssScoreCard } from '@/components/dss-score-card';
 import { ApplicationTimelineCard, TimelineEvent } from '@/components/application-timeline-card';
 import { IdDocumentInspectorModal } from '@/components/id-document-inspector-modal';
+import { IdentityVerificationReport } from '@/components/identity-verification-report';
+import { IdentityVerificationBadge } from '@/components/identity-verification-badge';
 
 interface ChecklistItem {
     label: string;
@@ -48,6 +50,10 @@ interface Application {
             home_address: string;
             valid_id_type: string;
             valid_id_number: string;
+            is_identity_verified?: boolean;
+            face_match_score?: number | null;
+            liveness_verified?: boolean;
+            identity_verified_at?: string | null;
             id_document_path?: string | null;
             id_document_name?: string | null;
             id_document_back_path?: string | null;
@@ -57,6 +63,7 @@ interface Application {
             adoption_reason: string;
             adoption_reason_text?: string;
         };
+        latest_didit_verification?: any;
         lifestyle_profile?: {
             housing_type: string;
             has_aircon: string;
@@ -254,14 +261,26 @@ export default function MaoApplicationShow({ application, dssMatch, defaultCheck
                             </CardContent>
                         </Card>
 
+                        {/* Automated Identity & Biometric Verification Report */}
+                        <IdentityVerificationReport
+                            verification={application.adopter?.latest_didit_verification}
+                            adopterProfile={profile}
+                        />
+
                         {/* Adopter Profile Details */}
                         {profile && (
                             <Card className="border-gray-200 shadow-xs">
-                                <CardHeader className="p-4 border-b border-gray-100">
+                                <CardHeader className="p-4 border-b border-gray-100 flex flex-row items-center justify-between">
                                     <CardTitle className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
                                         <User className="h-4 w-4 text-gray-500" />
                                         Verified Adopter Identity (RA 9482 Anti-Rabies Act Record)
                                     </CardTitle>
+                                    <IdentityVerificationBadge
+                                        isVerified={profile.is_identity_verified}
+                                        faceMatchScore={profile.face_match_score}
+                                        livenessVerified={profile.liveness_verified}
+                                        showDetails
+                                    />
                                 </CardHeader>
                                 <CardContent className="p-5 space-y-4 text-xs text-gray-600">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

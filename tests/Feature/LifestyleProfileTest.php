@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\AdopterProfile;
 use App\Models\LifestyleProfile;
 use App\Models\User;
 
@@ -9,6 +10,23 @@ beforeEach(function (): void {
 
     $this->adopter = User::factory()->create();
     $this->adopter->assignRole('adopter');
+
+    AdopterProfile::create([
+        'user_id' => $this->adopter->id,
+        'full_name' => 'Test Adopter',
+        'contact_number' => '09123456789',
+        'date_of_birth' => '1995-01-01',
+        'home_address' => 'Virac, Catanduanes',
+        'valid_id_type' => 'National ID',
+        'valid_id_number' => '12345',
+        'had_pets_before' => 'never',
+        'surrendered_pet' => false,
+        'adoption_reason' => 'Companionship',
+        'adoption_reason_text' => 'I love animals.',
+        'pet_stay' => 'inside',
+        'is_identity_verified' => true,
+        'profile_completed_at' => now(),
+    ]);
 });
 
 it('locks lifestyle profile editing for 3 months after submission', function (): void {

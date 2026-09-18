@@ -13,11 +13,32 @@ beforeEach(function (): void {
     $this->artisan('db:seed', ['--class' => 'SystemSettingsSeeder']);
 });
 
+function createVerifiedAdopterUser(): User
+{
+    $user = User::factory()->create();
+    $user->assignRole('adopter');
+    $user->adopterProfile()->create([
+        'full_name' => $user->name,
+        'contact_number' => '09123456789',
+        'date_of_birth' => '1990-01-01',
+        'home_address' => 'Virac',
+        'valid_id_type' => 'National ID',
+        'valid_id_number' => '12345',
+        'had_pets_before' => 'never',
+        'surrendered_pet' => false,
+        'adoption_reason' => 'Companionship',
+        'adoption_reason_text' => 'Loving home',
+        'pet_stay' => 'inside',
+        'is_identity_verified' => true,
+    ]);
+
+    return $user;
+}
+
 test('adopter can upload front and back valid ID images with encryption', function () {
     Storage::fake('local');
 
-    $user = User::factory()->create();
-    $user->assignRole('adopter');
+    $user = createVerifiedAdopterUser();
 
     $frontFile = UploadedFile::fake()->image('id_front.jpg', 600, 400);
     $backFile = UploadedFile::fake()->image('id_back.jpg', 600, 400);
@@ -62,8 +83,7 @@ test('adopter can upload front and back valid ID images with encryption', functi
 test('adopter can view their own front and back decrypted ID documents', function () {
     Storage::fake('local');
 
-    $user = User::factory()->create();
-    $user->assignRole('adopter');
+    $user = createVerifiedAdopterUser();
 
     $frontFile = UploadedFile::fake()->image('my_front.jpg', 400, 300);
     $backFile = UploadedFile::fake()->image('my_back.jpg', 400, 300);
@@ -108,11 +128,8 @@ test('adopter can view their own front and back decrypted ID documents', functio
 test('unauthorized user cannot view another adopters ID document', function () {
     Storage::fake('local');
 
-    $user1 = User::factory()->create();
-    $user1->assignRole('adopter');
-
-    $user2 = User::factory()->create();
-    $user2->assignRole('adopter');
+    $user1 = createVerifiedAdopterUser();
+    $user2 = createVerifiedAdopterUser();
 
     $file = UploadedFile::fake()->image('id.jpg', 400, 300);
 
@@ -146,8 +163,7 @@ test('unauthorized user cannot view another adopters ID document', function () {
 test('shelter staff, mao officer, and admin can inspect applicant ID document', function () {
     Storage::fake('local');
 
-    $adopter = User::factory()->create();
-    $adopter->assignRole('adopter');
+    $adopter = createVerifiedAdopterUser();
 
     $file = UploadedFile::fake()->image('id.jpg', 400, 300);
 

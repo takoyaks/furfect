@@ -25,7 +25,7 @@ beforeEach(function (): void {
     ]);
 });
 
-test('shelter staff can access shelter dashboard with metrics and recent items', function (): void {
+test('shelter staff can access shelter dashboard with metrics and graph analytics', function (): void {
     Application::create([
         'user_id' => $this->adopter->id,
         'pet_id' => $this->pet->id,
@@ -33,15 +33,6 @@ test('shelter staff can access shelter dashboard with metrics and recent items',
         'status' => 'pending',
         'dss_score' => 85.5,
         'submitted_at' => now(),
-    ]);
-
-    Announcement::create([
-        'title' => 'Vaccination Drive',
-        'slug' => 'vaccination-drive-abcde',
-        'category' => 'Health',
-        'content' => 'Free anti-rabies vaccination this weekend.',
-        'is_published' => true,
-        'published_at' => now(),
     ]);
 
     $response = $this->actingAs($this->shelterStaff)->get(route('shelter.dashboard'));
@@ -52,9 +43,12 @@ test('shelter staff can access shelter dashboard with metrics and recent items',
         ->has('metrics')
         ->where('metrics.pending_applications', 1)
         ->where('metrics.pets_available', 1)
-        ->has('recentApplications', 1)
-        ->has('recentPets', 1)
-        ->has('recentAnnouncements', 1)
+        ->has('monthlyTrends')
+        ->has('statusDistribution')
+        ->where('statusDistribution.pending', 1)
+        ->has('speciesStats')
+        ->has('petStatusBreakdown')
+        ->has('dssScoreDistribution')
     );
 });
 
@@ -70,6 +64,7 @@ test('unauthenticated users and adopters cannot access shelter dashboard', funct
         'valid_id_number' => '1234',
         'adoption_reason' => 'companionship',
         'adoption_reason_text' => 'Companion',
+        'is_identity_verified' => true,
         'profile_completed_at' => now(),
     ]);
 

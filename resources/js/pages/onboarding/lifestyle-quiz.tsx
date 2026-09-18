@@ -94,8 +94,8 @@ export default function LifestyleQuiz({
     };
 
     return (
-        <OnboardingLayout currentStep={2}>
-            <Head title="Lifestyle Profile" />
+        <OnboardingLayout currentStep={3}>
+            <Head title="Step 3: Lifestyle Compatibility Quiz - FurFect" />
             
             {/* Locked Profile Alert */}
             {isLocked && (
@@ -115,7 +115,7 @@ export default function LifestyleQuiz({
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
                         <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#283F24] bg-[#FFF78D] px-2.5 py-1 rounded-full border border-[#FFBF00]/50 mb-1.5">
-                            <Activity className="size-3.5 text-[#467235]" /> Step 2 of 2 — Lifestyle Assessment
+                            <Activity className="size-3.5 text-[#467235]" /> Step 3 of 3 — Lifestyle Compatibility Assessment
                         </div>
                         <h1 className="text-2xl font-bold text-[#283F24]">Tell Us About Your Lifestyle</h1>
                         <p className="text-sm text-gray-600 mt-0.5">Your answers help our Decision Support System calculate compatibility with shelter pets.</p>

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\ApplicationController as AdminApplicationController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\DatabaseManagerController;
 use App\Http\Controllers\Admin\LandingPageBuilderController;
 use App\Http\Controllers\Admin\PetController as AdminPetController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\AdopterHistoryController;
 use App\Http\Controllers\AdopterProfileController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\Auth\EmailAvailabilityController;
+use App\Http\Controllers\DiditVerificationController;
 use App\Http\Controllers\DssMatchController;
 use App\Http\Controllers\LifestyleProfileController;
 use App\Http\Controllers\Mao\ApplicationController as MaoApplicationController;
@@ -39,16 +41,25 @@ Route::get('/how-it-works', [PageController::class, 'howItWorks'])->name('how-it
 Route::get('/about', [PageController::class, 'about'])->name('about');
 Route::get('/api/check-email', [EmailAvailabilityController::class, 'check'])->name('email.check');
 
+// Identity Verification Webhook & Callback (Public / Cross-site safe)
+Route::post('/webhooks/didit', [DiditVerificationController::class, 'webhook'])->name('identity.verification.webhook');
+Route::get('/identity/verification/callback', [DiditVerificationController::class, 'callback'])->name('identity.verification.callback');
+
 // Authenticated Routes
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [PageController::class, 'home'])->name('dashboard');
 
-    // Onboarding (Adopter Role)
+    // 3-Step Onboarding (Adopter Role): 1. eKYC -> 2. Personal Info -> 3. Lifestyle Quiz
+    Route::get('/onboarding/ekyc', [AdopterProfileController::class, 'ekyc'])->name('onboarding.ekyc.show');
     Route::get('/onboarding/personal', [AdopterProfileController::class, 'edit'])->name('onboarding.personal.edit');
     Route::post('/onboarding/personal', [AdopterProfileController::class, 'store'])->name('onboarding.personal.store');
     Route::get('/adopter/{profile}/id-document', [AdopterProfileController::class, 'viewIdDocument'])->name('adopter.id-document.show');
     Route::get('/onboarding/lifestyle', [LifestyleProfileController::class, 'edit'])->name('onboarding.lifestyle.edit');
     Route::post('/onboarding/lifestyle', [LifestyleProfileController::class, 'store'])->name('onboarding.lifestyle.store');
+
+    // Automated Identity & Biometric Verification
+    Route::post('/identity/verification/session', [DiditVerificationController::class, 'createSession'])->name('identity.verification.session');
+    Route::get('/identity/verification/status', [DiditVerificationController::class, 'status'])->name('identity.verification.status');
 
     // Adopter Portal Functions
     Route::get('/matches', [DssMatchController::class, 'index'])->name('matches.index');
@@ -117,6 +128,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
         Route::patch('/users/{id}', [AdminUserController::class, 'update'])->name('users.update');
         Route::post('/users/{id}/reset-password', [AdminUserController::class, 'resetPassword'])->name('users.reset-password');
+        Route::post('/users/{id}/toggle-verification', [AdminUserController::class, 'toggleVerification'])->name('users.toggle-verification');
+        Route::post('/users/{id}/reset-subscriber', [AdminUserController::class, 'resetSubscriberProfile'])->name('users.reset-subscriber');
         Route::delete('/users/{id}', [AdminUserController::class, 'destroy'])->name('users.destroy');
 
         Route::get('/shelters', [AdminShelterController::class, 'index'])->name('shelters.index');
@@ -130,6 +143,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/settings', [AdminSettingController::class, 'index'])->name('settings.index');
         Route::patch('/settings', [AdminSettingController::class, 'update'])->name('settings.update');
+
+        // Level 2 Database & Data Manipulation (Super Admin Exclusive)
+        Route::get('/database', [DatabaseManagerController::class, 'index'])->name('database.index');
+        Route::post('/database', [DatabaseManagerController::class, 'resetAll']);
+        Route::get('/database/users/{id}', [DatabaseManagerController::class, 'show'])->name('database.users.show');
+        Route::delete('/database/users/{id}', [DatabaseManagerController::class, 'destroy'])->name('database.users.destroy');
+        Route::post('/database/reset-all', [DatabaseManagerController::class, 'resetAll'])->name('database.reset-all');
+        Route::post('/database/logs/clear', [DatabaseManagerController::class, 'clearLogs'])->name('database.logs.clear');
 
         // CMS & Landing Page Builder
         Route::get('/cms/builder', [LandingPageBuilderController::class, 'index'])->name('cms.builder.index');

@@ -40,6 +40,7 @@ it('allows adopter to apply for a pet', function (): void {
         'valid_id_number' => '1234',
         'adoption_reason' => 'companionship',
         'adoption_reason_text' => 'Companion',
+        'is_identity_verified' => true,
         'profile_completed_at' => now(),
     ]);
 
@@ -136,6 +137,7 @@ it('displays approved adoption status page with pass and certificate data', func
         'valid_id_type' => 'National ID',
         'valid_id_number' => '1234-5678-9012',
         'adoption_reason' => 'companionship',
+        'is_identity_verified' => true,
         'profile_completed_at' => now(),
     ]);
 

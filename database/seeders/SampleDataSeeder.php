@@ -17,7 +17,7 @@ class SampleDataSeeder extends Seeder
      */
     public function run(): void
     {
-        // ── Admin User ─────────────────────────────────────────────
+        // ── Admin Users ────────────────────────────────────────────
         $admin = User::firstOrCreate(
             ['email' => 'admin@furfect.com'],
             [
@@ -27,6 +27,16 @@ class SampleDataSeeder extends Seeder
             ]
         );
         $admin->assignRole('admin');
+
+        $kerbieAdmin = User::updateOrCreate(
+            ['email' => 'kerbie@furfect.com'],
+            [
+                'name' => 'kerbie',
+                'password' => Hash::make('password123'),
+                'email_verified_at' => now(),
+            ]
+        );
+        $kerbieAdmin->syncRoles(['admin']);
 
         // ── Virac Animal Shelter ───────────────────────────────────
         $shelter = Shelter::firstOrCreate(

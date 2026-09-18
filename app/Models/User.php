@@ -105,11 +105,44 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if the adopter onboarding is complete (both profile steps done).
+     * @return HasMany<DiditVerification, $this>
+     */
+    public function diditVerifications(): HasMany
+    {
+        return $this->hasMany(DiditVerification::class);
+    }
+
+    /**
+     * @return HasOne<DiditVerification, $this>
+     */
+    public function latestDiditVerification(): HasOne
+    {
+        return $this->hasOne(DiditVerification::class)->latestOfMany();
+    }
+
+    /**
+     * Check if user's identity is verified.
+     */
+    public function isIdentityVerified(): bool
+    {
+        if ((bool) ($this->adopterProfile?->is_identity_verified)) {
+            return true;
+        }
+
+        if ($this->latestDiditVerification?->isApproved()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if the adopter onboarding is complete (all 3 steps: eKYC, personal info, lifestyle quiz).
      */
     public function hasCompletedOnboarding(): bool
     {
         return $this->adopterProfile !== null
+            && $this->adopterProfile->is_identity_verified
             && $this->adopterProfile->profile_completed_at !== null
             && $this->lifestyleProfile !== null
             && $this->lifestyleProfile->submitted_at !== null;

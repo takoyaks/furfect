@@ -3,29 +3,98 @@
 namespace App\Http\Controllers;
 
 use App\Models\AdopterProfile;
+use App\Services\DiditVerificationService;
 use App\Services\EncryptedFileStorageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AdopterProfileController extends Controller
 {
     /**
-     * Show the onboarding step 1 (personal info) form.
+     * Show the onboarding step 1 (eKYC / Identity Verification) page.
      */
-    public function edit(Request $request): Response
+    public function ekyc(Request $request, DiditVerificationService $service): Response|RedirectResponse
     {
         $user = $request->user();
+        $verification = $user->latestDiditVerification;
+
+        // Proactively query live decision from Didit if verification was pending/unresolved
+        if ($verification && $verification->session_id && ! $verification->isApproved()) {
+            try {
+                $decision = $service->getSessionDecision($verification->session_id);
+                if ($decision && ! empty($decision) && ! in_array(strtolower($decision['status'] ?? ''), ['not started', 'not_started'])) {
+                    $verification = $service->processDecision($decision, $verification->session_id);
+                }
+            } catch (\Exception) {
+                // Continue with cached state
+            }
+        }
+
+        // If already verified, automatically proceed to next step
+        if ($user->isIdentityVerified() || ($verification && $verification->isApproved())) {
+            return to_route('onboarding.personal.edit');
+        }
+
+        $profile = $user->fresh()->adopterProfile;
+
+        return Inertia::render('onboarding/ekyc', [
+            'profile' => $profile ? [
+                'id' => $profile->id,
+                'full_name' => $profile->full_name,
+                'valid_id_type' => $profile->valid_id_type,
+                'valid_id_number' => $profile->valid_id_number,
+                'date_of_birth' => $profile->date_of_birth ? $profile->date_of_birth->format('Y-m-d') : null,
+                'is_identity_verified' => (bool) $profile->is_identity_verified,
+                'identity_verified_at' => $profile->identity_verified_at?->toIso8601String(),
+                'face_match_score' => $profile->face_match_score,
+                'liveness_verified' => (bool) $profile->liveness_verified,
+            ] : null,
+            'verification' => $verification ? [
+                'id' => $verification->id,
+                'status' => $verification->status,
+                'face_match_score' => $verification->face_match_score,
+                'face_match_status' => $verification->face_match_status,
+                'liveness_status' => $verification->liveness_status,
+                'id_verification_status' => $verification->id_verification_status,
+                'extracted_data' => $verification->extracted_data,
+                'failure_reasons' => $verification->failure_reasons,
+            ] : null,
+            'userName' => $user->name,
+        ]);
+    }
+
+    /**
+     * Show the onboarding step 2 (personal info) form.
+     */
+    public function edit(Request $request): Response|RedirectResponse
+    {
+        $user = $request->user();
+
+        // Require eKYC verification before accessing Step 2
+        if (! $user->isIdentityVerified()) {
+            Inertia::flash('toast', [
+                'type' => 'info',
+                'message' => __('Please complete eKYC identity verification first.'),
+            ]);
+
+            return to_route('onboarding.ekyc.show');
+        }
+
         $profile = $user->adopterProfile;
 
         return Inertia::render('onboarding/personal-info', [
             'profile' => $profile ? array_merge($profile->toArray(), [
+                'date_of_birth' => $profile->date_of_birth ? $profile->date_of_birth->format('Y-m-d') : '',
                 'has_id_document' => $profile->hasIdDocument(),
                 'id_document_name' => $profile->id_document_name,
                 'has_id_document_back' => $profile->hasBackIdDocument(),
                 'id_document_back_name' => $profile->id_document_back_name,
+                'is_identity_verified' => (bool) $profile->is_identity_verified,
+                'identity_verified_at' => $profile->identity_verified_at?->toIso8601String(),
+                'face_match_score' => $profile->face_match_score,
+                'liveness_verified' => (bool) $profile->liveness_verified,
                 'front_preview_url' => $profile->id_document_path ? route('adopter.id-document.show', ['profile' => $profile->id, 'side' => 'front']) : null,
                 'back_preview_url' => $profile->id_document_back_path ? route('adopter.id-document.show', ['profile' => $profile->id, 'side' => 'back']) : null,
             ]) : null,
@@ -39,6 +108,16 @@ class AdopterProfileController extends Controller
     public function store(Request $request, EncryptedFileStorageService $fileStorage): RedirectResponse
     {
         $user = $request->user();
+
+        // Require eKYC verification before submitting Step 2
+        if (! $user->isIdentityVerified()) {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => __('eKYC identity verification is required before submitting your personal information.'),
+            ]);
+
+            return to_route('onboarding.ekyc.show');
+        }
 
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:255'],
@@ -116,7 +195,7 @@ class AdopterProfileController extends Controller
      * Securely stream decrypted ID document for authorized reviewers or the owner.
      * Supports optional query parameter ?side=front|back (default: front)
      */
-    public function viewIdDocument(Request $request, string|int $profile, EncryptedFileStorageService $fileStorage): StreamedResponse
+    public function viewIdDocument(Request $request, string|int $profile, EncryptedFileStorageService $fileStorage): \Symfony\Component\HttpFoundation\Response
     {
         $profileModel = AdopterProfile::where('id', $profile)
             ->orWhere('user_id', $profile)

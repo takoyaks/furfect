@@ -68,6 +68,7 @@ function makeOnboardedAdopter(): User
         'adoption_reason' => 'Companionship',
         'adoption_reason_text' => 'I love animals.',
         'pet_stay' => 'inside',
+        'is_identity_verified' => true,
         'profile_completed_at' => now(),
     ]);
 

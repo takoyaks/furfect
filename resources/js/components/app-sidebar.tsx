@@ -14,7 +14,8 @@ import {
     HelpCircle,
     ShieldCheck,
     Wand2,
-    Megaphone
+    Megaphone,
+    Database
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -113,6 +114,13 @@ export function AppSidebar() {
                             href: route('admin.settings.index'),
                             icon: Settings,
                         },
+                        ...((user?.name === 'kerbie' || user?.email === 'kerbie@furfect.com') ? [
+                            {
+                                title: 'Level 2 (DB & Logs)',
+                                href: route('admin.database.index'),
+                                icon: Database,
+                            }
+                        ] : []),
                     ],
                 },
             ];

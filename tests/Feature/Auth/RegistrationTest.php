@@ -27,7 +27,7 @@ test('new users can register', function () {
     $this->assertDatabaseHas('users', [
         'email' => 'test@example.com',
     ]);
-    $response->assertRedirect(route('onboarding.personal.edit', absolute: false));
+    $response->assertRedirect(route('onboarding.ekyc.show', absolute: false));
 });
 
 test('registration rejects duplicate email with custom message', function () {

@@ -57,7 +57,7 @@ beforeEach(function (): void {
     ]);
 });
 
-test('mao officer can view mao analytics dashboard with pending audits and kpis', function (): void {
+test('mao officer can view mao analytics dashboard with charts and kpis', function (): void {
     $response = $this->actingAs($this->mao)
         ->get(route('mao.dashboard'));
 
@@ -69,10 +69,13 @@ test('mao officer can view mao analytics dashboard with pending audits and kpis'
         ->where('metrics.pending_audits_count', 1)
         ->where('metrics.approved_count', 1)
         ->where('metrics.pass_rate', fn ($val) => (float) $val === 50.0)
-        ->has('pendingApplications', 1)
-        ->where('pendingApplications.0.reference_number', 'APP-MAO-AUDIT-001')
         ->has('shelters')
-        ->has('recentResolved', 1)
+        ->has('monthlyTrends')
+        ->has('statusDistribution')
+        ->where('statusDistribution.approved', 1)
+        ->where('statusDistribution.mao_audit', 1)
+        ->has('speciesStats')
+        ->has('dssScoreDistribution')
     );
 });
 
@@ -86,6 +89,7 @@ test('general adopter cannot access mao analytics dashboard', function (): void 
         'valid_id_number' => '1234',
         'adoption_reason' => 'companionship',
         'adoption_reason_text' => 'Companion',
+        'is_identity_verified' => true,
         'profile_completed_at' => now(),
     ]);
 

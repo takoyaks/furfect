@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\AdopterProfile;
+use App\Models\LifestyleProfile;
 use App\Models\User;
 
 test('guests are redirected to the login page', function () {
@@ -7,17 +9,17 @@ test('guests are redirected to the login page', function () {
     $response->assertRedirect(route('login'));
 });
 
-test('un-onboarded users are redirected to onboarding personal info page', function () {
+test('un-onboarded users are redirected to onboarding ekyc page', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
     $response = $this->get(route('dashboard'));
-    $response->assertRedirect(route('onboarding.personal.edit'));
+    $response->assertRedirect(route('onboarding.ekyc.show'));
 });
 
 test('authenticated users with completed onboarding can visit the dashboard', function () {
     $user = User::factory()->create();
-    \App\Models\AdopterProfile::create([
+    AdopterProfile::create([
         'user_id' => $user->id,
         'full_name' => 'Test User',
         'contact_number' => '09123456789',
@@ -30,9 +32,10 @@ test('authenticated users with completed onboarding can visit the dashboard', fu
         'adoption_reason' => 'Companionship',
         'adoption_reason_text' => 'I love animals.',
         'pet_stay' => 'inside',
+        'is_identity_verified' => true,
         'profile_completed_at' => now(),
     ]);
-    \App\Models\LifestyleProfile::create([
+    LifestyleProfile::create([
         'user_id' => $user->id,
         'housing_type' => 'apartment',
         'has_aircon' => 'stable',

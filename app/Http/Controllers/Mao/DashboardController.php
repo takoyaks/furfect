@@ -7,6 +7,7 @@ use App\Models\Application;
 use App\Models\Pet;
 use App\Models\Shelter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,6 +24,8 @@ class DashboardController extends Controller
         $pendingAuditsCount = Application::where('status', 'mao_audit')->count();
         $approvedCount = Application::where('status', 'approved')->count();
         $rejectedCount = Application::where('status', 'rejected')->count();
+        $underReviewCount = Application::where('status', 'under_review')->count();
+        $pendingInitialCount = Application::where('status', 'pending')->count();
 
         $passRate = $totalApplications > 0
             ? round(($approvedCount / $totalApplications) * 100, 1)
@@ -34,30 +37,7 @@ class DashboardController extends Controller
 
         $avgDssScore = round((float) Application::whereNotNull('dss_score')->avg('dss_score'), 1);
 
-        // 2. Urgent applications requiring MAO approval
-        $pendingApplications = Application::with([
-            'adopter.adopterProfile',
-            'pet.shelter',
-            'pet.photos',
-        ])
-            ->where('status', 'mao_audit')
-            ->orderBy('submitted_at', 'asc') // Oldest first to prioritize SLAs
-            ->take(8)
-            ->get();
-
-        // 3. Recent certified approvals / resolved adoptions
-        $recentResolved = Application::with([
-            'adopter',
-            'pet.shelter',
-            'maoOfficer',
-        ])
-            ->whereIn('status', ['approved', 'rejected'])
-            ->whereNotNull('resolved_at')
-            ->latest('resolved_at')
-            ->take(6)
-            ->get();
-
-        // 4. Municipal Shelter Capacity & Compliance breakdown
+        // 2. Municipal Shelter Capacity & Compliance breakdown
         $shelters = Shelter::withCount([
             'pets as total_pets_count',
             'pets as active_pets_count' => function ($q): void {
@@ -66,27 +46,78 @@ class DashboardController extends Controller
             'pets as adopted_pets_count' => function ($q): void {
                 $q->where('status', 'adopted');
             },
-        ])->get();
+        ])->get()->map(function ($s) {
+            return [
+                'id' => $s->id,
+                'name' => $s->name,
+                'location' => $s->location,
+                'active_pets_count' => $s->active_pets_count ?? 0,
+                'adopted_pets_count' => $s->adopted_pets_count ?? 0,
+                'total_pets_count' => $s->total_pets_count ?? 0,
+                'status' => $s->status,
+            ];
+        });
 
-        // 5. Monthly adoption trends (database-agnostic)
+        // 3. Monthly compliance decision trends (Last 6 months)
         $driver = DB::connection()->getDriverName();
         $dateExpr = $driver === 'sqlite'
             ? "strftime('%Y-%m', resolved_at)"
             : "DATE_FORMAT(resolved_at, '%Y-%m')";
 
-        $monthlyTrends = Application::selectRaw("{$dateExpr} as month, count(*) as count")
+        $months = collect(range(5, 0))->map(function ($i) {
+            return Carbon::now()->subMonths($i)->format('Y-m');
+        });
+
+        $approvalsByMonth = Application::selectRaw("{$dateExpr} as month, count(*) as count")
             ->where('status', 'approved')
             ->whereNotNull('resolved_at')
             ->groupBy('month')
-            ->orderBy('month', 'desc')
-            ->take(6)
-            ->get()
-            ->reverse()
-            ->values();
+            ->pluck('count', 'month');
 
-        // 6. Species split
+        $rejectionsByMonth = Application::selectRaw("{$dateExpr} as month, count(*) as count")
+            ->where('status', 'rejected')
+            ->whereNotNull('resolved_at')
+            ->groupBy('month')
+            ->pluck('count', 'month');
+
+        $monthlyTrends = $months->map(function ($m) use ($approvalsByMonth, $rejectionsByMonth) {
+            $formattedMonth = Carbon::createFromFormat('Y-m', $m)->format('M Y');
+
+            return [
+                'month' => $formattedMonth,
+                'approved' => (int) ($approvalsByMonth[$m] ?? 0),
+                'rejected' => (int) ($rejectionsByMonth[$m] ?? 0),
+            ];
+        })->values();
+
+        // 4. Status & Audit Distribution
+        $statusDistribution = [
+            'approved' => $approvedCount,
+            'rejected' => $rejectedCount,
+            'mao_audit' => $pendingAuditsCount,
+            'under_review' => $underReviewCount,
+            'pending' => $pendingInitialCount,
+        ];
+
+        // 5. Species Demographics & Placement Status
         $dogsAvailable = Pet::where('species', 'dog')->where('status', 'available')->count();
+        $dogsAdopted = Pet::where('species', 'dog')->where('status', 'adopted')->count();
         $catsAvailable = Pet::where('species', 'cat')->where('status', 'available')->count();
+        $catsAdopted = Pet::where('species', 'cat')->where('status', 'adopted')->count();
+
+        $speciesStats = [
+            'dogs_available' => $dogsAvailable,
+            'dogs_adopted' => $dogsAdopted,
+            'cats_available' => $catsAvailable,
+            'cats_adopted' => $catsAdopted,
+        ];
+
+        // 6. DSS Compatibility Distribution
+        $dssScoreDistribution = [
+            'high' => Application::where('dss_score', '>=', 80)->count(),
+            'medium' => Application::whereBetween('dss_score', [50, 79.99])->count(),
+            'low' => Application::where('dss_score', '<', 50)->whereNotNull('dss_score')->count(),
+        ];
 
         return Inertia::render('mao/dashboard', [
             'metrics' => [
@@ -102,10 +133,11 @@ class DashboardController extends Controller
                 'dogs_available' => $dogsAvailable,
                 'cats_available' => $catsAvailable,
             ],
-            'pendingApplications' => $pendingApplications,
-            'recentResolved' => $recentResolved,
-            'shelters' => $shelters,
             'monthlyTrends' => $monthlyTrends,
+            'statusDistribution' => $statusDistribution,
+            'shelters' => $shelters,
+            'speciesStats' => $speciesStats,
+            'dssScoreDistribution' => $dssScoreDistribution,
         ]);
     }
 }

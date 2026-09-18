@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -27,6 +28,12 @@ use Illuminate\Support\Carbon;
  * @property string $adoption_reason
  * @property string|null $adoption_reason_text
  * @property string $pet_stay
+ * @property bool $is_identity_verified
+ * @property Carbon|null $identity_verified_at
+ * @property string|null $identity_verification_provider
+ * @property string|null $didit_session_id
+ * @property float|null $face_match_score
+ * @property bool $liveness_verified
  * @property Carbon|null $profile_completed_at
  */
 class AdopterProfile extends Model
@@ -45,6 +52,12 @@ class AdopterProfile extends Model
         'id_document_back_path',
         'id_document_back_mime',
         'id_document_back_name',
+        'is_identity_verified',
+        'identity_verified_at',
+        'identity_verification_provider',
+        'didit_session_id',
+        'face_match_score',
+        'liveness_verified',
         'had_pets_before',
         'previous_pet_notes',
         'surrendered_pet',
@@ -56,7 +69,7 @@ class AdopterProfile extends Model
 
     public function hasIdDocument(): bool
     {
-        return ! empty($this->id_document_path) || ! empty($this->id_document_back_path);
+        return ! empty($this->id_document_path) || ! empty($this->id_document_back_path) || $this->is_identity_verified;
     }
 
     public function hasFrontIdDocument(): bool
@@ -76,6 +89,10 @@ class AdopterProfile extends Model
     {
         return [
             'surrendered_pet' => 'boolean',
+            'is_identity_verified' => 'boolean',
+            'liveness_verified' => 'boolean',
+            'face_match_score' => 'float',
+            'identity_verified_at' => 'datetime',
             'profile_completed_at' => 'datetime',
             'date_of_birth' => 'date',
         ];
@@ -87,5 +104,13 @@ class AdopterProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return HasMany<DiditVerification, $this>
+     */
+    public function diditVerifications(): HasMany
+    {
+        return $this->hasMany(DiditVerification::class);
     }
 }

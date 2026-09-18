@@ -1,5 +1,5 @@
-import { Head, useForm, usePage } from '@inertiajs/react';
-import { User, Phone, Calendar, CreditCard, Hash, MapPin, ArrowRight, Upload, FileText, Lock, ShieldCheck, CheckCircle2, Camera, Eye, Sparkles } from 'lucide-react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { User, Phone, Calendar, CreditCard, Hash, MapPin, ArrowRight, Upload, FileText, Lock, ShieldCheck, CheckCircle2, Camera, Eye, Heart } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,7 @@ import OnboardingLayout from '@/layouts/onboarding-layout';
 import { TermsAndPoliciesModal } from '@/components/terms-and-policies-modal';
 import { CameraCaptureModal } from '@/components/camera-capture-modal';
 import { IdDocumentInspectorModal } from '@/components/id-document-inspector-modal';
+import { IdentityVerificationCard } from '@/components/identity-verification-card';
 import { DEFAULT_AGREEMENT_CONTENT } from '@/config/agreement-content';
 
 interface Profile {
@@ -27,6 +28,10 @@ interface Profile {
     id_document_name?: string;
     has_id_document_back?: boolean;
     id_document_back_name?: string;
+    is_identity_verified?: boolean;
+    identity_verified_at?: string | null;
+    face_match_score?: number | null;
+    liveness_verified?: boolean;
     front_preview_url?: string | null;
     back_preview_url?: string | null;
     had_pets_before?: string;
@@ -70,7 +75,7 @@ export default function PersonalInfo({ profile, userName }: { profile: Profile |
     }>({
         full_name: profile?.full_name || userName || auth?.user?.name || '',
         contact_number: profile?.contact_number || '',
-        date_of_birth: profile?.date_of_birth || '',
+        date_of_birth: profile?.date_of_birth ? profile.date_of_birth.split('T')[0] : '',
         home_address: profile?.home_address || '',
         valid_id_type: profile?.valid_id_type || '',
         valid_id_number: profile?.valid_id_number || '',
@@ -178,21 +183,61 @@ export default function PersonalInfo({ profile, userName }: { profile: Profile |
     };
 
     return (
-        <OnboardingLayout currentStep={1}>
-            <Head title="Personal Information" />
+        <OnboardingLayout currentStep={2}>
+            <Head title="Step 2: Personal Information - FurFect" />
             
             {/* Page Header Banner */}
             <div className="bg-gradient-to-r from-[#FFFDF0] via-[#FFF78D]/30 to-[#467235]/10 border border-[#467235]/20 rounded-2xl p-5 shadow-xs mb-1">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
                         <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#283F24] bg-[#FFF78D] px-2.5 py-1 rounded-full border border-[#FFBF00]/50 mb-1.5">
-                            <ShieldCheck className="size-3.5 text-[#467235]" /> Step 1 of 2 — Personal Information
+                            <ShieldCheck className="size-3.5 text-[#467235]" /> Step 2 of 3 — Personal Information
                         </div>
-                        <h1 className="text-2xl font-bold text-[#283F24]">Welcome to FurFect Match!</h1>
-                        <p className="text-sm text-gray-600 mt-0.5">Fill out your information once and it stays securely saved for all your future shelter adoptions.</p>
+                        <h1 className="text-2xl font-bold text-[#283F24]">Adopter Profile & Particulars</h1>
+                        <p className="text-sm text-gray-600 mt-0.5">
+                            {profile?.is_identity_verified 
+                                ? 'Your identity has been verified in Step 1. Please review and complete your contact and adoption details.'
+                                : 'Complete your primary contact and adoption information. All details stay securely saved for all shelter adoptions.'}
+                        </p>
                     </div>
                 </div>
             </div>
+
+            {/* Verified Identity Status Notice */}
+            {profile?.is_identity_verified ? (
+                <div className="rounded-xl border border-emerald-300 bg-emerald-50/80 p-4 flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white">
+                            <ShieldCheck className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <span className="font-bold text-emerald-950 block">Identity Authenticated via eKYC</span>
+                            <span className="text-emerald-800">
+                                Your name, date of birth, and valid ID have been verified and locked for adoption security.
+                            </span>
+                        </div>
+                    </div>
+                    {/* <Link href={route('onboarding.ekyc.show')}>
+                        <Button variant="outline" size="sm" className="text-xs border-emerald-300 text-emerald-800 hover:bg-emerald-100/60">
+                            View eKYC Details
+                        </Button>
+                    </Link> */}
+                </div>
+            ) : (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3.5 flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2.5">
+                        <ShieldCheck className="h-4 w-4 text-amber-700 shrink-0" />
+                        <span className="text-amber-900">
+                            Want to fast-track your adoption? You can complete 60-second automated ID & biometric verification in Step 1.
+                        </span>
+                    </div>
+                    <Link href={route('onboarding.ekyc.show')}>
+                        <Button variant="outline" size="sm" className="text-xs border-amber-300 text-amber-900 hover:bg-amber-100 shrink-0">
+                            Go to Step 1 eKYC
+                        </Button>
+                    </Link>
+                </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* 2-Column Responsive Layout for Desktop */}
@@ -360,7 +405,7 @@ export default function PersonalInfo({ profile, userName }: { profile: Profile |
                                         <CreditCard className="size-4 text-[#467235]" /> Valid ID Verification
                                     </CardTitle>
                                     <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-[#FFF78D] px-2 py-0.5 rounded-full border border-[#FFBF00]/40">
-                                        <Lock className="size-3 text-[#467235]" /> AES-256 Encrypted
+                                        <ShieldCheck className="size-3 text-[#467235]" /> Verified Identity
                                     </span>
                                 </div>
                                 <CardDescription className="text-xs">Government or institutional ID for adopter legitimacy.</CardDescription>
@@ -592,7 +637,7 @@ export default function PersonalInfo({ profile, userName }: { profile: Profile |
                         <Card className="border-[#467235]/20 shadow-xs">
                             <CardHeader className="bg-[#FFFDF0] border-b border-[#467235]/15 py-3.5 px-5">
                                 <CardTitle className="text-base font-bold text-[#283F24] flex items-center gap-2">
-                                    <Sparkles className="size-4 text-[#467235]" /> Adoption Intentions
+                                    <Heart className="size-4 text-[#467235]" /> Adoption Intentions
                                 </CardTitle>
                                 <CardDescription className="text-xs">Why you wish to welcome a pet into your life.</CardDescription>
                             </CardHeader>

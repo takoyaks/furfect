@@ -157,7 +157,7 @@ export function IdDocumentInspectorModal({
                 <div className="pt-2 flex items-center justify-between text-[11px] text-gray-500">
                     <span className="flex items-center gap-1 text-emerald-700 font-medium">
                         <span className="size-2 rounded-full bg-emerald-500 inline-block" />
-                        Decrypted securely on-the-fly via AES-256
+                        Verified Government ID • Protected Document
                     </span>
                     <Button
                         type="button"

@@ -27,6 +27,7 @@ function createTestOnboardedAdopter(): User
         'adoption_reason' => 'Companionship',
         'adoption_reason_text' => 'Loving home for a rescued pet.',
         'pet_stay' => 'inside',
+        'is_identity_verified' => true,
         'profile_completed_at' => now(),
     ]);
 

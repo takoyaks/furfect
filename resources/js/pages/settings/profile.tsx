@@ -5,6 +5,7 @@ import { CameraCaptureModal } from '@/components/camera-capture-modal';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
 import { IdDocumentInspectorModal } from '@/components/id-document-inspector-modal';
+import { IdentityVerificationCard } from '@/components/identity-verification-card';
 import InputError from '@/components/input-error';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +31,10 @@ interface AdopterProfileData {
     id_document_name?: string | null;
     has_id_document_back?: boolean;
     id_document_back_name?: string | null;
+    is_identity_verified?: boolean;
+    identity_verified_at?: string | null;
+    face_match_score?: number | null;
+    liveness_verified?: boolean;
     front_preview_url?: string | null;
     back_preview_url?: string | null;
 }
@@ -473,6 +478,15 @@ export default function Profile({
                                 </Badge>
                             </div>
 
+                            {/* Automated Biometric Identity Verification Option */}
+                            <IdentityVerificationCard
+                                isVerified={adopterProfile?.is_identity_verified}
+                                faceMatchScore={adopterProfile?.face_match_score}
+                                livenessVerified={adopterProfile?.liveness_verified}
+                                verifiedAt={adopterProfile?.identity_verified_at}
+                                returnTo="settings"
+                            />
+
                             <div className="grid gap-4 sm:grid-cols-2">
                                 {/* Date of Birth */}
                                 <div className="space-y-1.5">
@@ -550,7 +564,7 @@ export default function Profile({
                                                 : 'Select your Valid ID Type above to see if it requires both sides (e.g. National ID, Driver\'s License) or front only (e.g. Passport, PhilHealth, Clearances).'}
                                         </p>
                                         <p className="text-[11px] text-[#8B6508] mt-1 font-medium">
-                                            All uploaded ID documents are securely stored with AES-256 encryption at rest.
+                                            All uploaded ID documents are securely stored in protected storage.
                                         </p>
                                     </div>
                                 </div>

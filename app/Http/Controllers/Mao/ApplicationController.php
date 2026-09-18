@@ -45,6 +45,7 @@ class ApplicationController extends Controller
     {
         $application = Application::with([
             'adopter.adopterProfile',
+            'adopter.latestDiditVerification',
             'adopter.lifestyleProfile',
             'pet.photos',
             'pet.shelter',

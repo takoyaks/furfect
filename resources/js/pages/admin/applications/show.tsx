@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Check, X, ExternalLink, Eye } from 'lucide-react';
+import { Sparkles, Check, X, ExternalLink, Eye, ShieldCheck } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { IdDocumentInspectorModal } from '@/components/id-document-inspector-modal';
+import { IdentityVerificationReport } from '@/components/identity-verification-report';
+import { IdentityVerificationBadge } from '@/components/identity-verification-badge';
 
 const CHECKLIST_LABELS: Record<string, { label: string; description: string }> = {
     identity_verified:   { label: 'Applicant identity verified',       description: 'Name, address, and contact details match submitted ID document.' },
@@ -40,11 +42,16 @@ interface Application {
             home_address: string;
             valid_id_type: string;
             valid_id_number: string;
+            is_identity_verified?: boolean;
+            face_match_score?: number | null;
+            liveness_verified?: boolean;
+            identity_verified_at?: string | null;
             id_document_path?: string | null;
             id_document_name?: string | null;
             id_document_back_path?: string | null;
             id_document_back_name?: string | null;
         };
+        latest_didit_verification?: any;
         lifestyle_profile?: {
             housing_type: string;
             has_aircon: string;
@@ -116,11 +123,23 @@ export default function AdminApplicationShow({ application }: { application: App
                             </CardContent>
                         </Card>
 
+                        {/* Automated Identity & Biometric Verification Report */}
+                        <IdentityVerificationReport
+                            verification={application.adopter?.latest_didit_verification}
+                            adopterProfile={profile}
+                        />
+
                         {/* Adopter details */}
                         {profile && (
                             <Card className="border-gray-200 shadow-md">
-                                <CardHeader>
+                                <CardHeader className="flex flex-row items-center justify-between">
                                     <CardTitle className="text-sm font-bold text-gray-800">Adopter Profile</CardTitle>
+                                    <IdentityVerificationBadge
+                                        isVerified={profile.is_identity_verified}
+                                        faceMatchScore={profile.face_match_score}
+                                        livenessVerified={profile.liveness_verified}
+                                        showDetails
+                                    />
                                 </CardHeader>
                                 <CardContent className="space-y-4 text-xs">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

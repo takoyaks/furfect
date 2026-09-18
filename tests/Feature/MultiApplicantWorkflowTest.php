@@ -26,6 +26,7 @@ function createMultiTestAdopter(string $name, string $income = '40001_60000'): U
         'had_pets_before' => 'had_before',
         'surrendered_pet' => false,
         'adoption_reason' => 'Companionship',
+        'is_identity_verified' => true,
         'profile_completed_at' => now(),
     ]);
 

@@ -6,7 +6,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class EncryptedFileStorageService
 {
@@ -30,6 +30,28 @@ class EncryptedFileStorageService
             'path' => $fullPath,
             'original_name' => $file->getClientOriginalName(),
             'mime' => $file->getMimeType() ?: 'application/octet-stream',
+        ];
+    }
+
+    /**
+     * Encrypt raw binary data and store it in private disk storage.
+     *
+     * @return array{path: string, original_name: string, mime: string}
+     */
+    public function storeRawEncrypted(string $binaryData, string $filename = 'id_document.jpg', string $mime = 'image/jpeg', string $directory = 'id_documents'): array
+    {
+        $encryptedPayload = Crypt::encryptString($binaryData);
+
+        $extension = pathinfo($filename, PATHINFO_EXTENSION) ?: 'jpg';
+        $randomName = Str::random(40).'.'.$extension.'.enc';
+        $fullPath = trim($directory, '/').'/'.$randomName;
+
+        Storage::disk('local')->put($fullPath, $encryptedPayload);
+
+        return [
+            'path' => $fullPath,
+            'original_name' => $filename,
+            'mime' => $mime,
         ];
     }
 
@@ -60,30 +82,24 @@ class EncryptedFileStorageService
     /**
      * Stream a decrypted file as an HTTP response.
      */
-    public function streamDecrypted(string $path, ?string $filename = null, ?string $mime = null): StreamedResponse
+    public function streamDecrypted(string $path, ?string $filename = null, ?string $mime = null): Response
     {
         $content = $this->decryptContent($path);
 
         if ($content === null) {
-            abort(404, 'Encrypted file not found or corrupted.');
+            abort(404, 'Protected document not found or corrupted.');
         }
 
         $filename = $filename ?: basename($path);
-        $mime = $mime ?: 'application/octet-stream';
+        $mime = $mime ?: 'image/jpeg';
 
-        return response()->stream(
-            function () use ($content): void {
-                echo $content;
-            },
-            200,
-            [
-                'Content-Type' => $mime,
-                'Content-Disposition' => 'inline; filename="'.addslashes($filename).'"',
-                'Content-Length' => strlen($content),
-                'Cache-Control' => 'no-store, no-cache, must-revalidate',
-                'Pragma' => 'no-cache',
-            ]
-        );
+        return response($content, 200, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'inline; filename="'.addslashes($filename).'"',
+            'Content-Length' => strlen($content),
+            'Cache-Control' => 'no-store, no-cache, must-revalidate',
+            'Pragma' => 'no-cache',
+        ]);
     }
 
     /**

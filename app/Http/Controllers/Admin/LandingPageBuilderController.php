@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\LandingPageConfig;
+use App\Services\CloudinaryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -50,7 +51,7 @@ class LandingPageBuilderController extends Controller
     /**
      * Update the Landing Page configuration settings.
      */
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request, CloudinaryService $cloudinary): RedirectResponse
     {
         $config = LandingPageConfig::active();
 
@@ -73,10 +74,21 @@ class LandingPageBuilderController extends Controller
         ]);
 
         if ($request->hasFile('hero_image')) {
-            if ($config->hero_image_path) {
-                Storage::disk('public')->delete($config->hero_image_path);
+            $rawHero = $config->getRawOriginal('hero_image_path');
+            if ($rawHero) {
+                if (str_starts_with($rawHero, 'http://') || str_starts_with($rawHero, 'https://')) {
+                    $cloudinary->delete($rawHero);
+                } elseif (Storage::disk('public')->exists($rawHero)) {
+                    Storage::disk('public')->delete($rawHero);
+                }
             }
-            $validated['hero_image_path'] = $request->file('hero_image')->store('landing', 'public');
+
+            if ($cloudinary->isConfigured()) {
+                $upload = $cloudinary->upload($request->file('hero_image'), 'landing');
+                $validated['hero_image_path'] = $upload['secure_url'];
+            } else {
+                $validated['hero_image_path'] = $request->file('hero_image')->store('landing', 'public');
+            }
         }
 
         if (isset($validated['section_settings']) && is_array($validated['section_settings'])) {

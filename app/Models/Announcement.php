@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -34,6 +36,18 @@ class Announcement extends Model
             'is_published' => 'boolean',
             'published_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Get the announcement image URL.
+     *
+     * @return Attribute<string|null, string|null>
+     */
+    protected function imagePath(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => $value ? (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') ? $value : (str_starts_with($value, '/storage/') ? $value : Storage::url($value))) : null,
+        );
     }
 
     protected static function boot(): void

@@ -159,7 +159,7 @@ export default function AnnouncementsIndex({ announcements, filters }: Props) {
                                             <TableCell>
                                                 {item.image_path ? (
                                                     <img
-                                                        src={`/storage/${item.image_path}`}
+                                                        src={item.image_path.startsWith('http') || item.image_path.startsWith('/storage/') ? item.image_path : `/storage/${item.image_path}`}
                                                         alt={item.title}
                                                         className="w-12 h-12 object-cover rounded-lg border border-gray-200"
                                                     />

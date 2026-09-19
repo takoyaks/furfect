@@ -11,6 +11,7 @@ use App\Models\DssMatchScore;
 use App\Models\LifestyleProfile;
 use App\Models\SavedPet;
 use App\Models\User;
+use App\Services\CloudinaryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -224,11 +225,20 @@ class UserController extends Controller
 
             if (in_array($type, ['ekyc', 'full'], true)) {
                 if ($user->adopterProfile) {
-                    if ($user->adopterProfile->id_document_path && Storage::disk('public')->exists($user->adopterProfile->id_document_path)) {
-                        Storage::disk('public')->delete($user->adopterProfile->id_document_path);
+                    $cloudinary = app(CloudinaryService::class);
+                    if ($user->adopterProfile->id_document_path) {
+                        if (str_starts_with($user->adopterProfile->id_document_path, 'http')) {
+                            $cloudinary->delete($user->adopterProfile->id_document_path);
+                        } elseif (Storage::disk('public')->exists($user->adopterProfile->id_document_path)) {
+                            Storage::disk('public')->delete($user->adopterProfile->id_document_path);
+                        }
                     }
-                    if ($user->adopterProfile->id_document_back_path && Storage::disk('public')->exists($user->adopterProfile->id_document_back_path)) {
-                        Storage::disk('public')->delete($user->adopterProfile->id_document_back_path);
+                    if ($user->adopterProfile->id_document_back_path) {
+                        if (str_starts_with($user->adopterProfile->id_document_back_path, 'http')) {
+                            $cloudinary->delete($user->adopterProfile->id_document_back_path);
+                        } elseif (Storage::disk('public')->exists($user->adopterProfile->id_document_back_path)) {
+                            Storage::disk('public')->delete($user->adopterProfile->id_document_back_path);
+                        }
                     }
                     $user->adopterProfile()->update([
                         'is_identity_verified' => false,
@@ -362,17 +372,31 @@ class UserController extends Controller
         }
 
         DB::transaction(function () use ($user): void {
+            $cloudinary = app(CloudinaryService::class);
+
             if ($user->adopterProfile) {
-                if ($user->adopterProfile->id_document_path && Storage::disk('public')->exists($user->adopterProfile->id_document_path)) {
-                    Storage::disk('public')->delete($user->adopterProfile->id_document_path);
+                if ($user->adopterProfile->id_document_path) {
+                    if (str_starts_with($user->adopterProfile->id_document_path, 'http')) {
+                        $cloudinary->delete($user->adopterProfile->id_document_path);
+                    } elseif (Storage::disk('public')->exists($user->adopterProfile->id_document_path)) {
+                        Storage::disk('public')->delete($user->adopterProfile->id_document_path);
+                    }
                 }
-                if ($user->adopterProfile->id_document_back_path && Storage::disk('public')->exists($user->adopterProfile->id_document_back_path)) {
-                    Storage::disk('public')->delete($user->adopterProfile->id_document_back_path);
+                if ($user->adopterProfile->id_document_back_path) {
+                    if (str_starts_with($user->adopterProfile->id_document_back_path, 'http')) {
+                        $cloudinary->delete($user->adopterProfile->id_document_back_path);
+                    } elseif (Storage::disk('public')->exists($user->adopterProfile->id_document_back_path)) {
+                        Storage::disk('public')->delete($user->adopterProfile->id_document_back_path);
+                    }
                 }
             }
 
-            if ($user->avatar && ! str_starts_with($user->avatar, 'http') && Storage::disk('public')->exists($user->avatar)) {
-                Storage::disk('public')->delete($user->avatar);
+            if ($user->avatar) {
+                if (str_starts_with($user->avatar, 'http')) {
+                    $cloudinary->delete($user->avatar);
+                } elseif (Storage::disk('public')->exists($user->avatar)) {
+                    Storage::disk('public')->delete($user->avatar);
+                }
             }
 
             DiditVerification::where('user_id', $user->id)->delete();

@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @property int $id
@@ -48,6 +50,18 @@ class LandingPageConfig extends Model
             'section_settings' => 'array',
             'how_it_works_steps' => 'array',
         ];
+    }
+
+    /**
+     * Get the hero image full URL.
+     *
+     * @return Attribute<string|null, string|null>
+     */
+    protected function heroImagePath(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => $value ? (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') ? $value : (str_starts_with($value, '/storage/') ? $value : Storage::url($value))) : null,
+        );
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AdopterProfile;
 use App\Models\SystemSetting;
+use App\Services\CloudinaryService;
 use App\Services\DiditVerificationService;
 use App\Services\EncryptedFileStorageService;
 use Illuminate\Http\RedirectResponse;
@@ -120,7 +121,7 @@ class AdopterProfileController extends Controller
     /**
      * Store or update the adopter's personal info.
      */
-    public function store(Request $request, EncryptedFileStorageService $fileStorage): RedirectResponse
+    public function store(Request $request, EncryptedFileStorageService $fileStorage, CloudinaryService $cloudinary): RedirectResponse
     {
         $user = $request->user();
         $ekycEnabled = (bool) SystemSetting::get('ekyc_enabled', true);
@@ -165,32 +166,55 @@ class AdopterProfileController extends Controller
 
         $existingProfile = $user->adopterProfile;
 
-        // Handle front ID encrypted file upload if provided
+        // Handle front ID file upload if provided
         if ($request->hasFile('id_document')) {
             if ($existingProfile?->id_document_path) {
-                $fileStorage->deleteFile($existingProfile->id_document_path);
+                if (str_starts_with($existingProfile->id_document_path, 'http')) {
+                    $cloudinary->delete($existingProfile->id_document_path);
+                } else {
+                    $fileStorage->deleteFile($existingProfile->id_document_path);
+                }
             }
 
-            $stored = $fileStorage->storeEncrypted($request->file('id_document'), 'id_documents');
-            $validated['id_document_path'] = $stored['path'];
-            $validated['id_document_mime'] = $stored['mime'];
-            $validated['id_document_name'] = $stored['original_name'];
+            if ($cloudinary->isConfigured()) {
+                $upload = $cloudinary->upload($request->file('id_document'), 'id_documents');
+                $validated['id_document_path'] = $upload['secure_url'];
+                $validated['id_document_mime'] = $request->file('id_document')->getMimeType() ?: 'image/jpeg';
+                $validated['id_document_name'] = $request->file('id_document')->getClientOriginalName();
+            } else {
+                $stored = $fileStorage->storeEncrypted($request->file('id_document'), 'id_documents');
+                $validated['id_document_path'] = $stored['path'];
+                $validated['id_document_mime'] = $stored['mime'];
+                $validated['id_document_name'] = $stored['original_name'];
+            }
         }
 
-        // Handle back ID encrypted file upload if provided
+        // Handle back ID file upload if provided
         if ($request->hasFile('id_document_back')) {
             if ($existingProfile?->id_document_back_path) {
-                $fileStorage->deleteFile($existingProfile->id_document_back_path);
+                if (str_starts_with($existingProfile->id_document_back_path, 'http')) {
+                    $cloudinary->delete($existingProfile->id_document_back_path);
+                } else {
+                    $fileStorage->deleteFile($existingProfile->id_document_back_path);
+                }
             }
 
-            $storedBack = $fileStorage->storeEncrypted($request->file('id_document_back'), 'id_documents');
-            $validated['id_document_back_path'] = $storedBack['path'];
-            $validated['id_document_back_mime'] = $storedBack['mime'];
-            $validated['id_document_back_name'] = $storedBack['original_name'];
+            if ($cloudinary->isConfigured()) {
+                $upload = $cloudinary->upload($request->file('id_document_back'), 'id_documents');
+                $validated['id_document_back_path'] = $upload['secure_url'];
+                $validated['id_document_back_mime'] = $request->file('id_document_back')->getMimeType() ?: 'image/jpeg';
+                $validated['id_document_back_name'] = $request->file('id_document_back')->getClientOriginalName();
+            } else {
+                $stored = $fileStorage->storeEncrypted($request->file('id_document_back'), 'id_documents');
+                $validated['id_document_back_path'] = $stored['path'];
+                $validated['id_document_back_mime'] = $stored['mime'];
+                $validated['id_document_back_name'] = $stored['original_name'];
+            }
         }
 
         unset($validated['id_document'], $validated['id_document_back']);
 
+        // Update or create adopter profile
         AdopterProfile::updateOrCreate(
             ['user_id' => $user->id],
             array_merge($validated, [
@@ -208,7 +232,7 @@ class AdopterProfileController extends Controller
     }
 
     /**
-     * Securely stream decrypted ID document for authorized reviewers or the owner.
+     * Securely stream or redirect to ID document for authorized reviewers or the owner.
      * Supports optional query parameter ?side=front|back (default: front)
      */
     public function viewIdDocument(Request $request, string|int $profile, EncryptedFileStorageService $fileStorage): \Symfony\Component\HttpFoundation\Response
@@ -234,6 +258,10 @@ class AdopterProfileController extends Controller
                 abort(404, 'No back-side identification document uploaded.');
             }
 
+            if (str_starts_with($profileModel->id_document_back_path, 'http')) {
+                return redirect()->away($profileModel->id_document_back_path);
+            }
+
             return $fileStorage->streamDecrypted(
                 $profileModel->id_document_back_path,
                 $profileModel->id_document_back_name ?: 'id_document_back',
@@ -243,6 +271,10 @@ class AdopterProfileController extends Controller
 
         if (! $profileModel->id_document_path) {
             abort(404, 'No identification document uploaded.');
+        }
+
+        if (str_starts_with($profileModel->id_document_path, 'http')) {
+            return redirect()->away($profileModel->id_document_path);
         }
 
         return $fileStorage->streamDecrypted(

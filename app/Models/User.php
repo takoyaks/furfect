@@ -60,7 +60,7 @@ class User extends Authenticatable
     protected function avatar(): Attribute
     {
         return Attribute::make(
-            get: fn (?string $value) => $value ? (str_starts_with($value, 'http') ? $value : Storage::url($value)) : null,
+            get: fn (?string $value) => $value ? (str_starts_with($value, 'http') ? $value : (str_starts_with($value, '/storage/') ? $value : Storage::url($value))) : null,
         );
     }
 

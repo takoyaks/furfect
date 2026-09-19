@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @property int $id
@@ -30,6 +32,18 @@ class PetPhoto extends Model
             'is_primary' => 'boolean',
             'sort_order' => 'integer',
         ];
+    }
+
+    /**
+     * Get the photo full URL.
+     *
+     * @return Attribute<string|null, string|null>
+     */
+    protected function photoPath(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value) => $value ? (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') ? $value : (str_starts_with($value, '/storage/') ? $value : Storage::url($value))) : null,
+        );
     }
 
     /**

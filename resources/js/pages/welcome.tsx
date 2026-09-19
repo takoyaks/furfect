@@ -141,7 +141,7 @@ export default function Welcome({ config, featuredPets = [], announcements = [],
                             <div className="lg:col-span-5 flex justify-center">
                                 {config?.hero_image_path ? (
                                     <img
-                                        src={`/storage/${config.hero_image_path}`}
+                                        src={config.hero_image_path.startsWith('http') || config.hero_image_path.startsWith('/storage/') ? config.hero_image_path : `/storage/${config.hero_image_path}`}
                                         alt="Hero Banner"
                                         className="w-full max-h-80 object-cover rounded-2xl shadow-lg border border-white"
                                     />
@@ -340,7 +340,7 @@ export default function Welcome({ config, featuredPets = [], announcements = [],
                                                 {item.image_path && (
                                                     <div className="w-full h-36 overflow-hidden rounded-lg bg-gray-100">
                                                         <img
-                                                            src={`/storage/${item.image_path}`}
+                                                            src={item.image_path.startsWith('http') || item.image_path.startsWith('/storage/') ? item.image_path : `/storage/${item.image_path}`}
                                                             alt={item.title}
                                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                         />

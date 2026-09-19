@@ -107,9 +107,9 @@ export default function AnnouncementShow({ config, announcement, recentAnnouncem
                     {announcement.image_path && (
                         <div className="w-full rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 shadow-xs max-h-[480px]">
                             <img
-                                src={`/storage/${announcement.image_path}`}
+                                src={announcement.image_path.startsWith('http') || announcement.image_path.startsWith('/storage/') ? announcement.image_path : `/storage/${announcement.image_path}`}
                                 alt={announcement.title}
-                                className="w-full h-full object-cover max-h-[480px]"
+                                className="w-full h-auto object-cover max-h-[480px]"
                             />
                         </div>
                     )}

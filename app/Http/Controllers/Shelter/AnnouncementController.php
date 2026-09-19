@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Shelter;
 
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
+use App\Services\CloudinaryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -36,7 +37,7 @@ class AnnouncementController extends Controller
     /**
      * Store a newly created announcement.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, CloudinaryService $cloudinary): RedirectResponse
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -48,7 +49,12 @@ class AnnouncementController extends Controller
 
         $imagePath = null;
         if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('announcements', 'public');
+            if ($cloudinary->isConfigured()) {
+                $upload = $cloudinary->upload($request->file('image'), 'announcements');
+                $imagePath = $upload['secure_url'];
+            } else {
+                $imagePath = $request->file('image')->store('announcements', 'public');
+            }
         }
 
         Announcement::create([
@@ -72,7 +78,7 @@ class AnnouncementController extends Controller
     /**
      * Update an existing announcement.
      */
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(Request $request, int $id, CloudinaryService $cloudinary): RedirectResponse
     {
         $announcement = Announcement::findOrFail($id);
 
@@ -84,12 +90,22 @@ class AnnouncementController extends Controller
             'image' => ['nullable', 'image', 'max:4096'],
         ]);
 
-        $imagePath = $announcement->image_path;
+        $imagePath = $announcement->getRawOriginal('image_path');
         if ($request->hasFile('image')) {
-            if ($imagePath && Storage::disk('public')->exists($imagePath)) {
-                Storage::disk('public')->delete($imagePath);
+            if ($imagePath) {
+                if (str_starts_with($imagePath, 'http://') || str_starts_with($imagePath, 'https://')) {
+                    $cloudinary->delete($imagePath);
+                } elseif (Storage::disk('public')->exists($imagePath)) {
+                    Storage::disk('public')->delete($imagePath);
+                }
             }
-            $imagePath = $request->file('image')->store('announcements', 'public');
+
+            if ($cloudinary->isConfigured()) {
+                $upload = $cloudinary->upload($request->file('image'), 'announcements');
+                $imagePath = $upload['secure_url'];
+            } else {
+                $imagePath = $request->file('image')->store('announcements', 'public');
+            }
         }
 
         $wasPublished = $announcement->is_published;
@@ -120,12 +136,17 @@ class AnnouncementController extends Controller
     /**
      * Delete an announcement.
      */
-    public function destroy(int $id): RedirectResponse
+    public function destroy(int $id, CloudinaryService $cloudinary): RedirectResponse
     {
         $announcement = Announcement::findOrFail($id);
 
-        if ($announcement->image_path && Storage::disk('public')->exists($announcement->image_path)) {
-            Storage::disk('public')->delete($announcement->image_path);
+        $rawImage = $announcement->getRawOriginal('image_path');
+        if ($rawImage) {
+            if (str_starts_with($rawImage, 'http://') || str_starts_with($rawImage, 'https://')) {
+                $cloudinary->delete($rawImage);
+            } elseif (Storage::disk('public')->exists($rawImage)) {
+                Storage::disk('public')->delete($rawImage);
+            }
         }
 
         $announcement->delete();

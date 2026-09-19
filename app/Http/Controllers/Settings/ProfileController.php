@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Models\AdopterProfile;
+use App\Services\CloudinaryService;
 use App\Services\EncryptedFileStorageService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -53,7 +54,7 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request, EncryptedFileStorageService $fileStorage): RedirectResponse
+    public function update(ProfileUpdateRequest $request, EncryptedFileStorageService $fileStorage, CloudinaryService $cloudinary): RedirectResponse
     {
         $user = $request->user();
         $validated = $request->validated();
@@ -61,8 +62,12 @@ class ProfileController extends Controller
         // Handle avatar removal
         if ($request->boolean('remove_avatar')) {
             $rawAvatar = $user->getRawOriginal('avatar');
-            if ($rawAvatar && Storage::disk('public')->exists($rawAvatar)) {
-                Storage::disk('public')->delete($rawAvatar);
+            if ($rawAvatar) {
+                if (str_starts_with($rawAvatar, 'http://') || str_starts_with($rawAvatar, 'https://')) {
+                    $cloudinary->delete($rawAvatar);
+                } elseif (Storage::disk('public')->exists($rawAvatar)) {
+                    Storage::disk('public')->delete($rawAvatar);
+                }
             }
             $user->avatar = null;
         }
@@ -70,11 +75,21 @@ class ProfileController extends Controller
         // Handle avatar upload
         if ($request->hasFile('avatar')) {
             $rawAvatar = $user->getRawOriginal('avatar');
-            if ($rawAvatar && Storage::disk('public')->exists($rawAvatar)) {
-                Storage::disk('public')->delete($rawAvatar);
+            if ($rawAvatar) {
+                if (str_starts_with($rawAvatar, 'http://') || str_starts_with($rawAvatar, 'https://')) {
+                    $cloudinary->delete($rawAvatar);
+                } elseif (Storage::disk('public')->exists($rawAvatar)) {
+                    Storage::disk('public')->delete($rawAvatar);
+                }
             }
-            $path = $request->file('avatar')->store('avatars', 'public');
-            $user->avatar = $path;
+
+            if ($cloudinary->isConfigured()) {
+                $upload = $cloudinary->upload($request->file('avatar'), 'avatars');
+                $user->avatar = $upload['secure_url'];
+            } else {
+                $path = $request->file('avatar')->store('avatars', 'public');
+                $user->avatar = $path;
+            }
         }
 
         $user->fill([
@@ -119,28 +134,50 @@ class ProfileController extends Controller
                 $adopterData['valid_id_number'] = $validated['valid_id_number'];
             }
 
-            // Handle front ID encrypted file upload if provided
+            // Handle front ID file upload if provided
             if ($request->hasFile('id_document')) {
                 if ($adopterProfile?->id_document_path) {
-                    $fileStorage->deleteFile($adopterProfile->id_document_path);
+                    if (str_starts_with($adopterProfile->id_document_path, 'http')) {
+                        $cloudinary->delete($adopterProfile->id_document_path);
+                    } else {
+                        $fileStorage->deleteFile($adopterProfile->id_document_path);
+                    }
                 }
 
-                $stored = $fileStorage->storeEncrypted($request->file('id_document'), 'id_documents');
-                $adopterData['id_document_path'] = $stored['path'];
-                $adopterData['id_document_mime'] = $stored['mime'];
-                $adopterData['id_document_name'] = $stored['original_name'];
+                if ($cloudinary->isConfigured()) {
+                    $upload = $cloudinary->upload($request->file('id_document'), 'id_documents');
+                    $adopterData['id_document_path'] = $upload['secure_url'];
+                    $adopterData['id_document_mime'] = $request->file('id_document')->getMimeType() ?: 'image/jpeg';
+                    $adopterData['id_document_name'] = $request->file('id_document')->getClientOriginalName();
+                } else {
+                    $stored = $fileStorage->storeEncrypted($request->file('id_document'), 'id_documents');
+                    $adopterData['id_document_path'] = $stored['path'];
+                    $adopterData['id_document_mime'] = $stored['mime'];
+                    $adopterData['id_document_name'] = $stored['original_name'];
+                }
             }
 
-            // Handle back ID encrypted file upload if provided
+            // Handle back ID file upload if provided
             if ($request->hasFile('id_document_back')) {
                 if ($adopterProfile?->id_document_back_path) {
-                    $fileStorage->deleteFile($adopterProfile->id_document_back_path);
+                    if (str_starts_with($adopterProfile->id_document_back_path, 'http')) {
+                        $cloudinary->delete($adopterProfile->id_document_back_path);
+                    } else {
+                        $fileStorage->deleteFile($adopterProfile->id_document_back_path);
+                    }
                 }
 
-                $storedBack = $fileStorage->storeEncrypted($request->file('id_document_back'), 'id_documents');
-                $adopterData['id_document_back_path'] = $storedBack['path'];
-                $adopterData['id_document_back_mime'] = $storedBack['mime'];
-                $adopterData['id_document_back_name'] = $storedBack['original_name'];
+                if ($cloudinary->isConfigured()) {
+                    $upload = $cloudinary->upload($request->file('id_document_back'), 'id_documents');
+                    $adopterData['id_document_back_path'] = $upload['secure_url'];
+                    $adopterData['id_document_back_mime'] = $request->file('id_document_back')->getMimeType() ?: 'image/jpeg';
+                    $adopterData['id_document_back_name'] = $request->file('id_document_back')->getClientOriginalName();
+                } else {
+                    $storedBack = $fileStorage->storeEncrypted($request->file('id_document_back'), 'id_documents');
+                    $adopterData['id_document_back_path'] = $storedBack['path'];
+                    $adopterData['id_document_back_mime'] = $storedBack['mime'];
+                    $adopterData['id_document_back_name'] = $storedBack['original_name'];
+                }
             }
 
             AdopterProfile::updateOrCreate(

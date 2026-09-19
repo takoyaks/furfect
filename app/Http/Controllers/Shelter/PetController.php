@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Pet;
 use App\Models\PetPhoto;
 use App\Models\Shelter;
+use App\Services\CloudinaryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -59,7 +60,7 @@ class PetController extends Controller
     /**
      * Store a newly created pet in storage.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, CloudinaryService $cloudinary): RedirectResponse
     {
         $validated = $request->validate([
             'shelter_id' => ['required', 'exists:shelters,id'],
@@ -103,11 +104,17 @@ class PetController extends Controller
             $sortOrder = 0;
 
             foreach ($request->file('photos') as $file) {
-                $path = $file->store('pets', 'public');
+                if ($cloudinary->isConfigured()) {
+                    $upload = $cloudinary->upload($file, 'pets');
+                    $photoPath = $upload['secure_url'];
+                } else {
+                    $path = $file->store('pets', 'public');
+                    $photoPath = Storage::url($path);
+                }
 
                 PetPhoto::create([
                     'pet_id' => $pet->id,
-                    'photo_path' => Storage::url($path),
+                    'photo_path' => $photoPath,
                     'is_primary' => $isPrimary,
                     'sort_order' => $sortOrder++,
                 ]);
@@ -141,7 +148,7 @@ class PetController extends Controller
     /**
      * Update the specified pet in storage.
      */
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(Request $request, int $id, CloudinaryService $cloudinary): RedirectResponse
     {
         $pet = Pet::findOrFail($id);
 
@@ -185,11 +192,17 @@ class PetController extends Controller
             $hasPrimary = $pet->photos()->where('is_primary', true)->exists();
 
             foreach ($request->file('photos') as $file) {
-                $path = $file->store('pets', 'public');
+                if ($cloudinary->isConfigured()) {
+                    $upload = $cloudinary->upload($file, 'pets');
+                    $photoPath = $upload['secure_url'];
+                } else {
+                    $path = $file->store('pets', 'public');
+                    $photoPath = Storage::url($path);
+                }
 
                 PetPhoto::create([
                     'pet_id' => $pet->id,
-                    'photo_path' => Storage::url($path),
+                    'photo_path' => $photoPath,
                     'is_primary' => ! $hasPrimary,
                     'sort_order' => $sortOrder++,
                 ]);

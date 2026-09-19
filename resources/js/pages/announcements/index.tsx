@@ -160,7 +160,7 @@ export default function AnnouncementsIndex({ config, announcements, categories =
                                         {item.image_path ? (
                                             <div className="w-full h-48 bg-gray-100 relative overflow-hidden">
                                                 <img
-                                                    src={`/storage/${item.image_path}`}
+                                                    src={item.image_path.startsWith('http') || item.image_path.startsWith('/storage/') ? item.image_path : `/storage/${item.image_path}`}
                                                     alt={item.title}
                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                 />

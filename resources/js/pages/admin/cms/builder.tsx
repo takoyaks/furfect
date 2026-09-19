@@ -344,7 +344,7 @@ export default function Builder({ config, templates }: Props) {
                                     {config.hero_image_path && (
                                         <div className="text-xs text-gray-500 flex items-center gap-2 mt-1">
                                             <span>Current image:</span>
-                                            <a href={`/storage/${config.hero_image_path}`} target="_blank" rel="noreferrer" className="text-[#D4A017] underline font-medium">
+                                            <a href={config.hero_image_path.startsWith('http') || config.hero_image_path.startsWith('/storage/') ? config.hero_image_path : `/storage/${config.hero_image_path}`} target="_blank" rel="noreferrer" className="text-[#D4A017] underline font-medium">
                                                 View Banner Image
                                             </a>
                                         </div>

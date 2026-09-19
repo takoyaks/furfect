@@ -31,4 +31,6 @@ php artisan optimize
 
 echo "Starting Laravel on port ${PORT:-10000}..."
 
-exec php -S "0.0.0.0:${PORT:-10000}" -t public public/index.php 
+export PHP_CLI_SERVER_WORKERS=4
+
+exec php -S "0.0.0.0:${PORT:-10000}" -t public public/index.php

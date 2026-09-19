@@ -1,11 +1,11 @@
 # Stage 1: Build React/Vite assets
-FROM node:22-bookworm-slim AS frontend
+FROM node:26-bookworm-slim AS frontend
 
 WORKDIR /app
 
 COPY package*.json ./
 
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+RUN npm install --legacy-peer-deps
 
 COPY . .
 

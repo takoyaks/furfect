@@ -1,6 +1,6 @@
 FROM node:26-bookworm-slim AS node
 
-FROM php:8.5-cli-bookworm
+FROM php:8.4-cli-bookworm
 
 WORKDIR /var/www/html
 

@@ -77,6 +77,13 @@ class SystemSettingsSeeder extends Seeder
                 'description' => 'When disabled, adoption fees and pricing inputs will be hidden across the public catalog, pet details, shelter forms, and application views.',
             ],
             [
+                'key' => 'ekyc_enabled',
+                'value' => '1',
+                'type' => 'boolean',
+                'label' => 'Enable Automated eKYC Identity Verification',
+                'description' => 'When enabled, adopters must complete automated ID and facial biometric verification (Didit eKYC) before submitting personal details. When disabled, adopters proceed directly to personal information.',
+            ],
+            [
                 'key' => 'consent_agreement_label',
                 'value' => 'I agree to the terms and conditions of FurFect Match and the Virac Animal Shelter Adoption policies.',
                 'type' => 'string',

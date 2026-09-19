@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AdopterProfile;
+use App\Models\SystemSetting;
 use App\Services\DiditVerificationService;
 use App\Services\EncryptedFileStorageService;
 use Illuminate\Http\RedirectResponse;
@@ -17,7 +18,18 @@ class AdopterProfileController extends Controller
      */
     public function ekyc(Request $request, DiditVerificationService $service): Response|RedirectResponse
     {
+        $ekycEnabled = (bool) SystemSetting::get('ekyc_enabled', true);
+        if (! $ekycEnabled) {
+            return to_route('onboarding.personal.edit');
+        }
+
         $user = $request->user();
+
+        // If already verified (e.g. manual admin approval or completed Didit), automatically proceed to next step
+        if ($user->isIdentityVerified()) {
+            return to_route('onboarding.personal.edit');
+        }
+
         $verification = $user->latestDiditVerification;
 
         // Proactively query live decision from Didit if verification was pending/unresolved
@@ -32,8 +44,8 @@ class AdopterProfileController extends Controller
             }
         }
 
-        // If already verified, automatically proceed to next step
-        if ($user->isIdentityVerified() || ($verification && $verification->isApproved())) {
+        // If verified after decision query, proceed to next step
+        if ($user->fresh()->isIdentityVerified() || ($verification && $verification->isApproved())) {
             return to_route('onboarding.personal.edit');
         }
 
@@ -62,6 +74,7 @@ class AdopterProfileController extends Controller
                 'failure_reasons' => $verification->failure_reasons,
             ] : null,
             'userName' => $user->name,
+            'ekycEnabled' => $ekycEnabled,
         ]);
     }
 
@@ -71,9 +84,10 @@ class AdopterProfileController extends Controller
     public function edit(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
+        $ekycEnabled = (bool) SystemSetting::get('ekyc_enabled', true);
 
-        // Require eKYC verification before accessing Step 2
-        if (! $user->isIdentityVerified()) {
+        // Require eKYC verification before accessing Step 2 if eKYC is enabled
+        if ($ekycEnabled && ! $user->isIdentityVerified()) {
             Inertia::flash('toast', [
                 'type' => 'info',
                 'message' => __('Please complete eKYC identity verification first.'),
@@ -99,6 +113,7 @@ class AdopterProfileController extends Controller
                 'back_preview_url' => $profile->id_document_back_path ? route('adopter.id-document.show', ['profile' => $profile->id, 'side' => 'back']) : null,
             ]) : null,
             'userName' => $user->name,
+            'ekycEnabled' => $ekycEnabled,
         ]);
     }
 
@@ -108,9 +123,10 @@ class AdopterProfileController extends Controller
     public function store(Request $request, EncryptedFileStorageService $fileStorage): RedirectResponse
     {
         $user = $request->user();
+        $ekycEnabled = (bool) SystemSetting::get('ekyc_enabled', true);
 
-        // Require eKYC verification before submitting Step 2
-        if (! $user->isIdentityVerified()) {
+        // Require eKYC verification before submitting Step 2 if eKYC is enabled
+        if ($ekycEnabled && ! $user->isIdentityVerified()) {
             Inertia::flash('toast', [
                 'type' => 'error',
                 'message' => __('eKYC identity verification is required before submitting your personal information.'),

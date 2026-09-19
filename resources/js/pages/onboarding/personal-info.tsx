@@ -42,7 +42,7 @@ interface Profile {
     pet_stay?: string;
 }
 
-export default function PersonalInfo({ profile, userName }: { profile: Profile | null; userName?: string }) {
+export default function PersonalInfo({ profile, userName, ekycEnabled = true }: { profile: Profile | null; userName?: string; ekycEnabled?: boolean }) {
     const { auth, systemSettings } = usePage().props as any;
 
     const consentLabel =
@@ -83,7 +83,7 @@ export default function PersonalInfo({ profile, userName }: { profile: Profile |
         id_document_back: null,
         had_pets_before: profile?.had_pets_before || 'never',
         previous_pet_notes: profile?.previous_pet_notes || '',
-        surrendered_pet: profile?.surrendered_pet || false,
+        surrendered_pet: profile?.surrendered_pet ?? false,
         adoption_reason: profile?.adoption_reason || 'Companionship',
         adoption_reason_text: profile?.adoption_reason_text || '',
         pet_stay: profile?.pet_stay || 'inside',
@@ -92,30 +92,30 @@ export default function PersonalInfo({ profile, userName }: { profile: Profile |
     });
 
     // ID Configuration: Determines whether each valid ID requires Front & Back or Front Only
-    const ID_CONFIG: Record<string, { sides: 'front_and_back' | 'front_only'; note: string }> = {
+    const ID_CONFIG: Record<string, { sides: 'front_only' | 'front_and_back'; note: string }> = {
         'Philippine Identification (PhilID / ePhilID)': {
             sides: 'front_and_back',
-            note: 'Philippine National ID cards feature biometric and security QR codes on the back.',
-        },
-        'Philippine Passport': {
-            sides: 'front_only',
-            note: 'Passports only require the biographical / photo data page.',
+            note: 'National ID requires front personal photo side and back QR code side.',
         },
         "Driver's License": {
             sides: 'front_and_back',
-            note: "Driver's Licenses require both front particulars and back conditions/restrictions.",
+            note: "Driver's License requires front info and back conditions/restrictions.",
+        },
+        'Philippine Passport': {
+            sides: 'front_only',
+            note: 'Passport requires the clear data page with signature.',
         },
         'Unified Multi-Purpose ID (UMID)': {
             sides: 'front_and_back',
-            note: 'UMID cards contain cardholder data on front and magnetic stripe/signature on back.',
+            note: 'UMID requires front cardholder details and back barcode strip.',
         },
         'Professional Regulation Commission (PRC) ID': {
             sides: 'front_and_back',
-            note: 'PRC ID cards have professional license data on front and validity/signature on back.',
+            note: 'PRC ID requires front license photo side and back registration renewal info.',
         },
         'GSIS e-Card': {
             sides: 'front_and_back',
-            note: 'GSIS UMID/e-Cards require both sides for membership verification.',
+            note: 'GSIS card requires front member ID and back magnetic strip / barcode.',
         },
         'School ID': {
             sides: 'front_and_back',
@@ -183,20 +183,20 @@ export default function PersonalInfo({ profile, userName }: { profile: Profile |
     };
 
     return (
-        <OnboardingLayout currentStep={2}>
-            <Head title="Step 2: Personal Information - FurFect" />
+        <OnboardingLayout currentStep={2} ekycEnabled={ekycEnabled}>
+            <Head title={ekycEnabled ? "Step 2: Personal Information - FurFect" : "Step 1: Personal Information - FurFect"} />
             
             {/* Page Header Banner */}
             <div className="bg-gradient-to-r from-[#FFFDF0] via-[#FFF78D]/30 to-[#467235]/10 border border-[#467235]/20 rounded-2xl p-5 shadow-xs mb-1">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
                         <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#283F24] bg-[#FFF78D] px-2.5 py-1 rounded-full border border-[#FFBF00]/50 mb-1.5">
-                            <ShieldCheck className="size-3.5 text-[#467235]" /> Step 2 of 3 — Personal Information
+                            <ShieldCheck className="size-3.5 text-[#467235]" /> {ekycEnabled ? 'Step 2 of 3 — Personal Information' : 'Step 1 of 2 — Personal Information'}
                         </div>
                         <h1 className="text-2xl font-bold text-[#283F24]">Adopter Profile & Particulars</h1>
                         <p className="text-sm text-gray-600 mt-0.5">
                             {profile?.is_identity_verified 
-                                ? 'Your identity has been verified in Step 1. Please review and complete your contact and adoption details.'
+                                ? 'Your identity has been verified. Please review and complete your contact and adoption details.'
                                 : 'Complete your primary contact and adoption information. All details stay securely saved for all shelter adoptions.'}
                         </p>
                     </div>

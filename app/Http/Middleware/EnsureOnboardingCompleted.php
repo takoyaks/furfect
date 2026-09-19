@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\SystemSetting;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -44,8 +45,10 @@ class EnsureOnboardingCompleted
                 return $next($request);
             }
 
-            // Step 1 check: eKYC Identity Verification
-            if (! $user->isIdentityVerified()) {
+            $ekycEnabled = (bool) SystemSetting::get('ekyc_enabled', true);
+
+            // Step 1 check: eKYC Identity Verification (if enabled)
+            if ($ekycEnabled && ! $user->isIdentityVerified()) {
                 return redirect()->route('onboarding.ekyc.show');
             }
 

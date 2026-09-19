@@ -226,11 +226,17 @@ export default function AdminUsers({
         }
     };
 
+    const [togglingVerificationId, setTogglingVerificationId] = useState<number | null>(null);
+
     const handleToggleVerification = (u: User) => {
-        const isVerified = u.adopter_profile?.is_identity_verified;
+        const isVerified = Boolean(u.adopter_profile?.is_identity_verified);
         const actionText = isVerified ? 'revoke identity verification for' : 'manually approve identity verification for';
         if (confirm(`Are you sure you want to ${actionText} ${u.name}?`)) {
-            router.post(route('admin.users.toggle-verification', u.id));
+            setTogglingVerificationId(u.id);
+            router.post(route('admin.users.toggle-verification', u.id), {}, {
+                preserveScroll: true,
+                onFinish: () => setTogglingVerificationId(null),
+            });
         }
     };
 
@@ -324,7 +330,7 @@ export default function AdminUsers({
                         }`}
                     >
                         <Users className="size-4" />
-                        <span>Subscribers & Adopters</span>
+                        <span>Adopters</span>
                         <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                             currentTab === 'subscribers' ? 'bg-[#283F24] text-white' : 'bg-gray-200 text-gray-700'
                         }`}>
@@ -362,7 +368,7 @@ export default function AdminUsers({
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                             <div>
                                 <CardTitle className="text-sm font-bold text-gray-900">
-                                    {currentTab === 'subscribers' ? 'Registered Adopters & Subscribers' : 'System Staff & Administrator Accounts'}
+                                    {currentTab === 'subscribers' ? 'Registered Adopters' : 'System Staff & Administrator Accounts'}
                                 </CardTitle>
                                 <CardDescription className="text-xs text-gray-500">
                                     {currentTab === 'subscribers' 
@@ -463,8 +469,9 @@ export default function AdminUsers({
                                     users.data.map(u => {
                                         const isCurrent = u.id === currentUserId;
                                         const profile = u.adopter_profile;
-                                        const isVerified = profile?.is_identity_verified;
+                                        const isVerified = Boolean(profile?.is_identity_verified);
                                         const hasQuiz = Boolean(u.lifestyle_profile?.submitted_at);
+                                        const isToggling = togglingVerificationId === u.id;
 
                                         return (
                                             <tr key={u.id} className="hover:bg-gray-50/50">
@@ -507,6 +514,7 @@ export default function AdminUsers({
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
+                                                                    disabled={isToggling}
                                                                     onClick={() => handleToggleVerification(u)}
                                                                     className={`h-6 text-[10px] px-2 rounded-md font-semibold ${
                                                                         isVerified 
@@ -515,7 +523,7 @@ export default function AdminUsers({
                                                                     }`}
                                                                     title={isVerified ? "Click to Revoke Verification" : "Click to Manually Approve eKYC"}
                                                                 >
-                                                                    {isVerified ? 'Revoke' : 'Manual Verify'}
+                                                                    {isToggling ? 'Updating...' : (isVerified ? 'Revoke' : 'Manual Verify')}
                                                                 </Button>
                                                             </div>
                                                         </td>

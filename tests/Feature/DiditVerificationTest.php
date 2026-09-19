@@ -49,6 +49,45 @@ test('adopter can initialize an automated identity verification session', functi
     expect($verification->status)->toBe('pending');
 });
 
+test('adopter can re-initialize or refresh session when session id already exists in database without duplicate key error', function () {
+    $user = User::factory()->create(['email_verified_at' => now()]);
+    $user->assignRole('adopter');
+
+    // Pre-existing verification session in DB
+    DiditVerification::create([
+        'user_id' => $user->id,
+        'session_id' => 'existing-session-uuid-9999',
+        'session_token' => 'old_tok',
+        'url' => 'https://verify.didit.me/session/old_tok',
+        'status' => 'pending',
+    ]);
+
+    Http::fake([
+        'https://verification.didit.me/v3/session/' => Http::response([
+            'session_id' => 'existing-session-uuid-9999',
+            'session_token' => 'new_tok',
+            'url' => 'https://verify.didit.me/session/new_tok',
+            'status' => 'Not Started',
+        ], 200),
+    ]);
+
+    $response = $this->actingAs($user)->postJson(route('identity.verification.session'), [
+        'return_to' => 'onboarding',
+    ]);
+
+    $response->assertOk()
+        ->assertJson([
+            'success' => true,
+            'session_id' => 'existing-session-uuid-9999',
+            'session_token' => 'new_tok',
+        ]);
+
+    $verification = DiditVerification::where('session_id', 'existing-session-uuid-9999')->first();
+    expect($verification)->not->toBeNull();
+    expect($verification->session_token)->toBe('new_tok');
+    expect(DiditVerification::where('session_id', 'existing-session-uuid-9999')->count())->toBe(1);
+});
+
 test('session creation returns error when external credits are exhausted', function () {
     $user = User::factory()->create(['name' => 'Kerbie Test', 'email_verified_at' => now()]);
     $user->assignRole('adopter');

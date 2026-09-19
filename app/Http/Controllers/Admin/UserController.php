@@ -127,39 +127,71 @@ class UserController extends Controller
         $user = User::with('adopterProfile')->findOrFail($id);
 
         $profile = $user->adopterProfile;
+        $newStatus = $profile ? ! (bool) $profile->is_identity_verified : true;
 
-        if (! $profile) {
-            // Create a basic profile if none exists so verification can be granted
-            $profile = AdopterProfile::create([
-                'user_id' => $user->id,
-                'full_name' => $user->name,
-                'contact_number' => $user->phone ?? 'N/A',
-                'date_of_birth' => '2000-01-01',
-                'home_address' => $user->address ?? 'N/A',
-                'valid_id_type' => 'Admin Verified ID',
-                'valid_id_number' => 'MANUAL-ADMIN',
-                'adoption_reason' => 'companionship',
-                'is_identity_verified' => true,
-                'identity_verified_at' => now(),
-                'identity_verification_provider' => 'manual_admin',
-                'profile_completed_at' => now(),
-            ]);
-
-            Inertia::flash('toast', [
-                'type' => 'success',
-                'message' => __('Profile created and identity manually verified for :name.', ['name' => $user->name]),
-            ]);
-
-            return back();
-        }
-
-        $newStatus = ! $profile->is_identity_verified;
-
-        $profile->update([
+        $profileData = [
             'is_identity_verified' => $newStatus,
             'identity_verified_at' => $newStatus ? now() : null,
             'identity_verification_provider' => $newStatus ? 'manual_admin' : null,
-        ]);
+            'liveness_verified' => $newStatus,
+            'face_match_score' => $newStatus ? 100.0 : null,
+        ];
+
+        if ($newStatus) {
+            $profileData = array_merge([
+                'full_name' => $profile?->full_name ?: $user->name,
+                'contact_number' => $profile?->contact_number ?: ($user->phone ?: '09123456789'),
+                'date_of_birth' => $profile?->date_of_birth ? $profile->date_of_birth->format('Y-m-d') : '2000-01-01',
+                'home_address' => $profile?->home_address ?: 'General Santos City',
+                'valid_id_type' => $profile?->valid_id_type ?: 'Philippine Identification (PhilID / ePhilID)',
+                'valid_id_number' => $profile?->valid_id_number ?: 'VERIFIED-MANUAL-ADMIN',
+                'had_pets_before' => $profile?->had_pets_before ?: 'never',
+                'surrendered_pet' => $profile?->surrendered_pet ?? false,
+                'adoption_reason' => $profile?->adoption_reason ?: 'Companionship',
+                'adoption_reason_text' => $profile?->adoption_reason_text ?: 'Admin Verified Adopter',
+                'pet_stay' => $profile?->pet_stay ?: 'inside',
+            ], $profileData);
+
+            $profile = AdopterProfile::updateOrCreate(
+                ['user_id' => $user->id],
+                $profileData
+            );
+
+            DiditVerification::where('user_id', $user->id)->update([
+                'adopter_profile_id' => $profile->id,
+                'status' => 'approved',
+                'id_verification_status' => 'approved',
+                'liveness_status' => 'passed',
+                'face_match_status' => 'matched',
+                'face_match_score' => 100.0,
+                'liveness_score' => 100.0,
+                'verified_at' => now(),
+            ]);
+
+            if (! DiditVerification::where('user_id', $user->id)->exists()) {
+                DiditVerification::create([
+                    'user_id' => $user->id,
+                    'adopter_profile_id' => $profile->id,
+                    'session_id' => 'manual_admin_'.$user->id.'_'.time(),
+                    'status' => 'approved',
+                    'id_verification_status' => 'approved',
+                    'liveness_status' => 'passed',
+                    'face_match_status' => 'matched',
+                    'face_match_score' => 100.0,
+                    'liveness_score' => 100.0,
+                    'verified_at' => now(),
+                ]);
+            }
+        } else {
+            if ($profile) {
+                $profile->update($profileData);
+            }
+
+            DiditVerification::where('user_id', $user->id)->update([
+                'status' => 'declined',
+                'verified_at' => null,
+            ]);
+        }
 
         Inertia::flash('toast', [
             'type' => 'success',

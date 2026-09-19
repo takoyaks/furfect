@@ -137,7 +137,7 @@ class DiditVerificationController extends Controller
         $profile = $user->adopterProfile;
 
         // If not yet verified, proactively poll decision from Didit
-        if ($verification && $verification->session_id && ! $verification->isApproved()) {
+        if (! $user->isIdentityVerified() && $verification && $verification->session_id && ! $verification->isApproved()) {
             try {
                 $decision = $service->getSessionDecision($verification->session_id);
                 if ($decision && ! empty($decision) && ! in_array(strtolower($decision['status'] ?? ''), ['not started', 'not_started'])) {

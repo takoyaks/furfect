@@ -69,6 +69,23 @@ test('admin can manually verify an adopter identity profile', function (): void 
     expect($profile->is_identity_verified)->toBeTrue();
     expect($profile->identity_verification_provider)->toBe('manual_admin');
     expect($profile->identity_verified_at)->not->toBeNull();
+    expect($this->adopter->fresh()->isIdentityVerified())->toBeTrue();
+});
+
+test('admin can manually verify a brand new subscriber who has no profile record yet', function (): void {
+    $newAdopter = User::factory()->create(['name' => 'Fresh User', 'email_verified_at' => now()]);
+    $newAdopter->assignRole('adopter');
+
+    expect($newAdopter->adopterProfile)->toBeNull();
+
+    $response = $this->actingAs($this->admin)->post(route('admin.users.toggle-verification', $newAdopter->id));
+    $response->assertRedirect();
+
+    $newProfile = $newAdopter->fresh()->adopterProfile;
+    expect($newProfile)->not->toBeNull();
+    expect($newProfile->is_identity_verified)->toBeTrue();
+    expect($newProfile->identity_verification_provider)->toBe('manual_admin');
+    expect($newAdopter->fresh()->isIdentityVerified())->toBeTrue();
 });
 
 test('admin can revoke manual verification for an adopter', function (): void {
@@ -92,6 +109,7 @@ test('admin can revoke manual verification for an adopter', function (): void {
     $profile->refresh();
     expect($profile->is_identity_verified)->toBeFalse();
     expect($profile->identity_verified_at)->toBeNull();
+    expect($this->adopter->fresh()->isIdentityVerified())->toBeFalse();
 });
 
 test('admin can reset subscriber lifestyle quiz', function (): void {

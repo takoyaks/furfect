@@ -32,11 +32,13 @@ interface Lifestyle {
 export default function LifestyleQuiz({ 
     lifestyle, 
     isLocked, 
-    lockedUntil 
+    lockedUntil,
+    ekycEnabled = true,
 }: { 
     lifestyle: Lifestyle | null;
     isLocked: boolean;
     lockedUntil: string | null;
+    ekycEnabled?: boolean;
 }) {
     const { data, setData, post, processing, errors } = useForm({
         housing_type: lifestyle?.housing_type || 'apartment',
@@ -50,9 +52,9 @@ export default function LifestyleQuiz({
         other_pets: lifestyle?.other_pets || 'none',
         occupation: lifestyle?.occupation || '',
         monthly_income: lifestyle?.monthly_income || '20001_40000',
-        pet_experience: lifestyle?.pet_experience || 'had_before',
+        pet_experience: lifestyle?.pet_experience || 'first_time',
         health_conditions: lifestyle?.health_conditions || [],
-        preferred_type: lifestyle?.preferred_type || 'none',
+        preferred_type: lifestyle?.preferred_type || 'dog',
         preferred_size: lifestyle?.preferred_size || [],
         preferred_gender: lifestyle?.preferred_gender || 'none',
         preferred_coat: lifestyle?.preferred_coat || [],
@@ -94,8 +96,8 @@ export default function LifestyleQuiz({
     };
 
     return (
-        <OnboardingLayout currentStep={3}>
-            <Head title="Step 3: Lifestyle Compatibility Quiz - FurFect" />
+        <OnboardingLayout currentStep={3} ekycEnabled={ekycEnabled}>
+            <Head title={ekycEnabled ? "Step 3: Lifestyle Compatibility Quiz - FurFect" : "Step 2: Lifestyle Compatibility Quiz - FurFect"} />
             
             {/* Locked Profile Alert */}
             {isLocked && (
@@ -115,7 +117,7 @@ export default function LifestyleQuiz({
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
                         <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#283F24] bg-[#FFF78D] px-2.5 py-1 rounded-full border border-[#FFBF00]/50 mb-1.5">
-                            <Activity className="size-3.5 text-[#467235]" /> Step 3 of 3 — Lifestyle Compatibility Assessment
+                            <Activity className="size-3.5 text-[#467235]" /> {ekycEnabled ? 'Step 3 of 3 — Lifestyle Compatibility Assessment' : 'Step 2 of 2 — Lifestyle Compatibility Assessment'}
                         </div>
                         <h1 className="text-2xl font-bold text-[#283F24]">Tell Us About Your Lifestyle</h1>
                         <p className="text-sm text-gray-600 mt-0.5">Your answers help our Decision Support System calculate compatibility with shelter pets.</p>

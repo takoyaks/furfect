@@ -137,12 +137,15 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if the adopter onboarding is complete (all 3 steps: eKYC, personal info, lifestyle quiz).
+     * Check if the adopter onboarding is complete (eKYC if enabled, personal info, lifestyle quiz).
      */
     public function hasCompletedOnboarding(): bool
     {
+        $ekycEnabled = (bool) SystemSetting::get('ekyc_enabled', true);
+        $identityVerified = $ekycEnabled ? ((bool) ($this->adopterProfile?->is_identity_verified)) : true;
+
         return $this->adopterProfile !== null
-            && $this->adopterProfile->is_identity_verified
+            && $identityVerified
             && $this->adopterProfile->profile_completed_at !== null
             && $this->lifestyleProfile !== null
             && $this->lifestyleProfile->submitted_at !== null;

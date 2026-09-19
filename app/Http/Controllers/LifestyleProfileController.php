@@ -18,8 +18,9 @@ class LifestyleProfileController extends Controller
     public function edit(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
+        $ekycEnabled = (bool) SystemSetting::get('ekyc_enabled', true);
 
-        if (! $user->isIdentityVerified()) {
+        if ($ekycEnabled && ! $user->isIdentityVerified()) {
             return to_route('onboarding.ekyc.show');
         }
 
@@ -33,6 +34,7 @@ class LifestyleProfileController extends Controller
             'lifestyle' => $lifestyle,
             'isLocked' => $lifestyle ? $lifestyle->isLocked() : false,
             'lockedUntil' => $lifestyle && $lifestyle->locked_until ? $lifestyle->locked_until->toIso8601String() : null,
+            'ekycEnabled' => $ekycEnabled,
         ]);
     }
 
@@ -42,8 +44,9 @@ class LifestyleProfileController extends Controller
     public function store(Request $request, DssMatchingService $dssService): RedirectResponse
     {
         $user = $request->user();
+        $ekycEnabled = (bool) SystemSetting::get('ekyc_enabled', true);
 
-        if (! $user->isIdentityVerified()) {
+        if ($ekycEnabled && ! $user->isIdentityVerified()) {
             return to_route('onboarding.ekyc.show');
         }
 

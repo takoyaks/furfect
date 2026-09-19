@@ -61,16 +61,18 @@ class DiditVerificationService
 
                     $profile = $user->adopterProfile;
 
-                    // Persist verification session record
-                    $verification = DiditVerification::create([
-                        'user_id' => $user->id,
-                        'adopter_profile_id' => $profile?->id,
-                        'session_id' => $sessionId,
-                        'session_token' => $sessionToken,
-                        'workflow_id' => $this->workflowId,
-                        'url' => $url,
-                        'status' => 'pending',
-                    ]);
+                    // Persist or update verification session record
+                    $verification = DiditVerification::updateOrCreate(
+                        ['session_id' => $sessionId],
+                        [
+                            'user_id' => $user->id,
+                            'adopter_profile_id' => $profile?->id,
+                            'session_token' => $sessionToken,
+                            'workflow_id' => $this->workflowId,
+                            'url' => $url,
+                            'status' => 'pending',
+                        ]
+                    );
 
                     return [
                         'session_id' => $sessionId,
@@ -106,15 +108,17 @@ class DiditVerificationService
 
             $profile = $user->adopterProfile;
 
-            $verification = DiditVerification::create([
-                'user_id' => $user->id,
-                'adopter_profile_id' => $profile?->id,
-                'session_id' => $sessionId,
-                'session_token' => $sessionToken,
-                'workflow_id' => $this->workflowId,
-                'url' => $url,
-                'status' => 'pending',
-            ]);
+            $verification = DiditVerification::updateOrCreate(
+                ['session_id' => $sessionId],
+                [
+                    'user_id' => $user->id,
+                    'adopter_profile_id' => $profile?->id,
+                    'session_token' => $sessionToken,
+                    'workflow_id' => $this->workflowId,
+                    'url' => $url,
+                    'status' => 'pending',
+                ]
+            );
 
             return [
                 'session_id' => $sessionId,
@@ -238,12 +242,14 @@ class DiditVerificationService
                 $userId = (int) str_replace('furfect_user_', '', $vendor);
                 $user = User::find($userId);
                 if ($user) {
-                    $verification = DiditVerification::create([
-                        'user_id' => $user->id,
-                        'adopter_profile_id' => $user->adopterProfile?->id,
-                        'session_id' => $sessionId ?: 'session_'.uniqid(),
-                        'status' => 'pending',
-                    ]);
+                    $verification = DiditVerification::updateOrCreate(
+                        ['session_id' => $sessionId ?: 'session_'.uniqid()],
+                        [
+                            'user_id' => $user->id,
+                            'adopter_profile_id' => $user->adopterProfile?->id,
+                            'status' => 'pending',
+                        ]
+                    );
                 }
             }
         }
@@ -442,20 +448,22 @@ class DiditVerificationService
         if ($profile) {
             $profile->update($updateData);
         } else {
-            $profile = AdopterProfile::create(array_merge([
-                'had_pets_before' => 'never',
-                'surrendered_pet' => false,
-                'adoption_reason' => 'Companionship',
-                'adoption_reason_text' => 'Verified Adopter',
-                'pet_stay' => 'inside',
-                'contact_number' => $user->phone ?? '09123456789',
-                'full_name' => $extracted['full_name'] ?? $user->name,
-                'date_of_birth' => $dob ?? '2000-01-01',
-                'home_address' => $extracted['address'] ?? 'General Santos City',
-                'valid_id_type' => $extracted['document_type'] ?? 'Philippine Identification (PhilID / ePhilID)',
-                'valid_id_number' => $extracted['document_number'] ?? 'VERIFIED',
-                'user_id' => $user->id,
-            ], $updateData));
+            $profile = AdopterProfile::updateOrCreate(
+                ['user_id' => $user->id],
+                array_merge([
+                    'had_pets_before' => 'never',
+                    'surrendered_pet' => false,
+                    'adoption_reason' => 'Companionship',
+                    'adoption_reason_text' => 'Verified Adopter',
+                    'pet_stay' => 'inside',
+                    'contact_number' => $user->phone ?? '09123456789',
+                    'full_name' => $extracted['full_name'] ?? $user->name,
+                    'date_of_birth' => $dob ?? '2000-01-01',
+                    'home_address' => $extracted['address'] ?? 'General Santos City',
+                    'valid_id_type' => $extracted['document_type'] ?? 'Philippine Identification (PhilID / ePhilID)',
+                    'valid_id_number' => $extracted['document_number'] ?? 'VERIFIED',
+                ], $updateData)
+            );
 
             $verification->update(['adopter_profile_id' => $profile->id]);
         }

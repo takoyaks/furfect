@@ -21,8 +21,6 @@ php artisan storage:link || true
 echo "Running database migrations..."
 php artisan migrate --force
 
-echo "Seeding initial database data..."
-php artisan db:seed --force
 
 echo "Optimizing Laravel..."
 php artisan optimize

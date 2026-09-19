@@ -31,17 +31,38 @@ const setCookie = (name: string, value: string, days = 365): void => {
 
 const getStoredAppearance = (): Appearance => {
     if (typeof window === 'undefined') {
-        return 'light';
+        return 'system';
     }
 
-    return (localStorage.getItem('appearance') as Appearance) || 'light';
+    return (localStorage.getItem('appearance') as Appearance) || 'system';
 };
 
 const isDarkMode = (appearance: Appearance): boolean => {
-    return appearance === 'dark' || (appearance === 'system' && prefersDark());
+    if (appearance === 'system') {
+        return prefersDark();
+    }
+
+    return appearance === 'dark';
 };
 
-const applyTheme = (appearance: Appearance): void => {
+const mediaQuery = (): MediaQueryList | null => {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    return window.matchMedia('(prefers-color-scheme: dark)');
+};
+
+const handleSystemThemeChange = (): void => {
+    const current = getStoredAppearance();
+
+    if (current === 'system') {
+        applyTheme('system');
+        notify();
+    }
+};
+
+const applyTheme = (appearance: Appearance = 'system'): void => {
     if (typeof document === 'undefined') {
         return;
     }
@@ -60,31 +81,20 @@ const subscribe = (callback: () => void) => {
 
 const notify = (): void => listeners.forEach((listener) => listener());
 
-const mediaQuery = (): MediaQueryList | null => {
-    if (typeof window === 'undefined') {
-        return null;
-    }
-
-    return window.matchMedia('(prefers-color-scheme: dark)');
-};
-
-const handleSystemThemeChange = (): void => applyTheme(currentAppearance);
-
 export function initializeTheme(): void {
     if (typeof window === 'undefined') {
         return;
     }
 
-    if (!localStorage.getItem('appearance')) {
-        localStorage.setItem('appearance', 'light');
-        setCookie('appearance', 'light');
-    }
-
     currentAppearance = getStoredAppearance();
     applyTheme(currentAppearance);
 
-    // Set up system theme change listener
-    mediaQuery()?.addEventListener('change', handleSystemThemeChange);
+    // Set up media query listener for system theme changes
+    const mq = mediaQuery();
+    if (mq) {
+        mq.removeEventListener('change', handleSystemThemeChange);
+        mq.addEventListener('change', handleSystemThemeChange);
+    }
 }
 
 export function useAppearance(): UseAppearanceReturn {

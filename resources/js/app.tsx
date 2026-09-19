@@ -13,6 +13,8 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 const routesMap: Record<string, string> = {
     'home': '/',
     'dashboard': '/dashboard',
+    'how-it-works': '/how-it-works',
+    'about': '/about',
     
     'onboarding.personal.edit': '/onboarding/personal',
     'onboarding.personal.store': '/onboarding/personal',
@@ -20,12 +22,28 @@ const routesMap: Record<string, string> = {
     'onboarding.lifestyle.store': '/onboarding/lifestyle',
     
     'matches.index': '/matches',
+    'history.index': '/history',
     'saved-pets.toggle': '/saved-pets/toggle',
     'application.show': '/application',
     'application.store': '/application',
+    'application.transfer': '/application/transfer',
+    'application.withdraw': '/application/withdraw',
+    
+    'notifications.index': '/notifications',
+    'notifications.read': '/notifications/{id}/read',
+    'notifications.read-all': '/notifications/read-all',
+    
+    'profile.edit': '/settings/profile',
+    'profile.update': '/settings/profile',
+    'profile.destroy': '/settings/profile',
+    'security.edit': '/settings/security',
+    'user-password.update': '/settings/password',
+    'appearance.edit': '/settings/appearance',
     
     'pets.index': '/pets',
     'pets.show': '/pets/{id}',
+    'announcements.index': '/announcements',
+    'announcements.show': '/announcements/{id}',
     
     'shelter.applications.index': '/shelter/applications',
     'shelter.applications.show': '/shelter/applications/{id}',
@@ -38,10 +56,13 @@ const routesMap: Record<string, string> = {
     'shelter.pets.destroy': '/shelter/pets/{id}',
     'shelter.reports.index': '/shelter/reports',
     
+    'mao.dashboard': '/mao/dashboard',
     'mao.applications.index': '/mao/applications',
     'mao.applications.show': '/mao/applications/{id}',
     'mao.applications.update': '/mao/applications/{id}',
     'mao.reports.index': '/mao/reports',
+    'mao.reports.pdf': '/mao/reports/pdf',
+    'mao.reports.excel': '/mao/reports/excel',
     
     'admin.dashboard': '/admin/dashboard',
     'admin.applications.index': '/admin/applications',
@@ -52,6 +73,7 @@ const routesMap: Record<string, string> = {
     'admin.users.index': '/admin/users',
     'admin.users.store': '/admin/users',
     'admin.users.update': '/admin/users/{id}',
+    'admin.users.reset-password': '/admin/users/{id}/reset-password',
     'admin.users.destroy': '/admin/users/{id}',
     'admin.shelters.index': '/admin/shelters',
     'admin.shelters.store': '/admin/shelters',
@@ -62,27 +84,51 @@ const routesMap: Record<string, string> = {
     'admin.reports.excel': '/admin/reports/excel',
     'admin.settings.index': '/admin/settings',
     'admin.settings.update': '/admin/settings',
+    'admin.cms.builder.index': '/admin/cms/builder',
+    'admin.cms.builder.update': '/admin/cms/builder',
+    'admin.cms.announcements.index': '/admin/cms/announcements',
+    'admin.cms.announcements.store': '/admin/cms/announcements',
+    'admin.cms.announcements.update': '/admin/cms/announcements/{id}',
+    'admin.cms.announcements.destroy': '/admin/cms/announcements/{id}',
 };
 
 // Define global route helper mapping route name to URL string
-(window as any).route = (name: string, params?: any): string => {
+const globalRouteHelper = (name: string, params?: any): string => {
     let url = routesMap[name];
     if (!url) {
-        console.warn(`Route [${name}] not found in routesMap.`);
         return '';
     }
 
-    if (params) {
+    if (params !== undefined && params !== null) {
         if (typeof params === 'object') {
+            const queryParams: string[] = [];
             Object.entries(params).forEach(([key, val]) => {
-                url = url.replace(`{${key}}`, String(val));
+                if (url.includes(`{${key}}`)) {
+                    url = url.replace(`{${key}}`, String(val));
+                } else if (val !== undefined && val !== null) {
+                    queryParams.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(val))}`);
+                }
             });
+            if (queryParams.length > 0) {
+                url += (url.includes('?') ? '&' : '?') + queryParams.join('&');
+            }
         } else {
-            url = url.replace(/{[a-zA-Z0-9_]+}/, String(params));
+            if (url.includes('{')) {
+                url = url.replace(/{[a-zA-Z0-9_]+}/, String(params));
+            } else {
+                url += `?id=${encodeURIComponent(String(params))}`;
+            }
         }
     }
     return url;
 };
+
+if (typeof globalThis !== 'undefined') {
+    (globalThis as any).route = globalRouteHelper;
+}
+if (typeof window !== 'undefined') {
+    (window as any).route = globalRouteHelper;
+}
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),

@@ -3,8 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Settings, ShieldCheck } from 'lucide-react';
+import { Settings, ShieldCheck, Save } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 
 interface Setting {
@@ -72,14 +73,28 @@ export default function AdminSettings({ settings }: { settings: Setting[] }) {
                                                     />
                                                 </div>
                                             </div>
-                                        ) : (
-                                            /* Input field for string/integer settings */
+                                        ) : setting.type === 'text' ? (
+                                            /* Multiline Textarea for Terms/Policies text settings */
+                                            <div className="space-y-1.5">
+                                                <Label htmlFor={setting.key} className="font-bold text-gray-700 text-sm">{setting.label}</Label>
+                                                <p className="text-xs text-gray-400">{setting.description}</p>
+                                                <Textarea
+                                                    id={setting.key}
+                                                    value={data[setting.key] || ''}
+                                                    onChange={e => setData(setting.key, e.target.value)}
+                                                    rows={4}
+                                                    placeholder="Enter custom agreement or policy text here, or leave empty to use the default placeholder."
+                                                    className="focus-visible:ring-[#D4A017] font-mono text-xs"
+                                                />
+                                            </div>
+                                        ) : setting.type === 'integer' ? (
+                                            /* Input field for integer settings */
                                             <>
                                                 <div className="flex justify-between items-center">
                                                     <Label htmlFor={setting.key} className="font-bold text-gray-700 text-sm">{setting.label}</Label>
                                                     <Input 
                                                         id={setting.key}
-                                                        type={setting.type === 'integer' ? 'number' : 'text'}
+                                                        type="number"
                                                         value={data[setting.key] || ''}
                                                         onChange={e => setData(setting.key, e.target.value)}
                                                         className="w-32 text-right focus-visible:ring-[#D4A017]"
@@ -88,6 +103,20 @@ export default function AdminSettings({ settings }: { settings: Setting[] }) {
                                                 </div>
                                                 <p className="text-xs text-gray-400">{setting.description}</p>
                                             </>
+                                        ) : (
+                                            /* Input field for general string settings */
+                                            <div className="space-y-1.5">
+                                                <Label htmlFor={setting.key} className="font-bold text-gray-700 text-sm">{setting.label}</Label>
+                                                <Input 
+                                                    id={setting.key}
+                                                    type="text"
+                                                    value={data[setting.key] || ''}
+                                                    onChange={e => setData(setting.key, e.target.value)}
+                                                    className="focus-visible:ring-[#D4A017]"
+                                                    required
+                                                />
+                                                <p className="text-xs text-gray-400">{setting.description}</p>
+                                            </div>
                                         )}
                                     </div>
                                 ))}
@@ -99,8 +128,8 @@ export default function AdminSettings({ settings }: { settings: Setting[] }) {
                                     disabled={processing}
                                     className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold transition flex items-center gap-1.5"
                                 >
-                                    <ShieldCheck className="h-4.5 w-4.5" />
-                                    {processing ? 'Saving...' : 'Save Settings'}
+                                    <Save className="size-4" />
+                                    {processing ? 'Saving...' : 'Save Configuration'}
                                 </Button>
                             </div>
                         </form>

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\PetFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,9 +19,11 @@ use Illuminate\Support\Carbon;
  * @property int $age_years
  * @property string $gender
  * @property string $size
+ * @property string|null $coat_color
  * @property string|null $health_status
  * @property array<string>|null $temperament
  * @property string $energy_level
+ * @property string $maintenance_level
  * @property bool $requires_experience
  * @property bool $requires_yard
  * @property bool $requires_no_children
@@ -33,7 +36,7 @@ use Illuminate\Support\Carbon;
  */
 class Pet extends Model
 {
-    /** @use HasFactory<\Database\Factories\PetFactory> */
+    /** @use HasFactory<PetFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -41,17 +44,24 @@ class Pet extends Model
         'name',
         'species',
         'breed',
+        'tag_number',
+        'microchip_number',
         'age_years',
         'gender',
         'size',
+        'coat_color',
         'health_status',
         'temperament',
         'energy_level',
+        'maintenance_level',
         'requires_experience',
         'requires_yard',
         'requires_no_children',
         'requires_no_other_pets',
         'housing_compatible',
+        'housing_area',
+        'housing_notes',
+        'intake_date',
         'adoption_fee',
         'description',
         'status',
@@ -72,6 +82,7 @@ class Pet extends Model
             'requires_no_other_pets' => 'boolean',
             'adoption_fee' => 'decimal:2',
             'listed_at' => 'datetime',
+            'intake_date' => 'date',
         ];
     }
 

@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapPin, Phone, Mail, Clock, ShieldCheck, Heart, Building2 } from 'lucide-react';
 import { AppFooter } from '@/components/app-footer';
+import { getTheme } from '@/lib/theme-templates';
 
 interface Props {
     config?: {
+        template_name?: string;
         about_title?: string;
         about_mission?: string;
         about_phone?: string;
@@ -17,14 +19,16 @@ interface Props {
 }
 
 export default function About({ config }: Props) {
+    const theme = getTheme(config?.template_name);
+
     return (
         <AppLayout breadcrumbs={[{ title: 'About Us', href: route('about') }]}>
             <Head title="About Us — Virac Animal Shelter & FurFect Match" />
 
             <div className="max-w-5xl mx-auto py-8 px-4 space-y-12">
                 {/* Hero Banner */}
-                <div className="bg-[#FDFBF7] border border-[#D4A017]/20 rounded-2xl p-8 text-center space-y-4">
-                    <span className="bg-[#F5EDD7] text-[#B8860B] px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
+                <div className={`${theme.cardHighlightBg} border ${theme.cardHighlightBorder} rounded-2xl p-8 text-center space-y-4`}>
+                    <span className={`${theme.secondaryBadge} px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider`}>
                         About FurFect Match
                     </span>
                     <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">
@@ -39,7 +43,7 @@ export default function About({ config }: Props) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card className="border-gray-200 shadow-sm">
                         <CardHeader className="flex flex-row items-center gap-3 pb-2">
-                            <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center text-[#D4A017]">
+                            <div className={`w-10 h-10 rounded-lg ${theme.iconBg} flex items-center justify-center ${theme.iconText}`}>
                                 <Heart className="h-5 w-5" />
                             </div>
                             <CardTitle className="text-lg font-bold text-gray-900">Our Mission</CardTitle>
@@ -51,7 +55,7 @@ export default function About({ config }: Props) {
 
                     <Card className="border-gray-200 shadow-sm">
                         <CardHeader className="flex flex-row items-center gap-3 pb-2">
-                            <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center text-[#D4A017]">
+                            <div className={`w-10 h-10 rounded-lg ${theme.iconBg} flex items-center justify-center ${theme.iconText}`}>
                                 <ShieldCheck className="h-5 w-5" />
                             </div>
                             <CardTitle className="text-lg font-bold text-gray-900">Municipal Standards</CardTitle>
@@ -67,34 +71,34 @@ export default function About({ config }: Props) {
                     <Card className="border-gray-200 shadow-sm md:col-span-2">
                         <CardHeader>
                             <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                <Building2 className="h-5 w-5 text-[#D4A017]" />
+                                <Building2 className={`h-5 w-5 ${theme.accentText}`} />
                                 Virac Animal Shelter Directory
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 text-sm text-gray-600">
                             <div className="flex items-start gap-3">
-                                <MapPin className="h-5 w-5 text-[#D4A017] shrink-0 mt-0.5" />
+                                <MapPin className={`h-5 w-5 ${theme.accentText} shrink-0 mt-0.5`} />
                                 <div>
                                     <strong className="text-gray-800 block">Facility Location</strong>
                                     {config?.about_location || 'Virac Municipal Compound, Barangay Concepcion, Virac, Catanduanes 4800'}
                                 </div>
                             </div>
                             <div className="flex items-start gap-3">
-                                <Clock className="h-5 w-5 text-[#D4A017] shrink-0 mt-0.5" />
+                                <Clock className={`h-5 w-5 ${theme.accentText} shrink-0 mt-0.5`} />
                                 <div>
                                     <strong className="text-gray-800 block">Operating Hours</strong>
                                     {config?.about_hours || 'Monday – Friday: 8:00 AM – 5:00 PM | Saturday: 9:00 AM – 12:00 PM'}
                                 </div>
                             </div>
                             <div className="flex items-start gap-3">
-                                <Phone className="h-5 w-5 text-[#D4A017] shrink-0 mt-0.5" />
+                                <Phone className={`h-5 w-5 ${theme.accentText} shrink-0 mt-0.5`} />
                                 <div>
                                     <strong className="text-gray-800 block">Hotline &amp; Support</strong>
                                     {config?.about_phone || '(052) 811-2345 / +63 950-321-7654'}
                                 </div>
                             </div>
                             <div className="flex items-start gap-3">
-                                <Mail className="h-5 w-5 text-[#D4A017] shrink-0 mt-0.5" />
+                                <Mail className={`h-5 w-5 ${theme.accentText} shrink-0 mt-0.5`} />
                                 <div>
                                     <strong className="text-gray-800 block">Email Address</strong>
                                     {config?.about_email || 'virac.shelter@gmail.com / mao@virac.gov.ph'}
@@ -104,7 +108,7 @@ export default function About({ config }: Props) {
                     </Card>
 
                     {/* Quick Stats Card */}
-                    <Card className="border-[#D4A017]/20 bg-[#FDFBF7] shadow-sm flex flex-col justify-between p-6">
+                    <Card className={`${theme.cardHighlightBorder} ${theme.cardHighlightBg} shadow-sm flex flex-col justify-between p-6`}>
                         <div className="space-y-4">
                             <h3 className="font-bold text-gray-900 text-base">Adoption Pledge</h3>
                             <p className="text-xs text-gray-600 leading-relaxed">
@@ -113,7 +117,7 @@ export default function About({ config }: Props) {
                         </div>
                         <div className="pt-4">
                             <Link href={route('pets.index')}>
-                                <Button className="w-full bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold">
+                                <Button className={`w-full ${theme.primaryButton} font-semibold`}>
                                     Explore Available Pets
                                 </Button>
                             </Link>

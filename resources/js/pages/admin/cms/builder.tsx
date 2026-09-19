@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Wand2, Save, LayoutTemplate, Palette, Image as ImageIcon, Eye, Check, HelpCircle, Info } from 'lucide-react';
 import InputError from '@/components/input-error';
+import { getTheme } from '@/lib/theme-templates';
 
 interface TemplateOption {
     id: string;
@@ -135,10 +136,13 @@ export default function Builder({ config, templates }: Props) {
     };
 
     const toggleSection = (key: string) => {
-        setData('section_settings', {
-            ...data.section_settings,
-            [key]: !data.section_settings[key],
-        });
+        setData((prev) => ({
+            ...prev,
+            section_settings: {
+                ...prev.section_settings,
+                [key]: !prev.section_settings[key],
+            },
+        }));
     };
 
     const updateStep = (index: number, field: 'title' | 'description', value: string) => {
@@ -146,6 +150,8 @@ export default function Builder({ config, templates }: Props) {
         newSteps[index] = { ...newSteps[index], [field]: value };
         setData('how_it_works_steps', newSteps);
     };
+
+    const previewTheme = getTheme(data.template_name);
 
     return (
         <AppLayout breadcrumbs={[{ title: 'Content & Pages', href: '#' }, { title: 'Landing Builder', href: route('admin.cms.builder.index') }]}>
@@ -210,38 +216,58 @@ export default function Builder({ config, templates }: Props) {
                             </CardHeader>
                             <CardContent>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    {templates.map((tmpl) => (
-                                        <div
-                                            key={tmpl.id}
-                                            onClick={() => {
-                                                setData({
-                                                    ...data,
-                                                    template_name: tmpl.id,
-                                                    theme_color: tmpl.primary_color,
-                                                });
-                                            }}
-                                            className={`border rounded-xl p-4 cursor-pointer transition-all relative ${
-                                                data.template_name === tmpl.id
-                                                    ? 'border-[#D4A017] bg-amber-50/40 ring-2 ring-[#D4A017]/30'
-                                                    : 'border-gray-200 hover:border-gray-300 bg-white'
-                                            }`}
-                                        >
-                                            <div className="flex justify-between items-start mb-2">
-                                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{tmpl.preview_badge}</span>
-                                                {data.template_name === tmpl.id && (
-                                                    <div className="h-5 w-5 rounded-full bg-[#D4A017] text-white flex items-center justify-center">
-                                                        <Check className="h-3 w-3 stroke-[3]" />
-                                                    </div>
-                                                )}
+                                    {templates.map((tmpl) => {
+                                        const isSelected = data.template_name === tmpl.id;
+                                        const tmplTheme = getTheme(tmpl.id);
+
+                                        return (
+                                            <div
+                                                key={tmpl.id}
+                                                role="button"
+                                                tabIndex={0}
+                                                onClick={() => {
+                                                    setData((prev) => ({
+                                                        ...prev,
+                                                        template_name: tmpl.id,
+                                                        theme_color: tmpl.primary_color,
+                                                    }));
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                        e.preventDefault();
+                                                        setData((prev) => ({
+                                                            ...prev,
+                                                            template_name: tmpl.id,
+                                                            theme_color: tmpl.primary_color,
+                                                        }));
+                                                    }
+                                                }}
+                                                className={`border rounded-xl p-4 cursor-pointer transition-all relative select-none ${
+                                                    isSelected
+                                                        ? `${tmplTheme.ringColor} ring-2 bg-amber-50/20 shadow-xs`
+                                                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                                                }`}
+                                            >
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{tmpl.preview_badge}</span>
+                                                    {isSelected && (
+                                                        <div
+                                                            className="h-5 w-5 rounded-full text-white flex items-center justify-center shadow-xs"
+                                                            style={{ backgroundColor: tmpl.primary_color }}
+                                                        >
+                                                            <Check className="h-3 w-3 stroke-[3]" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <h4 className="font-bold text-gray-900 text-sm">{tmpl.name}</h4>
+                                                <p className="text-xs text-gray-500 mt-1 leading-relaxed">{tmpl.description}</p>
+                                                <div className="mt-3 flex items-center gap-2">
+                                                    <div className="h-4 w-4 rounded-full border border-gray-300 shadow-2xs" style={{ backgroundColor: tmpl.primary_color }} />
+                                                    <span className="text-[11px] font-mono text-gray-500">{tmpl.primary_color}</span>
+                                                </div>
                                             </div>
-                                            <h4 className="font-bold text-gray-900 text-sm">{tmpl.name}</h4>
-                                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">{tmpl.description}</p>
-                                            <div className="mt-3 flex items-center gap-2">
-                                                <div className="h-4 w-4 rounded-full border border-gray-300" style={{ backgroundColor: tmpl.primary_color }} />
-                                                <span className="text-[11px] font-mono text-gray-500">{tmpl.primary_color}</span>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </CardContent>
                         </Card>
@@ -472,28 +498,31 @@ export default function Builder({ config, templates }: Props) {
                         <CardHeader className="bg-gray-50 border-b border-gray-200">
                             <div className="flex justify-between items-center">
                                 <CardTitle className="text-base font-bold text-gray-900">Live Home Page Preview</CardTitle>
-                                <span className="text-xs text-gray-500 font-mono bg-white px-2 py-1 rounded border border-gray-200">Theme: {data.template_name}</span>
+                                <span className="text-xs text-gray-700 font-medium bg-white px-2.5 py-1 rounded-md border border-gray-200 flex items-center gap-1.5">
+                                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: previewTheme.primaryColor }} />
+                                    Theme: <strong className="capitalize">{previewTheme.name}</strong>
+                                </span>
                             </div>
                         </CardHeader>
                         <CardContent className="p-8 space-y-8">
                             {data.section_settings.show_hero && (
-                                <div className="p-8 rounded-2xl bg-gradient-to-br from-[#FDFBF7] via-[#F5EDD7]/40 to-[#EADAA2]/20 border border-[#D4A017]/20 space-y-4">
-                                    <span className="text-[10px] font-bold text-[#B8860B] bg-[#F5EDD7] px-2.5 py-0.5 rounded-full uppercase">Preview Hero</span>
+                                <div className={`p-8 rounded-2xl ${previewTheme.heroGradient} space-y-4`}>
+                                    <span className={`text-[10px] font-bold ${previewTheme.heroBadge} px-2.5 py-0.5 rounded-full uppercase`}>Preview Hero</span>
                                     <h2 className="text-2xl font-extrabold text-gray-900">{data.hero_title}</h2>
                                     <p className="text-sm text-gray-600">{data.hero_subtitle}</p>
-                                    <Button className="bg-[#D4A017] text-white font-bold text-xs px-4 py-2 rounded-lg">
+                                    <Button className={`${previewTheme.primaryButton} font-bold text-xs px-4 py-2 rounded-lg shadow-sm`}>
                                         {data.hero_cta_text}
                                     </Button>
                                 </div>
                             )}
 
                             {data.section_settings.show_how_it_works && (
-                                <div className="space-y-4 bg-[#FDFBF7] p-6 rounded-2xl border border-amber-200/60">
+                                <div className={`space-y-4 ${previewTheme.cardHighlightBg} p-6 rounded-2xl border ${previewTheme.cardHighlightBorder}`}>
                                     <h3 className="font-bold text-gray-900 text-lg">Preview: How It Works</h3>
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                         {data.how_it_works_steps.map((st, i) => (
                                             <div key={i} className="bg-white p-3 rounded-xl border border-gray-200 space-y-1">
-                                                <span className="text-[10px] font-bold text-[#D4A017]">Step {st.step || `0${i + 1}`}</span>
+                                                <span className={`text-[10px] font-bold ${previewTheme.accentText}`}>Step {st.step || `0${i + 1}`}</span>
                                                 <h4 className="font-bold text-xs text-gray-900">{st.title}</h4>
                                                 <p className="text-[11px] text-gray-500 line-clamp-2">{st.description}</p>
                                             </div>
@@ -506,15 +535,15 @@ export default function Builder({ config, templates }: Props) {
                                 <div className="grid grid-cols-3 gap-4 text-center">
                                     <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
                                         <div className="text-xl font-black text-gray-900">6</div>
-                                        <div className="text-[10px] text-gray-500 uppercase">Available Pets</div>
+                                        <div className="text-[10px] text-gray-500 uppercase font-medium">Available Pets</div>
                                     </div>
                                     <div className="bg-green-50 p-4 rounded-xl border border-green-200">
                                         <div className="text-xl font-black text-gray-900">12</div>
-                                        <div className="text-[10px] text-gray-500 uppercase">Adopted Pets</div>
+                                        <div className="text-[10px] text-gray-500 uppercase font-medium">Adopted Pets</div>
                                     </div>
                                     <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
                                         <div className="text-xl font-black text-gray-900">45</div>
-                                        <div className="text-[10px] text-gray-500 uppercase">Adopters</div>
+                                        <div className="text-[10px] text-gray-500 uppercase font-medium">Adopters</div>
                                     </div>
                                 </div>
                             )}

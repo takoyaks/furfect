@@ -1,24 +1,24 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'light') == 'dark'])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="app-version" content="{{ config('app.version', 'furfect_v2.0.5') }}">
 
-        {{-- Inline script to apply theme preference immediately --}}
+        {{-- Inline script to detect and apply theme without flash --}}
         <script>
             (function() {
-                const appearance = '{{ $appearance ?? "light" }}';
-
-                if (appearance === 'dark') {
-                    document.documentElement.classList.add('dark');
-                } else if (appearance === 'light') {
-                    document.documentElement.classList.remove('dark');
-                } else if (appearance === 'system') {
-                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                    if (prefersDark) {
+                try {
+                    const appearance = localStorage.getItem('appearance') || '{{ $appearance ?? "system" }}';
+                    const isDark = appearance === 'dark' || (appearance === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                    if (isDark) {
                         document.documentElement.classList.add('dark');
+                        document.documentElement.style.colorScheme = 'dark';
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                        document.documentElement.style.colorScheme = 'light';
                     }
-                }
+                } catch (e) {}
             })();
         </script>
 

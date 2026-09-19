@@ -68,6 +68,7 @@ function makeOnboardedAdopter(): User
         'adoption_reason' => 'Companionship',
         'adoption_reason_text' => 'I love animals.',
         'pet_stay' => 'inside',
+        'is_identity_verified' => true,
         'profile_completed_at' => now(),
     ]);
 
@@ -162,4 +163,27 @@ test('non-approved adopter sees Hidden breed on pet show page', function () {
     expect($props['isApproved'])->toBeFalse();
     expect($props['pet']['breed'])->toBe('Hidden');
     expect($props['pet']['description'])->not->toContain('Birman');
+});
+
+test('featured pets on home page have masked breed and description', function () {
+    $shelter = Shelter::first() ?? Shelter::factory()->create();
+
+    Pet::factory()->create([
+        'shelter_id' => $shelter->id,
+        'breed' => 'Birman',
+        'description' => 'The Birman cat is a large and affectionate cat.',
+        'status' => 'available',
+        'listed_at' => now(),
+    ]);
+
+    $response = $this->get(route('home'));
+
+    $response->assertOk();
+
+    $props = $response->original->getData()['page']['props'];
+    expect($props['featuredPets'])->not->toBeEmpty();
+
+    $featured = collect($props['featuredPets'])->firstWhere('status', 'available');
+    expect($featured['breed'])->toBe('Hidden');
+    expect($featured['description'])->not->toContain('Birman');
 });

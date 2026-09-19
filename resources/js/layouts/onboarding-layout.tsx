@@ -1,84 +1,89 @@
 import { ReactNode } from 'react';
-import { Link, usePage } from '@inertiajs/react';
-import AppLogo from '@/components/app-logo';
-import { Button } from '@/components/ui/button';
-import { LogOut, Cat } from 'lucide-react';
-import { logout } from '@/routes';
+import { Cat } from 'lucide-react';
 
 interface Props {
     children: ReactNode;
-    currentStep: 1 | 2;
+    currentStep: 1 | 2 | 3;
+    ekycEnabled?: boolean;
 }
 
-export default function OnboardingLayout({ children, currentStep }: Props) {
-    const { auth } = usePage().props;
-    const user = auth.user;
+export default function OnboardingLayout({ children, currentStep, ekycEnabled = true }: Props) {
+    const totalSteps = ekycEnabled ? 3 : 2;
+    const effectiveDisplayStep = !ekycEnabled && currentStep > 1 ? currentStep - 1 : currentStep;
 
     return (
-        <div className="min-h-screen bg-[#FDFBF7] flex flex-col justify-between selection:bg-[#D4A017] selection:text-white">
-            {/* Minimal Fullscreen Header */}
-            <header className="border-b border-[#D4A017]/15 bg-white/80 backdrop-blur-md sticky top-0 z-50">
-                <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-                    {/* <div className="flex items-center space-x-3">
-                        <AppLogo />
-                        <span className="hidden sm:inline-block h-4 w-[1px] bg-gray-300" />
-                        <span className="hidden sm:inline-block text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                            Adopter Onboarding
-                        </span>
-                    </div> */}
+        <div className="min-h-screen bg-[#FDFCF7] flex flex-col justify-between selection:bg-[#467235] selection:text-white">
+            {/* Dynamic Fullscreen Header with Centered Step Progress */}
+            <header className="border-b border-[#467235]/15 bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-xs w-full">
+                <div className="w-full px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-center">
+                    {/* Dynamic Progress Indicator */}
+                    <div className="hidden md:flex items-center justify-center space-x-2 text-xs font-medium">
+                        {ekycEnabled && (
+                            <>
+                                {/* Step 1: eKYC Verification */}
+                                <div className={`px-3.5 py-1.5 rounded-full flex items-center gap-2 transition-all ${
+                                    currentStep === 1 
+                                        ? 'bg-[#467235] text-white shadow-sm font-semibold ring-2 ring-[#FFBF00]/60' 
+                                        : currentStep > 1 
+                                            ? 'bg-[#FFF78D]/80 text-[#283F24] border border-[#467235]/20 font-medium'
+                                            : 'bg-gray-100 text-gray-500'
+                                }`}>
+                                    <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                        currentStep === 1 ? 'bg-white/20 text-white' : 'bg-[#467235]/15 text-[#283F24]'
+                                    }`}>1</span>
+                                    <span>eKYC Verification</span>
+                                </div>
 
-                    {/* Step indicator */}
-                    <div className="flex items-center justify-center space-x-2 text-xs font-medium">
-                        <div className={`px-3 py-1 rounded-full flex items-center gap-1.5 transition-colors ${
-                            currentStep === 1 
-                                ? 'bg-[#D4A017] text-white shadow-sm font-semibold' 
-                                : 'bg-gray-100 text-gray-500'
+                                <span className="text-[#467235]/40 font-bold">→</span>
+                            </>
+                        )}
+
+                        {/* Personal Info Step */}
+                        <div className={`px-3.5 py-1.5 rounded-full flex items-center gap-2 transition-all ${
+                            currentStep === 2 
+                                ? 'bg-[#467235] text-white shadow-sm font-semibold ring-2 ring-[#FFBF00]/60' 
+                                : currentStep > 2 
+                                    ? 'bg-[#FFF78D]/80 text-[#283F24] border border-[#467235]/20 font-medium'
+                                    : 'bg-gray-100 text-gray-500'
                         }`}>
-                            <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">1</span>
+                            <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                currentStep === 2 ? 'bg-white/20 text-white' : currentStep > 2 ? 'bg-[#467235]/15 text-[#283F24]' : 'bg-gray-200 text-gray-500'
+                            }`}>{ekycEnabled ? '2' : '1'}</span>
                             <span>Personal Info</span>
                         </div>
 
-                        <span className="text-gray-300">→</span>
+                        <span className="text-[#467235]/40 font-bold">→</span>
 
-                        <div className={`px-3 py-1 rounded-full flex items-center gap-1.5 transition-colors ${
-                            currentStep === 2 
-                                ? 'bg-[#D4A017] text-white shadow-sm font-semibold' 
+                        {/* Lifestyle Quiz Step */}
+                        <div className={`px-3.5 py-1.5 rounded-full flex items-center gap-2 transition-all ${
+                            currentStep === 3 
+                                ? 'bg-[#467235] text-white shadow-sm font-semibold ring-2 ring-[#FFBF00]/60' 
                                 : 'bg-gray-100 text-gray-500'
                         }`}>
-                            <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">2</span>
+                            <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                                currentStep === 3 ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-500'
+                            }`}>{ekycEnabled ? '3' : '2'}</span>
                             <span>Lifestyle Quiz</span>
                         </div>
                     </div>
 
-                    {/* Right side user info & logout */}
-                    {/* <div className="flex items-center space-x-3 text-xs">
-                        <span className="hidden md:inline-block text-gray-600 font-medium">
-                            {user?.name}
-                        </span>
-                        <Link href={logout()} method="post" as="button">
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="text-gray-500 hover:text-red-600 hover:bg-red-50 text-xs h-8 gap-1.5"
-                            >
-                                <LogOut className="h-3.5 w-3.5" />
-                                <span className="hidden sm:inline">Logout</span>
-                            </Button>
-                        </Link>
-                    </div> */}
+                    {/* Mobile Step Badge */}
+                    <div className="md:hidden flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#467235] text-white text-xs font-semibold shadow-xs">
+                        <span>Step {effectiveDisplayStep} of {totalSteps}</span>
+                    </div>
                 </div>
             </header>
 
-            {/* Main Content Area */}
-            <main className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+            {/* Main Content Area - Full-screen dynamic adjustable */}
+            <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-6 max-w-7xl 2xl:max-w-[1600px] mx-auto flex flex-col justify-start">
                 {children}
             </main>
 
             {/* Minimal Fullscreen Footer */}
-            <footer className="border-t border-[#D4A017]/10 bg-white/50 py-4 text-center text-xs text-gray-400">
-                <div className="flex items-center justify-center gap-1">
+            <footer className="border-t border-[#467235]/10 bg-white/60 py-4 text-center text-xs text-gray-500">
+                <div className="flex items-center justify-center gap-1.5">
                     <span>FurFect Match &copy; {new Date().getFullYear()} — Virac Animal Shelter Adoption System</span>
-                    <Cat className="h-3 w-3 text-black-400 fill-yellow-400 inline" />
+                    <Cat className="h-3.5 w-3.5 text-[#467235] fill-[#FFBF00] inline" />
                 </div>
             </footer>
         </div>

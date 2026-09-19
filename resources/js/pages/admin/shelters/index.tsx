@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { Search, Building, MapPin, Phone, Mail, Filter, Plus } from 'lucide-react';
 
 interface Shelter {
     id: number;
@@ -82,9 +83,9 @@ export default function AdminShelters({
                     </div>
                     
                     <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold">
-                                + Add Shelter
+                        <DialogTrigger>
+                            <Button className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold flex items-center gap-1.5">
+                                <Plus className="size-4" /> Add Shelter
                             </Button>
                         </DialogTrigger>
                         <DialogContent>
@@ -95,23 +96,23 @@ export default function AdminShelters({
                             <form onSubmit={handleAddShelter} className="space-y-4">
                                 <div className="space-y-1">
                                     <Label htmlFor="add-name">Shelter Name</Label>
-                                    <Input id="add-name" value={data.name} onChange={e => setData('name', e.target.value)} required />
+                                    <Input id="add-name" value={data.name} onChange={e => setData('name', e.target.value)} required leftIcon={<Building className="size-4 text-gray-500" />} />
                                 </div>
                                 <div className="space-y-1">
                                     <Label htmlFor="add-type">Shelter Type</Label>
-                                    <Input id="add-type" value={data.type} onChange={e => setData('type', e.target.value)} required />
+                                    <Input id="add-type" value={data.type} onChange={e => setData('type', e.target.value)} required leftIcon={<Building className="size-4 text-gray-500" />} />
                                 </div>
                                 <div className="space-y-1">
                                     <Label htmlFor="add-location">Location / Address</Label>
-                                    <Input id="add-location" value={data.location} onChange={e => setData('location', e.target.value)} required />
+                                    <Input id="add-location" value={data.location} onChange={e => setData('location', e.target.value)} required leftIcon={<MapPin className="size-4 text-gray-500" />} />
                                 </div>
                                 <div className="space-y-1">
                                     <Label htmlFor="add-contact">Contact Number</Label>
-                                    <Input id="add-contact" value={data.contact} onChange={e => setData('contact', e.target.value)} required />
+                                    <Input id="add-contact" value={data.contact} onChange={e => setData('contact', e.target.value)} required leftIcon={<Phone className="size-4 text-gray-500" />} />
                                 </div>
                                 <div className="space-y-1">
                                     <Label htmlFor="add-email">Email Address</Label>
-                                    <Input id="add-email" type="email" value={data.email} onChange={e => setData('email', e.target.value)} />
+                                    <Input id="add-email" type="email" value={data.email} onChange={e => setData('email', e.target.value)} leftIcon={<Mail className="size-4 text-gray-500" />} />
                                 </div>
                                 <div className="space-y-1">
                                     <Label htmlFor="add-status">Status</Label>
@@ -138,9 +139,10 @@ export default function AdminShelters({
                                     placeholder="Search shelters by name or location..." 
                                     value={search} 
                                     onChange={e => setSearch(e.target.value)}
+                                    leftIcon={<Search className="size-4 text-gray-500" />}
                                 />
                             </div>
-                            <Button type="submit" variant="secondary">Filter</Button>
+                            <Button type="submit" variant="secondary" className="flex items-center gap-1.5"><Filter className="size-4" /> Filter</Button>
                         </form>
                     </CardHeader>
                     <CardContent className="p-0 border-t border-gray-100 overflow-x-auto">
@@ -216,23 +218,23 @@ export default function AdminShelters({
                         <form onSubmit={handleEditShelter} className="space-y-4">
                             <div className="space-y-1">
                                 <Label htmlFor="edit-name">Shelter Name</Label>
-                                <Input id="edit-name" value={data.name} onChange={e => setData('name', e.target.value)} required />
+                                <Input id="edit-name" value={data.name} onChange={e => setData('name', e.target.value)} required leftIcon={<Building className="size-4 text-gray-500" />} />
                             </div>
                             <div className="space-y-1">
                                 <Label htmlFor="edit-type">Shelter Type</Label>
-                                <Input id="edit-type" value={data.type} onChange={e => setData('type', e.target.value)} required />
+                                <Input id="edit-type" value={data.type} onChange={e => setData('type', e.target.value)} required leftIcon={<Building className="size-4 text-gray-500" />} />
                             </div>
                             <div className="space-y-1">
                                 <Label htmlFor="edit-location">Location / Address</Label>
-                                <Input id="edit-location" value={data.location} onChange={e => setData('location', e.target.value)} required />
+                                <Input id="edit-location" value={data.location} onChange={e => setData('location', e.target.value)} required leftIcon={<MapPin className="size-4 text-gray-500" />} />
                             </div>
                             <div className="space-y-1">
                                 <Label htmlFor="edit-contact">Contact Number</Label>
-                                <Input id="edit-contact" value={data.contact} onChange={e => setData('contact', e.target.value)} required />
+                                <Input id="edit-contact" value={data.contact} onChange={e => setData('contact', e.target.value)} required leftIcon={<Phone className="size-4 text-gray-500" />} />
                             </div>
                             <div className="space-y-1">
                                 <Label htmlFor="edit-email">Email Address</Label>
-                                <Input id="edit-email" type="email" value={data.email} onChange={e => setData('email', e.target.value)} />
+                                <Input id="edit-email" type="email" value={data.email} onChange={e => setData('email', e.target.value)} leftIcon={<Mail className="size-4 text-gray-500" />} />
                             </div>
                             <div className="space-y-1">
                                 <Label htmlFor="edit-status">Status</Label>

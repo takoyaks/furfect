@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Models\AdopterProfile;
+use App\Services\EncryptedFileStorageService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -19,24 +22,132 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
+        $adopterProfile = $user->adopterProfile;
+
         return Inertia::render('settings/profile', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => $request->session()->get('status'),
+            'adopterProfile' => $adopterProfile ? [
+                'id' => $adopterProfile->id,
+                'full_name' => $adopterProfile->full_name,
+                'contact_number' => $adopterProfile->contact_number,
+                'date_of_birth' => $adopterProfile->date_of_birth ? $adopterProfile->date_of_birth->format('Y-m-d') : null,
+                'home_address' => $adopterProfile->home_address,
+                'valid_id_type' => $adopterProfile->valid_id_type,
+                'valid_id_number' => $adopterProfile->valid_id_number,
+                'has_id_document' => $adopterProfile->hasFrontIdDocument(),
+                'id_document_name' => $adopterProfile->id_document_name,
+                'has_id_document_back' => $adopterProfile->hasBackIdDocument(),
+                'id_document_back_name' => $adopterProfile->id_document_back_name,
+                'is_identity_verified' => (bool) $adopterProfile->is_identity_verified,
+                'identity_verified_at' => $adopterProfile->identity_verified_at?->toIso8601String(),
+                'face_match_score' => $adopterProfile->face_match_score,
+                'liveness_verified' => (bool) $adopterProfile->liveness_verified,
+                'front_preview_url' => $adopterProfile->id_document_path ? route('adopter.id-document.show', ['profile' => $adopterProfile->id, 'side' => 'front']) : null,
+                'back_preview_url' => $adopterProfile->id_document_back_path ? route('adopter.id-document.show', ['profile' => $adopterProfile->id, 'side' => 'back']) : null,
+            ] : null,
         ]);
     }
 
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(ProfileUpdateRequest $request, EncryptedFileStorageService $fileStorage): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $validated = $request->validated();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        // Handle avatar removal
+        if ($request->boolean('remove_avatar')) {
+            $rawAvatar = $user->getRawOriginal('avatar');
+            if ($rawAvatar && Storage::disk('public')->exists($rawAvatar)) {
+                Storage::disk('public')->delete($rawAvatar);
+            }
+            $user->avatar = null;
         }
 
-        $request->user()->save();
+        // Handle avatar upload
+        if ($request->hasFile('avatar')) {
+            $rawAvatar = $user->getRawOriginal('avatar');
+            if ($rawAvatar && Storage::disk('public')->exists($rawAvatar)) {
+                Storage::disk('public')->delete($rawAvatar);
+            }
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $user->avatar = $path;
+        }
+
+        $user->fill([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
+            'address' => $validated['address'] ?? null,
+            'bio' => $validated['bio'] ?? null,
+        ]);
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
+
+        // Handle Adopter Profile synchronization if user has an adopter profile or submitted adopter verification details
+        $hasAdopterInput = $request->has('valid_id_type')
+            || $request->has('valid_id_number')
+            || $request->has('date_of_birth')
+            || $request->hasFile('id_document')
+            || $request->hasFile('id_document_back');
+
+        $adopterProfile = $user->adopterProfile;
+
+        if ($adopterProfile || $hasAdopterInput) {
+            $adopterData = [
+                'full_name' => $user->name,
+                'contact_number' => $user->phone ?? ($adopterProfile?->contact_number ?? ''),
+                'home_address' => $user->address ?? ($adopterProfile?->home_address ?? ''),
+            ];
+
+            if ($request->filled('date_of_birth')) {
+                $adopterData['date_of_birth'] = $validated['date_of_birth'];
+            }
+
+            if ($request->filled('valid_id_type')) {
+                $adopterData['valid_id_type'] = $validated['valid_id_type'];
+            }
+
+            if ($request->filled('valid_id_number')) {
+                $adopterData['valid_id_number'] = $validated['valid_id_number'];
+            }
+
+            // Handle front ID encrypted file upload if provided
+            if ($request->hasFile('id_document')) {
+                if ($adopterProfile?->id_document_path) {
+                    $fileStorage->deleteFile($adopterProfile->id_document_path);
+                }
+
+                $stored = $fileStorage->storeEncrypted($request->file('id_document'), 'id_documents');
+                $adopterData['id_document_path'] = $stored['path'];
+                $adopterData['id_document_mime'] = $stored['mime'];
+                $adopterData['id_document_name'] = $stored['original_name'];
+            }
+
+            // Handle back ID encrypted file upload if provided
+            if ($request->hasFile('id_document_back')) {
+                if ($adopterProfile?->id_document_back_path) {
+                    $fileStorage->deleteFile($adopterProfile->id_document_back_path);
+                }
+
+                $storedBack = $fileStorage->storeEncrypted($request->file('id_document_back'), 'id_documents');
+                $adopterData['id_document_back_path'] = $storedBack['path'];
+                $adopterData['id_document_back_mime'] = $storedBack['mime'];
+                $adopterData['id_document_back_name'] = $storedBack['original_name'];
+            }
+
+            AdopterProfile::updateOrCreate(
+                ['user_id' => $user->id],
+                $adopterData
+            );
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
 

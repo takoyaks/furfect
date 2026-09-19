@@ -13,17 +13,28 @@ use Inertia\Response;
 class LifestyleProfileController extends Controller
 {
     /**
-     * Show the onboarding step 2 (lifestyle quiz) form.
+     * Show the onboarding step 3 (lifestyle quiz) form.
      */
-    public function edit(Request $request): Response
+    public function edit(Request $request): Response|RedirectResponse
     {
         $user = $request->user();
+        $ekycEnabled = (bool) SystemSetting::get('ekyc_enabled', true);
+
+        if ($ekycEnabled && ! $user->isIdentityVerified()) {
+            return to_route('onboarding.ekyc.show');
+        }
+
+        if (! $user->adopterProfile?->profile_completed_at) {
+            return to_route('onboarding.personal.edit');
+        }
+
         $lifestyle = $user->lifestyleProfile;
 
         return Inertia::render('onboarding/lifestyle-quiz', [
             'lifestyle' => $lifestyle,
             'isLocked' => $lifestyle ? $lifestyle->isLocked() : false,
             'lockedUntil' => $lifestyle && $lifestyle->locked_until ? $lifestyle->locked_until->toIso8601String() : null,
+            'ekycEnabled' => $ekycEnabled,
         ]);
     }
 
@@ -33,14 +44,25 @@ class LifestyleProfileController extends Controller
     public function store(Request $request, DssMatchingService $dssService): RedirectResponse
     {
         $user = $request->user();
+        $ekycEnabled = (bool) SystemSetting::get('ekyc_enabled', true);
+
+        if ($ekycEnabled && ! $user->isIdentityVerified()) {
+            return to_route('onboarding.ekyc.show');
+        }
+
+        if (! $user->adopterProfile?->profile_completed_at) {
+            return to_route('onboarding.personal.edit');
+        }
+
         $lifestyle = $user->lifestyleProfile;
 
         // Check if locked
         if ($lifestyle && $lifestyle->isLocked()) {
             Inertia::flash('toast', [
                 'type' => 'error',
-                'message' => __('Your lifestyle profile is locked for 3 months to ensure matching integrity.')
+                'message' => __('Your lifestyle profile is locked for 3 months to ensure matching integrity.'),
             ]);
+
             return to_route('onboarding.lifestyle.edit');
         }
 
@@ -93,7 +115,7 @@ class LifestyleProfileController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => __('Lifestyle Profile saved successfully! Your pet matches have been calculated.')
+            'message' => __('Lifestyle Profile saved successfully! Your pet matches have been calculated.'),
         ]);
 
         return to_route('matches.index');

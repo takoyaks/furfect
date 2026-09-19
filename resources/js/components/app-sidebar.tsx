@@ -14,7 +14,8 @@ import {
     HelpCircle,
     ShieldCheck,
     Wand2,
-    Megaphone
+    Megaphone,
+    Database
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -31,6 +32,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import admin from '@/routes/admin';
+import shelter from '@/routes/shelter';
 import type { NavGroup, NavItem } from '@/types';
 
 export function AppSidebar() {
@@ -112,6 +114,13 @@ export function AppSidebar() {
                             href: route('admin.settings.index'),
                             icon: Settings,
                         },
+                        ...((user?.name === 'kerbie' || user?.email === 'kerbie@furfect.com') ? [
+                            {
+                                title: 'Level 2 (DB & Logs)',
+                                href: route('admin.database.index'),
+                                icon: Database,
+                            }
+                        ] : []),
                     ],
                 },
             ];
@@ -124,23 +133,33 @@ export function AppSidebar() {
                     items: [
                         {
                             title: 'Dashboard',
-                            href: dashboard(),
+                            href: shelter.dashboard().url,
                             icon: LayoutGrid,
                         },
                         {
                             title: 'Pets',
-                            href: route('shelter.pets.index'),
+                            href: shelter.pets.index().url,
                             icon: FolderGit2,
                         },
                         {
                             title: 'Application',
-                            href: route('shelter.applications.index'),
+                            href: shelter.applications.index().url,
                             icon: ClipboardList,
                         },
                         {
                             title: 'Reports',
-                            href: route('shelter.reports.index'),
+                            href: shelter.reports.index().url,
                             icon: BookOpen,
+                        },
+                    ],
+                },
+                {
+                    title: 'Content & Pages',
+                    items: [
+                        {
+                            title: 'Announcements',
+                            href: shelter.cms.announcements.index().url,
+                            icon: Megaphone,
                         },
                     ],
                 },
@@ -154,7 +173,7 @@ export function AppSidebar() {
                     items: [
                         {
                             title: 'Dashboard',
-                            href: dashboard(),
+                            href: route('mao.dashboard'),
                             icon: LayoutGrid,
                         },
                         {
@@ -216,6 +235,12 @@ export function AppSidebar() {
     const getLogoLink = () => {
         if (roles.includes('admin')) {
             return route('admin.dashboard');
+        }
+        if (roles.includes('mao_officer')) {
+            return route('mao.dashboard');
+        }
+        if (roles.includes('shelter_staff')) {
+            return route('shelter.dashboard');
         }
         return dashboard();
     };

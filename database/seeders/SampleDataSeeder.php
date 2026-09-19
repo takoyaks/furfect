@@ -3,10 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\AdopterProfile;
-use App\Models\Application;
 use App\Models\LifestyleProfile;
 use App\Models\Pet;
-use App\Models\PetPhoto;
 use App\Models\Shelter;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -19,7 +17,7 @@ class SampleDataSeeder extends Seeder
      */
     public function run(): void
     {
-        // ── Admin User ─────────────────────────────────────────────
+        // ── Admin Users ────────────────────────────────────────────
         $admin = User::firstOrCreate(
             ['email' => 'admin@furfect.com'],
             [
@@ -29,6 +27,16 @@ class SampleDataSeeder extends Seeder
             ]
         );
         $admin->assignRole('admin');
+
+        $kerbieAdmin = User::updateOrCreate(
+            ['email' => 'kerbie@furfect.com'],
+            [
+                'name' => 'kerbie',
+                'password' => Hash::make('password123'),
+                'email_verified_at' => now(),
+            ]
+        );
+        $kerbieAdmin->syncRoles(['admin']);
 
         // ── Virac Animal Shelter ───────────────────────────────────
         $shelter = Shelter::firstOrCreate(
@@ -128,7 +136,9 @@ class SampleDataSeeder extends Seeder
                 'age_years' => 2,
                 'gender' => 'male',
                 'size' => 'medium',
-                'health_status' => 'Vaccinated, Neutered',
+                'health_status' => 'Vaccinated, Neutered, Anti-Rabies Vaccinated',
+                'maintenance_level' => 'medium',
+                'coat_color' => 'brown',
                 'temperament' => ['Friendly', 'Active'],
                 'energy_level' => 'moderate',
                 'requires_experience' => false,
@@ -148,7 +158,9 @@ class SampleDataSeeder extends Seeder
                 'age_years' => 1,
                 'gender' => 'male',
                 'size' => 'small',
-                'health_status' => 'Vaccinated',
+                'health_status' => 'Vaccinated, Dewormed',
+                'maintenance_level' => 'low',
+                'coat_color' => 'white',
                 'temperament' => ['Calm', 'Indoor'],
                 'energy_level' => 'low',
                 'requires_experience' => false,
@@ -168,7 +180,9 @@ class SampleDataSeeder extends Seeder
                 'age_years' => 3,
                 'gender' => 'male',
                 'size' => 'large',
-                'health_status' => 'Vaccinated',
+                'health_status' => 'Vaccinated, Anti-Rabies Vaccinated',
+                'maintenance_level' => 'high',
+                'coat_color' => 'golden',
                 'temperament' => ['Playful', 'Loyal'],
                 'energy_level' => 'very_active',
                 'requires_experience' => true,
@@ -189,6 +203,8 @@ class SampleDataSeeder extends Seeder
                 'gender' => 'male',
                 'size' => 'small',
                 'health_status' => 'Vaccinated, Neutered',
+                'maintenance_level' => 'low',
+                'coat_color' => 'black',
                 'temperament' => ['Sweet', 'Shy'],
                 'energy_level' => 'low',
                 'requires_experience' => false,
@@ -209,6 +225,8 @@ class SampleDataSeeder extends Seeder
                 'gender' => 'male',
                 'size' => 'small',
                 'health_status' => 'Vaccinated, Spayed',
+                'maintenance_level' => 'medium',
+                'coat_color' => 'mixed',
                 'temperament' => ['Friendly', 'Active'],
                 'energy_level' => 'moderate',
                 'requires_experience' => false,
@@ -228,7 +246,9 @@ class SampleDataSeeder extends Seeder
                 'age_years' => 1,
                 'gender' => 'female',
                 'size' => 'small',
-                'health_status' => 'Vaccinated',
+                'health_status' => 'Vaccinated, Fully Vaccinated',
+                'maintenance_level' => 'high',
+                'coat_color' => 'white',
                 'temperament' => ['Friendly', 'Active'],
                 'energy_level' => 'moderate',
                 'requires_experience' => false,

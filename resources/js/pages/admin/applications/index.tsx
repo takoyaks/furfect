@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { Search, Filter } from 'lucide-react';
 
 interface Application {
     id: number;
@@ -24,11 +25,30 @@ export default function AdminApplications({
     filters: any;
 }) {
     const [search, setSearch] = useState(filters.search || '');
-    const [status, setStatus] = useState(filters.status || 'All statuses');
+    const [status, setStatus] = useState(filters.status || 'all');
+
+    const applyStatusFilter = (val: string) => {
+        setStatus(val);
+        router.get(
+            route('admin.applications.index'),
+            {
+                search: search || undefined,
+                status: val === 'all' ? '' : val,
+            },
+            { preserveState: true, replace: true }
+        );
+    };
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        router.get(route('admin.applications.index'), { search, status }, { preserveState: true });
+        router.get(
+            route('admin.applications.index'),
+            {
+                search: search || undefined,
+                status: status === 'all' ? '' : status,
+            },
+            { preserveState: true, replace: true }
+        );
     };
 
     const handleDelete = (appId: number) => {
@@ -52,28 +72,58 @@ export default function AdminApplications({
                 {/* Filters and List */}
                 <Card className="border-gray-200">
                     <CardHeader className="pb-4">
-                        <form onSubmit={handleSearchSubmit} className="flex gap-4 flex-wrap">
-                            <div className="flex-1 min-w-[200px]">
+                        <form onSubmit={handleSearchSubmit} className="flex gap-4 flex-wrap items-center">
+                            <div className="flex-1 min-w-[220px]">
                                 <Input 
                                     placeholder="Search by reference number or adopter name..." 
                                     value={search} 
                                     onChange={e => setSearch(e.target.value)}
+                                    leftIcon={<Search className="size-4 text-gray-500" />}
                                 />
                             </div>
-                            <div className="w-48">
-                                <Select value={status} onValueChange={val => setStatus(val)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                            <div className="w-52">
+                                <Select value={status} onValueChange={applyStatusFilter}>
+                                    <SelectTrigger className="bg-white border-gray-200 shadow-xs h-9">
+                                        <div className="flex items-center gap-2 truncate">
+                                            <Filter className="h-4 w-4 text-gray-500 shrink-0" />
+                                            <SelectValue placeholder="Filter status" />
+                                        </div>
+                                    </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="All statuses">All statuses</SelectItem>
-                                        <SelectItem value="pending">Pending</SelectItem>
-                                        <SelectItem value="under_review">Under Review</SelectItem>
-                                        <SelectItem value="mao_audit">MAO Audit</SelectItem>
-                                        <SelectItem value="approved">Approved</SelectItem>
-                                        <SelectItem value="rejected">Rejected</SelectItem>
+                                        <SelectItem value="all">All statuses</SelectItem>
+                                        <SelectItem value="pending">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                                                Pending
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="under_review">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                                Under Review
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="mao_audit">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                                                MAO Audit
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="approved">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                                Approved
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="rejected">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                                Rejected
+                                            </div>
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <Button type="submit" variant="secondary">Filter</Button>
                         </form>
                     </CardHeader>
                     <CardContent className="p-0 border-t border-gray-100 overflow-x-auto">

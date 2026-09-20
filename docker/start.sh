@@ -13,9 +13,9 @@ mkdir -p \
 
 chmod -R 775 storage bootstrap/cache
 
-echo "Clearing old configuration..."
+echo "Clearing old Laravel caches..."
 
-php artisan config:clear
+php artisan optimize:clear
 
 echo "Creating storage link..."
 
@@ -25,6 +25,15 @@ echo "Running database migrations..."
 
 php artisan migrate --force
 
+echo "Checking Vite production assets..."
+
+if [ ! -f public/build/manifest.json ]; then
+    echo "ERROR: public/build/manifest.json was not found."
+    exit 1
+fi
+
+echo "Vite production assets found."
+
 echo "Optimizing Laravel..."
 
 php artisan optimize
@@ -33,4 +42,6 @@ echo "Starting Laravel on port ${PORT:-10000}..."
 
 export PHP_CLI_SERVER_WORKERS=4
 
-exec php -S "0.0.0.0:${PORT:-10000}" -t public public/index.php
+exec php artisan serve \
+    --host=0.0.0.0 \
+    --port="${PORT:-10000}"

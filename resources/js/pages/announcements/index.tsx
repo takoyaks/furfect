@@ -189,8 +189,8 @@ export default function AnnouncementsIndex({ config, announcements, categories =
                                             <h3 className={`font-bold text-base text-gray-900 group-hover:${theme.accentText} transition-colors line-clamp-2`}>
                                                 {item.title}
                                             </h3>
-                                            <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed">
-                                                {item.content}
+                                            <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed" title={item.content?.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}>
+                                                {item.content?.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}
                                             </p>
                                         </CardContent>
                                     </div>

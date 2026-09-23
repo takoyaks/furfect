@@ -27,6 +27,7 @@ import {
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
+import { useThemeTemplate } from '@/hooks/use-theme-template';
 import { cn } from '@/lib/utils';
 import { dashboard, login, register } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
@@ -39,10 +40,14 @@ const activeItemStyles =
     'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100';
 
 export function AppHeader({ breadcrumbs = [] }: Props) {
+    const theme = useThemeTemplate();
     const page = usePage();
     const { auth } = page.props;
     const getInitials = useInitials();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
+
+    const roles = (auth.user?.roles as string[]) || [];
+    const isStaffOrAdminOrMao = roles.some((r) => ['admin', 'shelter_staff', 'mao_officer'].includes(r));
 
     const mainNavItems: NavItem[] = auth.user
         ? [
@@ -76,11 +81,13 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                   href: route('application.show'),
                   icon: FileCheck,
               },
-              {
-                  title: 'Pet History',
-                  href: route('history.index'),
-                  icon: Award,
-              },
+              ...(!isStaffOrAdminOrMao ? [
+                  {
+                      title: 'Pet History',
+                      href: route('history.index'),
+                      icon: Award,
+                  },
+              ] : []),
           ]
         : [
               {
@@ -141,7 +148,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                                     className="flex items-center space-x-2 font-medium"
                                                 >
                                                     {item.icon && (
-                                                        <item.icon className="h-5 w-5" />
+                                                        <item.icon className={cn("h-5 w-5 transition-colors", isCurrentUrl(item.href) ? theme.sidebarActiveIcon : theme.sidebarInactiveIcon)} />
                                                     )}
                                                     <span>{item.title}</span>
                                                 </Link>
@@ -177,11 +184,14 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 )}
                             >
                                 {item.icon && (
-                                    <item.icon className="mr-2 h-4 w-4" />
+                                    <item.icon className={cn("mr-2 h-4 w-4 transition-colors", isCurrentUrl(item.href) ? theme.sidebarActiveIcon : theme.sidebarInactiveIcon)} />
                                 )}
                                 <span>{item.title}</span>
                                 {isCurrentUrl(item.href) && (
-                                    <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black dark:bg-white"></div>
+                                    <div
+                                        className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px rounded-full"
+                                        style={{ backgroundColor: theme.primaryColor }}
+                                    ></div>
                                 )}
                             </Link>
                         ))}
@@ -221,7 +231,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     </Button>
                                 </Link>
                                 <Link href={register()}>
-                                    <Button size="sm" className="text-xs font-semibold bg-[#D4A017] hover:bg-[#B8860B] text-white shadow-xs">
+                                    <Button size="sm" className={cn("text-xs font-semibold text-white shadow-xs", theme.primaryButton)}>
                                         Register
                                     </Button>
                                 </Link>

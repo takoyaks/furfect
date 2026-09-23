@@ -47,7 +47,7 @@ export function ApplicationTimelineCard({
             case 'mao_officer':
                 return <ShieldCheck className="h-4 w-4 text-purple-600" />;
             case 'shelter_staff':
-                return <Building className="h-4 w-4 text-[#D4A017]" />;
+                return <Building className="h-4 w-4 text-theme" />;
             case 'adopter':
                 return <UserCheck className="h-4 w-4 text-blue-600" />;
             default:
@@ -61,7 +61,7 @@ export function ApplicationTimelineCard({
                 <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="space-y-0.5">
                         <CardTitle className="text-base font-bold text-gray-800 flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-[#D4A017]" />
+                            <Clock className="h-4 w-4 text-theme" />
                             Official Audit Trail &amp; Processing History
                         </CardTitle>
                         <CardDescription className="text-xs text-gray-500">

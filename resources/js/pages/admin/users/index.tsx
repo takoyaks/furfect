@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { useThemeTemplate } from '@/hooks/use-theme-template';
 import { 
     Search, 
     User as UserIcon, 
@@ -105,6 +106,7 @@ export default function AdminUsers({
     counts, 
     filters 
 }: Props) {
+    const theme = useThemeTemplate();
     const { auth } = usePage().props as any;
     const currentUserId = auth?.user?.id;
 
@@ -271,7 +273,7 @@ export default function AdminUsers({
                     {currentTab === 'staff' && (
                         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                             <DialogTrigger asChild>
-                                <Button className="bg-[#FFBF00] hover:bg-[#E5A910] text-[#283F24] font-bold text-xs h-9 shadow-xs flex items-center gap-1.5">
+                                <Button className={`${theme.tabActive} text-xs h-9 shadow-xs flex items-center gap-1.5`}>
                                     <Plus className="size-4" /> Add Staff User
                                 </Button>
                             </DialogTrigger>
@@ -309,7 +311,7 @@ export default function AdminUsers({
                                             </SelectContent>
                                         </Select>
                                     </div>
-                                    <Button type="submit" disabled={processing} className="w-full bg-[#FFBF00] hover:bg-[#E5A910] text-[#283F24] font-bold">
+                                    <Button type="submit" disabled={processing} className={`w-full ${theme.tabActive}`}>
                                         Create Staff Account
                                     </Button>
                                 </form>
@@ -325,14 +327,14 @@ export default function AdminUsers({
                         onClick={() => handleTabChange('subscribers')}
                         className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
                             currentTab === 'subscribers'
-                                ? 'bg-[#FFBF00] text-[#283F24] shadow-xs'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                ? theme.tabActive
+                                : theme.tabInactive
                         }`}
                     >
                         <Users className="size-4" />
                         <span>Adopters</span>
                         <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                            currentTab === 'subscribers' ? 'bg-[#283F24] text-white' : 'bg-gray-200 text-gray-700'
+                            currentTab === 'subscribers' ? 'bg-black/20 text-current' : 'bg-gray-200 text-gray-700'
                         }`}>
                             {counts.subscribers}
                         </span>
@@ -348,14 +350,14 @@ export default function AdminUsers({
                         onClick={() => handleTabChange('staff')}
                         className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
                             currentTab === 'staff'
-                                ? 'bg-[#FFBF00] text-[#283F24] shadow-xs'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                ? theme.tabActive
+                                : theme.tabInactive
                         }`}
                     >
                         <ShieldCheck className="size-4" />
                         <span>Staff & Admins</span>
                         <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                            currentTab === 'staff' ? 'bg-[#283F24] text-white' : 'bg-gray-200 text-gray-700'
+                            currentTab === 'staff' ? 'bg-black/20 text-current' : 'bg-gray-200 text-gray-700'
                         }`}>
                             {counts.staff}
                         </span>
@@ -582,7 +584,7 @@ export default function AdminUsers({
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    className="size-7 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                                                    className="size-7 rounded-lg text-theme hover:text-theme-hover hover:bg-theme-light"
                                                                     title="Inspect Subscriber Profile"
                                                                     onClick={() => setInspectingSubscriber(u)}
                                                                 >
@@ -673,29 +675,29 @@ export default function AdminUsers({
                         {inspectingSubscriber && (
                             <div className="space-y-4 text-xs">
                                 {/* Account & Contact info */}
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                    <div>
-                                        <span className="text-gray-400 font-medium block text-[10px]">ACCOUNT ID</span>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                    <div className="min-w-0">
+                                        <span className="text-gray-400 font-medium block text-[10px] uppercase">Account ID</span>
                                         <span className="font-bold text-gray-800">#{inspectingSubscriber.id}</span>
                                     </div>
-                                    <div>
-                                        <span className="text-gray-400 font-medium block text-[10px]">EMAIL</span>
-                                        <span className="font-medium text-gray-800">{inspectingSubscriber.email}</span>
+                                    <div className="min-w-0">
+                                        <span className="text-gray-400 font-medium block text-[10px] uppercase">Email</span>
+                                        <span className="font-medium text-gray-800 break-all block">{inspectingSubscriber.email}</span>
                                     </div>
-                                    <div>
-                                        <span className="text-gray-400 font-medium block text-[10px]">PHONE</span>
-                                        <span className="font-medium text-gray-800">{inspectingSubscriber.adopter_profile?.contact_number || inspectingSubscriber.phone || 'N/A'}</span>
+                                    <div className="min-w-0">
+                                        <span className="text-gray-400 font-medium block text-[10px] uppercase">Phone</span>
+                                        <span className="font-medium text-gray-800 break-words block">{inspectingSubscriber.adopter_profile?.contact_number || inspectingSubscriber.phone || 'N/A'}</span>
                                     </div>
-                                    <div className="col-span-2 sm:col-span-3">
-                                        <span className="text-gray-400 font-medium block text-[10px]">HOME ADDRESS</span>
-                                        <span className="font-medium text-gray-800">{inspectingSubscriber.adopter_profile?.home_address || 'N/A'}</span>
+                                    <div className="min-w-0 sm:col-span-3 pt-2 border-t border-gray-100">
+                                        <span className="text-gray-400 font-medium block text-[10px] uppercase">Home Address</span>
+                                        <span className="font-medium text-gray-800 break-words block">{inspectingSubscriber.adopter_profile?.home_address || 'N/A'}</span>
                                     </div>
                                 </div>
 
                                 {/* eKYC Verification & Valid ID */}
-                                <div className="border border-gray-200 rounded-lg p-3 space-y-2">
+                                <div className="border border-gray-200 rounded-lg p-3 space-y-2.5">
                                     <div className="flex justify-between items-center">
-                                        <span className="font-bold text-gray-900">Identity & ID Document Status</span>
+                                        <span className="font-bold text-gray-900">Identity &amp; ID Document Status</span>
                                         {inspectingSubscriber.adopter_profile?.is_identity_verified ? (
                                             <span className="text-emerald-800 bg-emerald-50 text-[10px] px-2 py-0.5 rounded font-bold border border-emerald-200 flex items-center gap-1">
                                                 <CheckCircle2 className="size-3 text-emerald-600" /> Verified
@@ -708,11 +710,27 @@ export default function AdminUsers({
                                     </div>
 
                                     {inspectingSubscriber.adopter_profile ? (
-                                        <div className="grid grid-cols-2 gap-2 text-[11px] bg-stone-50 p-2 rounded">
-                                            <div><strong>ID Type:</strong> {inspectingSubscriber.adopter_profile.valid_id_type || 'N/A'}</div>
-                                            <div><strong>ID Number:</strong> {inspectingSubscriber.adopter_profile.valid_id_number || 'N/A'}</div>
-                                            <div><strong>Front ID Doc:</strong> {inspectingSubscriber.adopter_profile.id_document_path ? '✓ Uploaded' : 'None'}</div>
-                                            <div><strong>Back ID Doc:</strong> {inspectingSubscriber.adopter_profile.id_document_back_path ? '✓ Uploaded' : 'None'}</div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] bg-stone-50 p-2.5 rounded-lg border border-stone-100">
+                                            <div className="min-w-0 bg-white/80 p-2 rounded border border-stone-200/60">
+                                                <span className="text-[10px] text-gray-400 font-semibold block uppercase">ID Type</span>
+                                                <span className="font-semibold text-gray-800 break-words block capitalize">{inspectingSubscriber.adopter_profile.valid_id_type?.replace(/_/g, ' ') || 'N/A'}</span>
+                                            </div>
+                                            <div className="min-w-0 bg-white/80 p-2 rounded border border-stone-200/60">
+                                                <span className="text-[10px] text-gray-400 font-semibold block uppercase">ID Number</span>
+                                                <span className="font-semibold text-gray-800 break-words block">{inspectingSubscriber.adopter_profile.valid_id_number || 'N/A'}</span>
+                                            </div>
+                                            <div className="min-w-0 bg-white/80 p-2 rounded border border-stone-200/60">
+                                                <span className="text-[10px] text-gray-400 font-semibold block uppercase">Front ID Document</span>
+                                                <span className="font-medium text-gray-800 break-words block">
+                                                    {inspectingSubscriber.adopter_profile.id_document_path ? '✓ Uploaded' : 'None'}
+                                                </span>
+                                            </div>
+                                            <div className="min-w-0 bg-white/80 p-2 rounded border border-stone-200/60">
+                                                <span className="text-[10px] text-gray-400 font-semibold block uppercase">Back ID Document</span>
+                                                <span className="font-medium text-gray-800 break-words block">
+                                                    {inspectingSubscriber.adopter_profile.id_document_back_path ? '✓ Uploaded' : 'None'}
+                                                </span>
+                                            </div>
                                         </div>
                                     ) : (
                                         <p className="text-gray-400 italic text-[11px]">No adopter profile record found.</p>
@@ -720,16 +738,38 @@ export default function AdminUsers({
                                 </div>
 
                                 {/* Lifestyle Quiz Summary */}
-                                <div className="border border-gray-200 rounded-lg p-3 space-y-2">
-                                    <div className="font-bold text-gray-900">Lifestyle Profile & Questionnaire</div>
+                                <div className="border border-gray-200 rounded-lg p-3 space-y-2.5">
+                                    <div className="font-bold text-gray-900">Lifestyle Profile &amp; Questionnaire</div>
                                     {inspectingSubscriber.lifestyle_profile ? (
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] bg-purple-50/50 p-2.5 rounded">
-                                            <div><strong>Housing:</strong> {inspectingSubscriber.lifestyle_profile.housing_type}</div>
-                                            <div><strong>Activity Level:</strong> {inspectingSubscriber.lifestyle_profile.activity_level}</div>
-                                            <div><strong>Work Schedule:</strong> {inspectingSubscriber.lifestyle_profile.work_schedule}</div>
-                                            <div><strong>Household Size:</strong> {inspectingSubscriber.lifestyle_profile.household_size}</div>
-                                            <div><strong>Has Children:</strong> {inspectingSubscriber.lifestyle_profile.has_children}</div>
-                                            <div><strong>Submitted:</strong> {new Date(inspectingSubscriber.lifestyle_profile.submitted_at || '').toLocaleDateString()}</div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-[11px] bg-purple-50/50 p-2.5 rounded-lg border border-purple-100">
+                                            <div className="min-w-0 bg-white/80 p-2 rounded border border-purple-100/80">
+                                                <span className="text-[10px] text-purple-600 font-semibold block uppercase">Housing Type</span>
+                                                <span className="font-semibold text-gray-800 break-words block capitalize">{inspectingSubscriber.lifestyle_profile.housing_type?.replace(/_/g, ' ') || 'N/A'}</span>
+                                            </div>
+                                            <div className="min-w-0 bg-white/80 p-2 rounded border border-purple-100/80">
+                                                <span className="text-[10px] text-purple-600 font-semibold block uppercase">Activity Level</span>
+                                                <span className="font-semibold text-gray-800 break-words block capitalize">{inspectingSubscriber.lifestyle_profile.activity_level?.replace(/_/g, ' ') || 'N/A'}</span>
+                                            </div>
+                                            <div className="min-w-0 bg-white/80 p-2 rounded border border-purple-100/80">
+                                                <span className="text-[10px] text-purple-600 font-semibold block uppercase">Work Schedule</span>
+                                                <span className="font-semibold text-gray-800 break-words block capitalize">{inspectingSubscriber.lifestyle_profile.work_schedule?.replace(/_/g, ' ') || 'N/A'}</span>
+                                            </div>
+                                            <div className="min-w-0 bg-white/80 p-2 rounded border border-purple-100/80">
+                                                <span className="text-[10px] text-purple-600 font-semibold block uppercase">Household Size</span>
+                                                <span className="font-semibold text-gray-800 break-words block">{inspectingSubscriber.lifestyle_profile.household_size ?? 'N/A'}</span>
+                                            </div>
+                                            <div className="min-w-0 bg-white/80 p-2 rounded border border-purple-100/80">
+                                                <span className="text-[10px] text-purple-600 font-semibold block uppercase">Has Children</span>
+                                                <span className="font-semibold text-gray-800 break-words block capitalize">{inspectingSubscriber.lifestyle_profile.has_children ? 'Yes' : 'No'}</span>
+                                            </div>
+                                            <div className="min-w-0 bg-white/80 p-2 rounded border border-purple-100/80">
+                                                <span className="text-[10px] text-purple-600 font-semibold block uppercase">Submitted Date</span>
+                                                <span className="font-semibold text-gray-800 break-words block">
+                                                    {inspectingSubscriber.lifestyle_profile.submitted_at 
+                                                        ? new Date(inspectingSubscriber.lifestyle_profile.submitted_at).toLocaleDateString() 
+                                                        : 'N/A'}
+                                                </span>
+                                            </div>
                                         </div>
                                     ) : (
                                         <p className="text-gray-400 italic text-[11px]">Lifestyle quiz not yet completed.</p>

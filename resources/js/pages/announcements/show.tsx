@@ -115,9 +115,14 @@ export default function AnnouncementShow({ config, announcement, recentAnnouncem
                     )}
 
                     {/* Article Content */}
-                    <div className="prose max-w-none text-gray-700 text-sm sm:text-base leading-relaxed whitespace-pre-line py-2">
-                        {announcement.content}
-                    </div>
+                    <div 
+                        className="prose max-w-none text-gray-700 text-sm sm:text-base leading-relaxed py-2 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-gray-900 [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-gray-900 [&_h4]:text-lg [&_h4]:font-bold [&_h4]:text-gray-900 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_blockquote]:border-l-4 [&_blockquote]:border-[#D4A017] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-gray-600"
+                        dangerouslySetInnerHTML={{ 
+                            __html: announcement.content?.includes('<') && announcement.content?.includes('>') 
+                                ? announcement.content 
+                                : announcement.content?.replace(/\n/g, '<br />') || ''
+                        }}
+                    />
 
                     {/* Official Banner Tag */}
                     <div className={`${theme.cardHighlightBg} border ${theme.cardHighlightBorder} rounded-2xl p-5 flex items-start sm:items-center gap-4 mt-6`}>

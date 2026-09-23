@@ -46,6 +46,7 @@ class ApplicationController extends Controller
             'pet.shelter',
             'staff',
             'maoOfficer',
+            'releasingOfficer',
             'timelines.actor',
         ])->findOrFail($id);
 
@@ -177,5 +178,119 @@ class ApplicationController extends Controller
         ]);
 
         return to_route('shelter.applications.index');
+    }
+
+    /**
+     * Confirm the physical handover and release of the pet to the adopter.
+     */
+    public function confirmRelease(Request $request, int $id): RedirectResponse
+    {
+        $application = Application::with(['pet', 'adopter.adopterProfile'])->findOrFail($id);
+
+        if ($application->status !== 'approved') {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => __('Only approved applications can be confirmed for pet release.'),
+            ]);
+
+            return back();
+        }
+
+        $request->validate([
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'checklist' => ['nullable', 'array'],
+            'checklist.*' => ['boolean'],
+        ]);
+
+        $actor = $request->user();
+        $notes = $request->input('notes');
+        $checklist = $request->input('checklist', []);
+
+        $application->update([
+            'status' => 'completed',
+            'released_at' => now(),
+            'releasing_officer_id' => $actor->id,
+            'releasing_notes' => $notes,
+            'release_checklist' => $checklist,
+        ]);
+
+        // Keep pet status permanently adopted
+        $application->pet->update(['status' => 'adopted']);
+
+        $adopterName = $application->adopter?->adopterProfile?->full_name
+            ?? $application->adopter?->name
+            ?? 'Authorized Adopter';
+
+        $application->logTimeline(
+            stage: 'completed',
+            action: 'pet_released',
+            title: 'Pet Handover Confirmed — Adoption Completed',
+            description: "Pet {$application->pet->name} was officially released and turned over to {$adopterName}. Physical custody transferred and municipal registry confirmed.",
+            actor: $actor,
+            metadata: [
+                'released_at' => now()->toIso8601String(),
+                'releasing_officer' => $actor->name,
+                'releasing_notes' => $notes,
+                'checklist' => $checklist,
+            ]
+        );
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __("Pet :name successfully marked as released and handed over to the adopter!", ['name' => $application->pet->name]),
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Mark an approved adoption application as unclaimed if the 7-day pickup deadline expired.
+     */
+    public function markUnclaimed(Request $request, int $id): RedirectResponse
+    {
+        $application = Application::with(['pet', 'adopter'])->findOrFail($id);
+
+        if ($application->status !== 'approved') {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => __('Only approved applications can be marked as unclaimed.'),
+            ]);
+
+            return back();
+        }
+
+        $request->validate([
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $actor = $request->user();
+        $notes = $request->input('notes');
+
+        $application->update([
+            'status' => 'unclaimed',
+            'releasing_notes' => $notes,
+        ]);
+
+        // Return pet to available catalog
+        $application->pet->update(['status' => 'available']);
+
+        $application->logTimeline(
+            stage: 'closed',
+            action: 'adoption_unclaimed',
+            title: 'Adoption Forfeited — Pet Unclaimed',
+            description: $notes ?: "Adopter failed to pick up {$application->pet->name} within the scheduled pickup deadline. Pet returned to available catalog.",
+            actor: $actor,
+            metadata: [
+                'reason' => 'Unclaimed after deadline',
+                'notes' => $notes,
+            ]
+        );
+
+        Inertia::flash('toast', [
+            'type' => 'warning',
+            'message' => __("Application marked as unclaimed. :name has been returned to the available catalog.", ['name' => $application->pet->name]),
+        ]);
+
+        return back();
     }
 }

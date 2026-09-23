@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Form, Head } from '@inertiajs/react';
 import { Mail, LogIn } from 'lucide-react';
 import InputError from '@/components/input-error';
@@ -18,6 +19,7 @@ type Props = {
 };
 
 export default function Login({ status, canResetPassword }: Props) {
+    const [remember, setRemember] = useState(false);
     return (
         <>
             <Head title="Log in" />
@@ -79,9 +81,12 @@ export default function Login({ status, canResetPassword }: Props) {
                             </div>
 
                             <div className="flex items-center space-x-2 pt-1">
+                                <input type="hidden" name="remember" value={remember ? 'true' : 'false'} />
                                 <Checkbox
                                     id="remember"
-                                    name="remember"
+                                    name="remember_ui"
+                                    checked={remember}
+                                    onCheckedChange={(checked) => setRemember(Boolean(checked))}
                                     tabIndex={3}
                                     className="border-[#FFBF00] data-[state=checked]:bg-[#FFBF00] data-[state=checked]:text-[#283F24] data-[state=checked]:border-[#FFBF00] rounded-md"
                                 />

@@ -20,3 +20,8 @@ export type AuthLayoutProps = {
     title?: string;
     description?: string;
 };
+
+export type SharedTheme = {
+    template: string;
+    primary_color: string;
+};

@@ -87,11 +87,13 @@ class PetController extends Controller
             'housing_area' => ['nullable', 'string', 'max:255'],
             'housing_notes' => ['nullable', 'string', 'max:1000'],
             'intake_date' => ['nullable', 'date'],
-            'adoption_fee' => ['required', 'numeric', 'min:0'],
+            'adoption_fee' => ['nullable', 'numeric', 'min:0'],
             'description' => ['nullable', 'string'],
             'photos' => ['nullable', 'array'],
             'photos.*' => ['image', 'max:4096'], // max 4MB
         ]);
+
+        $validated['adoption_fee'] = $validated['adoption_fee'] ?? 0;
 
         $pet = Pet::create(array_merge($validated, [
             'status' => 'available',
@@ -177,14 +179,34 @@ class PetController extends Controller
             'housing_area' => ['nullable', 'string', 'max:255'],
             'housing_notes' => ['nullable', 'string', 'max:1000'],
             'intake_date' => ['nullable', 'date'],
-            'adoption_fee' => ['required', 'numeric', 'min:0'],
+            'adoption_fee' => ['nullable', 'numeric', 'min:0'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'string', 'in:available,adopted,archived'],
             'photos' => ['nullable', 'array'],
             'photos.*' => ['image', 'max:4096'],
+            'deleted_photo_ids' => ['nullable', 'array'],
+            'deleted_photo_ids.*' => ['integer'],
         ]);
 
+        $validated['adoption_fee'] = $validated['adoption_fee'] ?? 0;
+
         $pet->update($validated);
+
+        // Process deleted existing photos
+        if (! empty($validated['deleted_photo_ids'])) {
+            PetPhoto::where('pet_id', $pet->id)
+                ->whereIn('id', $validated['deleted_photo_ids'])
+                ->delete();
+
+            // Reassign primary photo if previous primary was removed
+            $hasPrimary = $pet->photos()->where('is_primary', true)->exists();
+            if (! $hasPrimary) {
+                $firstPhoto = $pet->photos()->first();
+                if ($firstPhoto) {
+                    $firstPhoto->update(['is_primary' => true]);
+                }
+            }
+        }
 
         // Process new photos
         if ($request->hasFile('photos')) {
@@ -220,17 +242,27 @@ class PetController extends Controller
     }
 
     /**
-     * Archive the specified pet (marks as archived rather than hard deletion).
+     * Archive or permanently delete the specified pet.
      */
-    public function destroy(int $id): RedirectResponse
+    public function destroy(Request $request, int $id): RedirectResponse
     {
         $pet = Pet::findOrFail($id);
-        $pet->update(['status' => 'archived']);
 
-        Inertia::flash('toast', [
-            'type' => 'info',
-            'message' => __('Pet listing archived successfully.'),
-        ]);
+        if ($request->input('action') === 'delete' || $request->boolean('force_delete')) {
+            $pet->delete();
+
+            Inertia::flash('toast', [
+                'type' => 'success',
+                'message' => __('Pet listing permanently deleted.'),
+            ]);
+        } else {
+            $pet->update(['status' => 'archived']);
+
+            Inertia::flash('toast', [
+                'type' => 'info',
+                'message' => __('Pet listing archived successfully.'),
+            ]);
+        }
 
         return to_route('shelter.pets.index');
     }

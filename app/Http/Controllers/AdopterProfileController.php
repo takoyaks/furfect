@@ -24,7 +24,7 @@ class AdopterProfileController extends Controller
             return to_route('onboarding.personal.edit');
         }
 
-        $user = $request->user();
+        $user = $request->user()->fresh();
 
         // If already verified (e.g. manual admin approval or completed Didit), automatically proceed to next step
         if ($user->isIdentityVerified()) {
@@ -33,8 +33,11 @@ class AdopterProfileController extends Controller
 
         $verification = $user->latestDiditVerification;
 
-        // Proactively query live decision from Didit if verification was pending/unresolved
-        if ($verification && $verification->session_id && ! $verification->isApproved()) {
+        // Proactively query live decision from Didit if verification was pending/unresolved.
+        // Skip for manual admin sessions (fake session IDs would hit Didit API unnecessarily).
+        $isManualAdminSession = $verification && str_starts_with((string) $verification->session_id, 'manual_admin_');
+
+        if ($verification && $verification->session_id && ! $verification->isApproved() && ! $isManualAdminSession) {
             try {
                 $decision = $service->getSessionDecision($verification->session_id);
                 if ($decision && ! empty($decision) && ! in_array(strtolower($decision['status'] ?? ''), ['not started', 'not_started'])) {

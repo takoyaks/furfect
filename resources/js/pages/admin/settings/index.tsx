@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Settings, ShieldCheck, Save } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
+import { RichTextEditor } from '@/components/rich-text-editor';
 
 interface Setting {
     id: number;
@@ -74,17 +75,18 @@ export default function AdminSettings({ settings }: { settings: Setting[] }) {
                                                 </div>
                                             </div>
                                         ) : setting.type === 'text' ? (
-                                            /* Multiline Textarea for Terms/Policies text settings */
-                                            <div className="space-y-1.5">
-                                                <Label htmlFor={setting.key} className="font-bold text-gray-700 text-sm">{setting.label}</Label>
-                                                <p className="text-xs text-gray-400">{setting.description}</p>
-                                                <Textarea
+                                            /* Rich Textbox for Terms/Policies text settings */
+                                            <div className="space-y-2">
+                                                <div>
+                                                    <Label htmlFor={setting.key} className="font-bold text-gray-800 text-sm">{setting.label}</Label>
+                                                    <p className="text-xs text-gray-400 mt-0.5">{setting.description}</p>
+                                                </div>
+                                                <RichTextEditor
                                                     id={setting.key}
                                                     value={data[setting.key] || ''}
-                                                    onChange={e => setData(setting.key, e.target.value)}
-                                                    rows={4}
-                                                    placeholder="Enter custom agreement or policy text here, or leave empty to use the default placeholder."
-                                                    className="focus-visible:ring-[#D4A017] font-mono text-xs"
+                                                    onChange={val => setData(setting.key, val)}
+                                                    placeholder="Enter custom agreement or policy text here with rich formatting, or leave empty for default..."
+                                                    minHeight="220px"
                                                 />
                                             </div>
                                         ) : setting.type === 'integer' ? (

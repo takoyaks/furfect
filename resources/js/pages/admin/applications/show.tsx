@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Check, X, ExternalLink, Eye, ShieldCheck } from 'lucide-react';
+import { Sparkles, Check, X, ExternalLink, Eye, ShieldCheck, Clock, CheckCircle2 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { IdDocumentInspectorModal } from '@/components/id-document-inspector-modal';
 import { IdentityVerificationReport } from '@/components/identity-verification-report';
 import { IdentityVerificationBadge } from '@/components/identity-verification-badge';
+import { AdoptionCertificateModal } from '@/components/adoption-certificate-modal';
+import { AdoptionPassModal } from '@/components/adoption-pass-modal';
+import { ConfirmPetReleaseModal } from '@/components/confirm-pet-release-modal';
 
 const CHECKLIST_LABELS: Record<string, { label: string; description: string }> = {
     identity_verified:   { label: 'Applicant identity verified',       description: 'Name, address, and contact details match submitted ID document.' },
@@ -29,6 +32,11 @@ interface Application {
     mao_checklist: Record<string, boolean> | null;
     resolved_at: string | null;
     submitted_at: string;
+    released_at?: string | null;
+    pickup_deadline_at?: string | null;
+    releasing_officer?: { name: string } | null;
+    releasing_notes?: string | null;
+    release_checklist?: Record<string, boolean> | null;
     adopter: {
         id: number;
         name: string;
@@ -95,9 +103,32 @@ export default function AdminApplicationShow({ application }: { application: App
                         <h2 className="text-2xl font-bold text-gray-800">Application Audit details</h2>
                         <p className="text-xs text-gray-500">{application.reference_number} • Adopter: {application.adopter.name}</p>
                     </div>
-                    <span className="text-xs bg-amber-100 text-amber-700 px-3 py-1 rounded-full uppercase font-bold">
-                        {application.status.replace(/_/g, ' ')}
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {application.status === 'approved' && (
+                            <>
+                                <ConfirmPetReleaseModal application={application as any} routePrefix="admin" />
+                                <AdoptionCertificateModal application={application as any} />
+                                <AdoptionPassModal application={application as any} />
+                            </>
+                        )}
+                        {application.status === 'completed' && (
+                            <>
+                                <AdoptionCertificateModal application={application as any} />
+                                <AdoptionPassModal application={application as any} />
+                            </>
+                        )}
+                        <span className={`text-xs px-3.5 py-1 rounded-full uppercase font-bold tracking-wider ${
+                            application.status === 'completed'
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                : application.status === 'approved'
+                                ? 'bg-green-100 text-green-800'
+                                : application.status === 'rejected' || application.status === 'unclaimed'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-amber-100 text-amber-700'
+                        }`}>
+                            {application.status === 'completed' ? 'RELEASED / ADOPTED' : application.status.replace(/_/g, ' ')}
+                        </span>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -264,6 +295,15 @@ export default function AdminApplicationShow({ application }: { application: App
                                         {application.mao_remarks && <p className="italic text-gray-500 mt-1">"{application.mao_remarks}"</p>}
                                     </div>
                                 )}
+
+                                {/* Physical Release / Handover Turnover */}
+                                {application.status === 'completed' && (
+                                    <div className="border-l-2 border-emerald-500 pl-3 py-1">
+                                        <div className="font-bold text-gray-700">Physical Pet Turnover: <span className="uppercase text-emerald-600 font-black">RELEASED &amp; ADOPTED</span></div>
+                                        <div className="text-gray-400 mt-0.5">By {application.releasing_officer?.name || 'Authorized Officer'} • {application.released_at ? new Date(application.released_at).toLocaleString() : ''}</div>
+                                        {application.releasing_notes && <p className="italic text-gray-500 mt-1">"{application.releasing_notes}"</p>}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
 
@@ -312,6 +352,69 @@ export default function AdminApplicationShow({ application }: { application: App
                                 )}
                             </CardContent>
                         </Card>
+
+                        {/* Physical Turnover & Release Status */}
+                        {application.status === 'approved' && (
+                            <Card className="border-emerald-300 bg-emerald-50/60 shadow-md">
+                                <CardHeader className="p-4 pb-2 border-b border-emerald-200">
+                                    <CardTitle className="text-sm font-bold text-emerald-950 flex items-center gap-1.5">
+                                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                                        MAO Approved &bull; Ready for Release
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-4 space-y-3 text-xs">
+                                    <p className="text-emerald-800 leading-relaxed">
+                                        Adopter has been issued the official Municipal Adoption Pass. Verify ID, carrier/gear, and turnover logbook before confirming release.
+                                    </p>
+                                    {application.pickup_deadline_at && (
+                                        <div className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1.5">
+                                            <Clock className="w-3.5 h-3.5" />
+                                            Claim Deadline: {new Date(application.pickup_deadline_at).toLocaleDateString()}
+                                        </div>
+                                    )}
+                                    <div className="pt-1">
+                                        <ConfirmPetReleaseModal application={application as any} routePrefix="admin" />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {application.status === 'completed' && (
+                            <Card className="border-emerald-300 bg-emerald-50/50 shadow-md">
+                                <CardHeader className="p-4 pb-2 border-b border-emerald-200">
+                                    <CardTitle className="text-sm font-bold text-emerald-900 flex items-center gap-1.5">
+                                        <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                                        Pet Handover Confirmed
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-4 space-y-2 text-xs text-emerald-800">
+                                    <p><strong>Date Released:</strong> {application.released_at ? new Date(application.released_at).toLocaleDateString() : 'Recorded in registry'}</p>
+                                    {application.releasing_officer && (
+                                        <p><strong>Releasing Officer:</strong> {application.releasing_officer.name}</p>
+                                    )}
+                                    {application.releasing_notes && (
+                                        <p className="italic text-gray-600">"{application.releasing_notes}"</p>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {application.status === 'unclaimed' && (
+                            <Card className="border-red-300 bg-red-50/50 shadow-md">
+                                <CardHeader className="p-4 pb-2 border-b border-red-200">
+                                    <CardTitle className="text-sm font-bold text-red-900 flex items-center gap-1.5">
+                                        <Clock className="h-4 w-4 text-red-600" />
+                                        Adoption Forfeited — Unclaimed
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-4 space-y-2 text-xs text-red-800">
+                                    <p>The adopter did not pick up the pet within the scheduled deadline. The pet has been returned to the available catalog.</p>
+                                    {application.releasing_notes && (
+                                        <p className="italic text-gray-600">"{application.releasing_notes}"</p>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )}
 
                         <Link href={route('admin.applications.index')} className="block">
                             <Button variant="outline" className="w-full text-xs border-gray-200">

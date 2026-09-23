@@ -136,8 +136,11 @@ class DiditVerificationController extends Controller
         $verification = $user->latestDiditVerification;
         $profile = $user->adopterProfile;
 
-        // If not yet verified, proactively poll decision from Didit
-        if (! $user->isIdentityVerified() && $verification && $verification->session_id && ! $verification->isApproved()) {
+        // If not yet verified, proactively poll decision from Didit.
+        // Skip for manual admin sessions (fake session IDs should not hit Didit API).
+        $isManualAdminSession = $verification && str_starts_with((string) $verification->session_id, 'manual_admin_');
+
+        if (! $user->isIdentityVerified() && $verification && $verification->session_id && ! $verification->isApproved() && ! $isManualAdminSession) {
             try {
                 $decision = $service->getSessionDecision($verification->session_id);
                 if ($decision && ! empty($decision) && ! in_array(strtolower($decision['status'] ?? ''), ['not started', 'not_started'])) {

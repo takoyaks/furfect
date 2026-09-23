@@ -76,34 +76,110 @@ class ApplicationController extends Controller
             'pet_stay' => $application->adopter?->adopterProfile?->pet_stay ?? 'inside',
         ];
 
+        $defaultChecklist = $this->evaluateStatutoryCompliance($application, $dssMatch, $adopterTrackRecord);
+
         return Inertia::render('mao/applications/show', [
             'application' => $application,
             'dssMatch' => $dssMatch,
             'adopterTrackRecord' => $adopterTrackRecord,
-            // Statutory compliance checklist items (mapped to RA 8485 Animal Welfare Act & RA 9482 Anti-Rabies Act)
-            'defaultChecklist' => [
-                'identity_verified' => [
-                    'label' => __('Applicant Identity Verified (RA 9482 Compliance)'),
-                    'description' => __('Government-issued ID matches submitted personal details and residency in Catanduanes.'),
-                ],
-                'dss_score_acceptable' => [
-                    'label' => __('DSS Multi-Factor Compatibility Met (>= 50% Threshold)'),
-                    'description' => __('8-Factor Decision Support System score confirms baseline compatibility with selected pet.'),
-                ],
-                'staff_recommendation' => [
-                    'label' => __('Shelter Staff Initial Assessment Endorsed'),
-                    'description' => __('Virac Animal Shelter staff completed initial interview and endorsed applicant suitability.'),
-                ],
-                'housing_appropriate' => [
-                    'label' => __('Humane Living Environment & Security Verified (RA 8485)'),
-                    'description' => __('Residence environment meets space, safety, and outdoor containment standards.'),
-                ],
-                'no_red_flags' => [
-                    'label' => __('No Animal Neglect or Abuse History'),
-                    'description' => __('Applicant has no record of municipal animal cruelty, illegal surrender, or abandonment violations.'),
-                ],
-            ],
+            'defaultChecklist' => $defaultChecklist,
         ]);
+    }
+
+    /**
+     * Compute automated statutory compliance evaluation for an application.
+     *
+     * @param  array<string, mixed>  $adopterTrackRecord
+     * @return array<string, array{label: string, description: string, auto_compliant: bool, compliance_reason: string}>
+     */
+    protected function evaluateStatutoryCompliance(Application $application, ?DssMatchScore $dssMatch, array $adopterTrackRecord): array
+    {
+        $adopter = $application->adopter;
+        $lifestyle = $adopter?->lifestyleProfile;
+        $pet = $application->pet;
+
+        // 1. Identity Verified (RA 9482)
+        $isIdentityVerified = (bool) ($adopter?->isIdentityVerified());
+        $identityReason = $isIdentityVerified
+            ? __('Government ID and biometrics successfully verified (RA 9482 compliant).')
+            : __('Applicant identity is unverified or awaiting valid government ID.');
+
+        // 2. DSS Score >= 50% Threshold
+        $dssScore = $dssMatch?->total_score ?? (float) ($application->dss_score ?? 0);
+        $isDssAcceptable = $dssScore >= 50.0;
+        $dssReason = $isDssAcceptable
+            ? __('Compatibility score of :score% meets or exceeds municipal threshold (>= 50%).', ['score' => round($dssScore, 1)])
+            : __('Compatibility score of :score% is below the required 50% municipal baseline.', ['score' => round($dssScore, 1)]);
+
+        // 3. Shelter Staff Recommendation
+        $isStaffEndorsed = in_array($application->staff_decision, ['suitable', 'approved'], true) || $application->status === 'mao_audit';
+        $staffReason = $isStaffEndorsed
+            ? __('Virac Animal Shelter staff completed initial interview and endorsed applicant as suitable.')
+            : __('Shelter staff evaluation not marked as suitable or pending endorsement.');
+
+        // 4. Housing & Living Environment (RA 8485)
+        $housingScore = $dssMatch?->housing_score ?? 100.0;
+        $yardRequirementMet = ! ($pet?->requires_yard && ($lifestyle?->outdoor_access ?? 'none') === 'none');
+        $householdAgrees = $lifestyle?->household_agrees !== false;
+        $isHousingAppropriate = ($housingScore >= 50.0) && $yardRequirementMet && $householdAgrees;
+
+        if (! $yardRequirementMet) {
+            $housingReason = __('Pet requires yard access, but applicant residence has no outdoor enclosure.');
+        } elseif (! $householdAgrees) {
+            $housingReason = __('Household agreement for pet adoption was not confirmed.');
+        } elseif ($housingScore < 50.0) {
+            $housingReason = __('Residence space compatibility score (:score%) does not satisfy pet criteria.', ['score' => round($housingScore, 1)]);
+        } else {
+            $housingReason = __('Living environment and outdoor containment verified suitable for :pet.', ['pet' => $pet?->name ?? __('pet')]);
+        }
+
+        // 5. No Red Flags (Surrender / Abuse History)
+        $surrenderedPet = (bool) ($adopter?->adopterProfile?->surrendered_pet ?? false);
+        $priorRejections = (int) ($adopterTrackRecord['prior_rejected_count'] ?? 0);
+        $isNoRedFlags = (! $surrenderedPet) && ($priorRejections === 0);
+
+        if ($surrenderedPet && $priorRejections > 0) {
+            $redFlagReason = __('Warning: Disclosed prior pet surrender and has :count prior rejected application(s).', ['count' => $priorRejections]);
+        } elseif ($surrenderedPet) {
+            $redFlagReason = __('Warning: Applicant disclosed prior history of surrendering an animal.');
+        } elseif ($priorRejections > 0) {
+            $redFlagReason = __('Warning: Applicant has :count prior rejected adoption application(s).', ['count' => $priorRejections]);
+        } else {
+            $redFlagReason = __('Clean welfare track record (0 disclosed surrenders, 0 prior municipal rejections).');
+        }
+
+        return [
+            'identity_verified' => [
+                'label' => __('Applicant Identity Verified (RA 9482 Compliance)'),
+                'description' => __('Government-issued ID matches submitted personal details and residency in Catanduanes.'),
+                'auto_compliant' => $isIdentityVerified,
+                'compliance_reason' => $identityReason,
+            ],
+            'dss_score_acceptable' => [
+                'label' => __('DSS Multi-Factor Compatibility Met (>= 50% Threshold)'),
+                'description' => __('8-Factor Decision Support System score confirms baseline compatibility with selected pet.'),
+                'auto_compliant' => $isDssAcceptable,
+                'compliance_reason' => $dssReason,
+            ],
+            'staff_recommendation' => [
+                'label' => __('Shelter Staff Initial Assessment Endorsed'),
+                'description' => __('Virac Animal Shelter staff completed initial interview and endorsed applicant suitability.'),
+                'auto_compliant' => $isStaffEndorsed,
+                'compliance_reason' => $staffReason,
+            ],
+            'housing_appropriate' => [
+                'label' => __('Humane Living Environment & Security Verified (RA 8485)'),
+                'description' => __('Residence environment meets space, safety, and outdoor containment standards.'),
+                'auto_compliant' => $isHousingAppropriate,
+                'compliance_reason' => $housingReason,
+            ],
+            'no_red_flags' => [
+                'label' => __('No Animal Neglect or Abuse History'),
+                'description' => __('Applicant has no record of municipal animal cruelty, illegal surrender, or abandonment violations.'),
+                'auto_compliant' => $isNoRedFlags,
+                'compliance_reason' => $redFlagReason,
+            ],
+        ];
     }
 
     /**

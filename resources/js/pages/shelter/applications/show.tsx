@@ -5,13 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Sparkles, Check, ShieldAlert, Award, FileText, UserCheck, Home, Phone, Mail, MapPin, Zap, Building, Tag, Cpu, Calendar, Users, ArrowRight, CheckCircle2, XCircle, ExternalLink, Eye } from 'lucide-react';
+import { Sparkles, Check, ShieldAlert, Award, FileText, UserCheck, Home, Phone, Mail, MapPin, Zap, Building, Tag, Cpu, Calendar, Users, ArrowRight, CheckCircle2, XCircle, ExternalLink, Eye, Clock, ShieldCheck } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { DssScoreCard } from '@/components/dss-score-card';
 import { ApplicationTimelineCard, TimelineEvent } from '@/components/application-timeline-card';
 import { IdDocumentInspectorModal } from '@/components/id-document-inspector-modal';
 import { IdentityVerificationReport } from '@/components/identity-verification-report';
 import { IdentityVerificationBadge } from '@/components/identity-verification-badge';
+import { AdoptionCertificateModal } from '@/components/adoption-certificate-modal';
+import { AdoptionPassModal } from '@/components/adoption-pass-modal';
+import { ConfirmPetReleaseModal } from '@/components/confirm-pet-release-modal';
 
 interface CompetingApp {
     id: number;
@@ -181,15 +184,32 @@ export default function ShelterApplicationShow({
                             Ref: <strong className="text-gray-700">{application.reference_number}</strong> &bull; {application.adopter.name} applying for <strong>{application.pet.name}</strong>
                         </p>
                     </div>
-                    <span className={`text-xs px-3.5 py-1 rounded-full uppercase font-bold tracking-wider ${
-                        application.status === 'approved'
-                            ? 'bg-green-100 text-green-800'
-                            : application.status === 'rejected'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-amber-100 text-amber-800'
-                    }`}>
-                        {application.status.replace(/_/g, ' ')}
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {application.status === 'approved' && (
+                            <>
+                                <ConfirmPetReleaseModal application={application as any} routePrefix="shelter" />
+                                <AdoptionCertificateModal application={application as any} />
+                                <AdoptionPassModal application={application as any} />
+                            </>
+                        )}
+                        {application.status === 'completed' && (
+                            <>
+                                <AdoptionCertificateModal application={application as any} />
+                                <AdoptionPassModal application={application as any} />
+                            </>
+                        )}
+                        <span className={`text-xs px-3.5 py-1 rounded-full uppercase font-bold tracking-wider ${
+                            application.status === 'completed'
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                : application.status === 'approved'
+                                ? 'bg-green-100 text-green-800'
+                                : application.status === 'rejected' || application.status === 'unclaimed'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-amber-100 text-amber-800'
+                        }`}>
+                            {application.status === 'completed' ? 'RELEASED / ADOPTED' : application.status.replace(/_/g, ' ')}
+                        </span>
+                    </div>
                 </div>
 
                 {/* ── 8-Factor DSS Score Card ────────────────────────────────────── */}
@@ -473,6 +493,61 @@ export default function ShelterApplicationShow({
                                             <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-1.5">
                                                 <span className="text-gray-500 font-bold uppercase block">Staff Notes:</span>
                                                 <p className="text-gray-700 italic">"{application.staff_notes}"</p>
+                                            </div>
+                                        )}
+
+                                        {/* Physical Turnover & Handover Section */}
+                                        {application.status === 'approved' && (
+                                            <div className="p-4 bg-emerald-50/80 rounded-xl border-2 border-emerald-300 space-y-3">
+                                                <div className="flex items-center gap-2 text-emerald-950 font-bold text-sm">
+                                                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                                                    MAO Approved &bull; Ready for Release
+                                                </div>
+                                                <p className="text-xs text-emerald-800 leading-relaxed">
+                                                    Verify adopter credentials, inspect safe transport equipment, and confirm physical handover.
+                                                </p>
+                                                {application.pickup_deadline_at && (
+                                                    <div className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1.5">
+                                                        <Clock className="w-3.5 h-3.5" />
+                                                        Claim Deadline: {new Date(application.pickup_deadline_at).toLocaleDateString()}
+                                                    </div>
+                                                )}
+                                                <div className="pt-1">
+                                                    <ConfirmPetReleaseModal application={application as any} routePrefix="shelter" />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {application.status === 'completed' && (
+                                            <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-300 space-y-2">
+                                                <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm">
+                                                    <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                                                    Pet Handover Confirmed
+                                                </div>
+                                                <div className="text-xs text-emerald-800 space-y-1">
+                                                    <p><strong>Date Released:</strong> {application.released_at ? new Date(application.released_at).toLocaleDateString() : 'Recorded in registry'}</p>
+                                                    {application.releasing_officer && (
+                                                        <p><strong>Releasing Officer:</strong> {application.releasing_officer.name}</p>
+                                                    )}
+                                                    {application.releasing_notes && (
+                                                        <p className="italic text-gray-600">"{application.releasing_notes}"</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {application.status === 'unclaimed' && (
+                                            <div className="p-4 bg-gray-100 rounded-xl border border-gray-300 space-y-1.5 text-gray-700">
+                                                <div className="font-bold flex items-center gap-1.5 text-gray-900">
+                                                    <Clock className="w-4 h-4 text-red-600" />
+                                                    Adoption Forfeited — Unclaimed
+                                                </div>
+                                                <p className="text-[11px] leading-relaxed">
+                                                    Adopter did not pick up the pet within the scheduled deadline. Pet returned to available catalog.
+                                                </p>
+                                                {application.releasing_notes && (
+                                                    <p className="text-[11px] italic text-gray-600">"{application.releasing_notes}"</p>
+                                                )}
                                             </div>
                                         )}
                                     </div>

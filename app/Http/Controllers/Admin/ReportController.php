@@ -94,6 +94,8 @@ class ReportController extends Controller
             'approval_rate' => $kpis['approval_rate'],
             'avg_score' => $kpis['avg_dss_score'],
             'activeFilters' => $activeFilters,
+            'generated_by' => $request->user()?->name ?? 'Administrator',
+            'user_role' => 'System Administrator',
         ];
 
         $pdf = Pdf::loadView('reports.adoption', $data);

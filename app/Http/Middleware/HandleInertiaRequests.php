@@ -3,8 +3,10 @@
 namespace App\Http\Middleware;
 
 use App\Models\Application;
+use App\Models\LandingPageConfig;
 use App\Models\SystemSetting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -78,10 +80,20 @@ class HandleInertiaRequests extends Middleware
             }
         }
 
+        $themeConfig = Cache::remember('active_theme_config', 3600, function (): array {
+            $config = LandingPageConfig::active();
+
+            return [
+                'template' => $config->template_name ?: 'honey_warm',
+                'primary_color' => $config->theme_color ?: '#467235',
+            ];
+        });
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'version' => config('app.version', 'furfect_v2.0.5'),
+            'theme' => $themeConfig,
             'auth' => [
                 'user' => $user ? array_merge($user->toArray(), [
                     'roles' => $user->getRoleNames(),
@@ -90,6 +102,7 @@ class HandleInertiaRequests extends Middleware
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'systemSettings' => [
                 'pricing_enabled' => SystemSetting::get('pricing_enabled', false),
+                'client_adoption_certificate_enabled' => (bool) SystemSetting::get('client_adoption_certificate_enabled', false),
                 'terms_and_conditions_content' => SystemSetting::get('terms_and_conditions_content'),
                 'shelter_policies_content' => SystemSetting::get('shelter_policies_content'),
                 'consent_agreement_label' => SystemSetting::get('consent_agreement_label'),

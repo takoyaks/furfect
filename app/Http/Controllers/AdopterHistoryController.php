@@ -19,10 +19,14 @@ class AdopterHistoryController extends Controller
 
         // 1. All officially adopted pets with certificates and shelter relations
         $adoptedPets = Application::where('user_id', $user->id)
-            ->where('status', 'approved')
+            ->whereIn('status', ['approved', 'completed'])
             ->with([
+                'user.adopterProfile',
                 'pet.photos',
                 'pet.shelter',
+                'staff',
+                'maoOfficer',
+                'releasingOfficer',
                 'timelines.actor',
             ])
             ->latest('resolved_at')
@@ -31,8 +35,12 @@ class AdopterHistoryController extends Controller
         // 2. Complete chronological archive of all applications
         $allApplications = Application::where('user_id', $user->id)
             ->with([
+                'user.adopterProfile',
                 'pet.photos',
                 'pet.shelter',
+                'staff',
+                'maoOfficer',
+                'releasingOfficer',
                 'timelines.actor',
             ])
             ->latest('submitted_at')

@@ -2,6 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Sparkles, CheckCircle2, AlertTriangle, Zap, ShieldCheck, Home, HeartHandshake, Award, Users, Activity, Stethoscope } from 'lucide-react';
+import { useThemeTemplate } from '@/hooks/use-theme-template';
+import { cn } from '@/lib/utils';
 
 interface DssMatchScoreData {
     total_score: number;
@@ -20,6 +22,7 @@ interface DssMatchScoreData {
 }
 
 export function DssScoreCard({ dss, compact = false }: { dss: DssMatchScoreData | null; compact?: boolean }) {
+    const theme = useThemeTemplate();
     if (!dss) {
         return (
             <Card className="border-gray-200 shadow-sm">
@@ -112,12 +115,12 @@ export function DssScoreCard({ dss, compact = false }: { dss: DssMatchScoreData 
     };
 
     return (
-        <Card className="border-[#D4A017]/30 shadow-md overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-[#F5EDD7]/80 to-amber-50/40 border-b border-[#D4A017]/10 p-5">
+        <Card className="border-theme/25 shadow-md overflow-hidden">
+            <CardHeader className={cn(theme.portalBanner, "border-b border-theme/15 p-5")}>
                 <div className="flex items-center justify-between flex-wrap gap-3">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                            <Sparkles className="h-5 w-5 text-[#D4A017]" />
+                            <Sparkles className={cn("h-5 w-5", theme.iconText)} />
                             <CardTitle className="text-lg font-bold text-gray-900">
                                 8-Factor DSS Compatibility Score
                             </CardTitle>
@@ -151,7 +154,7 @@ export function DssScoreCard({ dss, compact = false }: { dss: DssMatchScoreData 
                             <div key={c.key} className="p-3 rounded-xl border border-gray-100 bg-gray-50/40 space-y-2 hover:bg-white transition">
                                 <div className="flex items-center justify-between text-xs font-bold text-gray-700">
                                     <div className="flex items-center gap-1.5">
-                                        <Icon className="h-4 w-4 text-[#D4A017]" />
+                                        <Icon className={cn("h-4 w-4", theme.iconText)} />
                                         <span>{c.label}</span>
                                         <span className="text-[10px] text-gray-400 font-normal">({c.weight})</span>
                                     </div>

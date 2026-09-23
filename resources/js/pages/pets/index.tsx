@@ -213,21 +213,6 @@ export default function PetsIndex({
                                     </Select>
                                 </div>
 
-                                {/* Adoption Fee — only shown when pricing is enabled */}
-                                {pricingEnabled && (
-                                <div className="space-y-2">
-                                    <label className="text-xs font-semibold text-gray-500 uppercase">Adoption Fee</label>
-                                    <Select value={fee} onValueChange={val => { setFee(val); updateFilter({ fee: val }); }}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All pets</SelectItem>
-                                            <SelectItem value="free">Free adoption only</SelectItem>
-                                            <SelectItem value="paid">Adoption fee applies</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                )}
-
                                 <Button 
                                     type="button"
                                     variant="outline"
@@ -333,14 +318,7 @@ export default function PetsIndex({
                                             </div>
                                         </div>
 
-                                        <div className="p-4 pt-0 border-t border-gray-100 mt-2 pt-3 flex items-center justify-between">
-                                            {pricingEnabled ? (
-                                                <span className="text-xs font-semibold text-gray-500">
-                                                    {parseFloat(pet.adoption_fee) === 0 ? 'Free adoption' : `₱${parseFloat(pet.adoption_fee).toLocaleString()}`}
-                                                </span>
-                                            ) : (
-                                                <span />
-                                            )}
+                                        <div className="p-4 pt-0 border-t border-gray-100 mt-2 pt-3 flex items-center justify-end">
                                             <Link href={route('pets.show', pet.id)}>
                                                 <Button size="sm" variant="outline" className="text-xs flex items-center gap-1 border-gray-200">
                                                     <Eye className="h-3.5 w-3.5" />

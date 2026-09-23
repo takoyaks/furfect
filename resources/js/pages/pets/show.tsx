@@ -2,7 +2,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, ShieldAlert, Award, Calendar, Phone, Heart, Sparkles, MapPin, BadgeCheck, Zap, CheckCircle2, ArrowRight, ZoomIn, X } from 'lucide-react';
+import { Check, ShieldAlert, Award, Calendar, Phone, Heart, Sparkles, MapPin, BadgeCheck, Zap, CheckCircle2, ArrowRight, ZoomIn, X, Eye } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { DssScoreCard } from '@/components/dss-score-card';
@@ -59,30 +59,45 @@ export default function PetShow({
     isSaved,
     hasActiveApplication,
     isApproved = false,
+    isViewOnly = false,
 }: {
     pet: Pet;
     dssData: DssData | null;
     isSaved: boolean;
     hasActiveApplication: boolean;
     isApproved: boolean;
+    isViewOnly?: boolean;
 }) {
-    const { systemSettings } = usePage().props as any;
+    const page = usePage();
+    const { auth, systemSettings } = page.props as any;
+    const userRoles: string[] = auth?.user?.roles ?? [];
+    const isStaffOrAdmin = userRoles.some(r => ['admin', 'shelter_staff', 'mao_officer'].includes(r));
+    const isViewOnlyMode = isViewOnly || isStaffOrAdmin || (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view_only') === '1');
+
     const pricingEnabled = systemSettings?.pricing_enabled ?? false;
     const [selectedPhoto, setSelectedPhoto] = useState(pet.photos[0]?.photo_path || '/placeholder-pet.png');
     const [isZoomOpen, setIsZoomOpen] = useState(false);
 
     const handleApply = () => {
+        if (isViewOnlyMode) return;
         router.post(route('application.store'), { pet_id: pet.id });
     };
 
     const handleSaveToggle = () => {
+        if (isViewOnlyMode) return;
         router.post(route('saved-pets.toggle'), { pet_id: pet.id }, { preserveScroll: true });
     };
 
     const totalScore = dssData ? Math.round(Number(dssData.total_score) || 0) : null;
 
+    const breadcrumbs = userRoles.includes('admin')
+        ? [{ title: 'Admin Pets', href: route('admin.pets.index') }, { title: pet.name, href: '#' }]
+        : userRoles.includes('shelter_staff')
+        ? [{ title: 'Shelter Pets', href: route('shelter.pets.index') }, { title: pet.name, href: '#' }]
+        : [{ title: 'Browse Pets', href: route('pets.index') }, { title: pet.name, href: '#' }];
+
     return (
-        <AppLayout breadcrumbs={[{ title: 'Browse Pets', href: route('pets.index') }, { title: pet.name, href: '#' }]}>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={pet.name} />
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4 max-w-7xl mx-auto w-full">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -159,9 +174,20 @@ export default function PetShow({
                                     ))}
                                 </div>
 
-                                <div className="pt-2 border-t border-gray-100">
+                                <div className="pt-2 border-t border-gray-100 dark:border-neutral-800">
                                     <h4 className="text-xs font-bold uppercase text-gray-400 tracking-wider mb-2">About {pet.name}</h4>
-                                    <p className="text-gray-700 text-sm whitespace-pre-line leading-relaxed">{pet.description || 'No description provided.'}</p>
+                                    {pet.description ? (
+                                        pet.description.includes('<') && pet.description.includes('>') ? (
+                                            <div 
+                                                className="text-gray-700 dark:text-neutral-300 text-sm leading-relaxed space-y-2.5 prose max-w-none [&_h2]:text-base [&_h2]:font-bold [&_h3]:text-sm [&_h3]:font-semibold [&_h4]:text-xs [&_h4]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_blockquote]:border-l-4 [&_blockquote]:border-[#D4A017] [&_blockquote]:pl-3.5 [&_blockquote]:italic [&_blockquote]:bg-amber-50/50 dark:[&_blockquote]:bg-amber-950/20 [&_blockquote]:py-1 [&_p]:leading-relaxed"
+                                                dangerouslySetInnerHTML={{ __html: pet.description }}
+                                            />
+                                        ) : (
+                                            <p className="text-gray-700 dark:text-neutral-300 text-sm whitespace-pre-line leading-relaxed">{pet.description}</p>
+                                        )
+                                    ) : (
+                                        <p className="text-gray-400 dark:text-neutral-500 text-sm italic">No description provided.</p>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -206,32 +232,41 @@ export default function PetShow({
                             </CardHeader>
 
                             <CardContent className="p-5 space-y-4">
-                                {pricingEnabled && (
-                                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-2xs">
-                                        <span className="text-xs text-gray-500 font-medium">Adoption Fee</span>
-                                        <span className="font-bold text-base text-[#D4A017]">
-                                            {parseFloat(pet.adoption_fee) === 0 ? 'Free Adoption' : `₱${parseFloat(pet.adoption_fee).toLocaleString()}`}
-                                        </span>
-                                    </div>
-                                )}
-
                                 {/* Action Buttons */}
                                 <div className="space-y-2">
+                                    {isViewOnlyMode && (
+                                        <div className="p-2.5 rounded-lg bg-theme-light border border-theme/30 text-center text-xs text-theme-hover font-medium flex items-center justify-center gap-1.5 shadow-2xs">
+                                            <Eye className="size-3.5 text-theme shrink-0" />
+                                            <span>Administrative View &bull; Actions disabled (view-only)</span>
+                                        </div>
+                                    )}
+
                                     <div className="flex gap-2">
                                         <Button 
-                                            onClick={handleSaveToggle} 
+                                            onClick={isViewOnlyMode ? undefined : handleSaveToggle} 
+                                            disabled={isViewOnlyMode}
                                             variant="outline" 
-                                            className="px-3 border-gray-200 hover:bg-red-50 hover:border-red-200 transition-colors"
-                                            title="Save to Favorites"
+                                            className={`px-3 border-gray-200 transition-colors ${
+                                                isViewOnlyMode 
+                                                    ? 'opacity-50 cursor-not-allowed bg-gray-50' 
+                                                    : 'hover:bg-red-50 hover:border-red-200'
+                                            }`}
+                                            title={isViewOnlyMode ? 'Favorites disabled in view-only mode' : 'Save to Favorites'}
                                         >
-                                            <Heart className={`h-5 w-5 ${isSaved ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+                                            <Heart className={`h-5 w-5 ${isSaved && !isViewOnlyMode ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
                                         </Button>
                                         <Button 
-                                            onClick={handleApply}
-                                            disabled={hasActiveApplication || pet.status !== 'available'}
-                                            className="flex-1 bg-[#D4A017] hover:bg-[#B8860B] text-white font-bold text-sm h-10 shadow-xs gap-1.5"
+                                            onClick={isViewOnlyMode ? undefined : handleApply}
+                                            disabled={isViewOnlyMode || hasActiveApplication || pet.status !== 'available'}
+                                            className={`flex-1 font-bold text-sm h-10 shadow-xs gap-1.5 ${
+                                                isViewOnlyMode 
+                                                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed hover:bg-gray-200' 
+                                                    : 'bg-[#D4A017] hover:bg-[#B8860B] text-white'
+                                            }`}
                                         >
-                                            {hasActiveApplication ? (
+                                            {isViewOnlyMode ? (
+                                                'View-Only Mode'
+                                            ) : hasActiveApplication ? (
                                                 'Application Active'
                                             ) : pet.status !== 'available' ? (
                                                 'Pet Unavailable'
@@ -244,7 +279,7 @@ export default function PetShow({
                                         </Button>
                                     </div>
 
-                                    {hasActiveApplication && (
+                                    {!isViewOnlyMode && hasActiveApplication && (
                                         <p className="text-[11px] text-center text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200">
                                             You currently have an active adoption application. Track progress in your portal.
                                         </p>
@@ -263,7 +298,7 @@ export default function PetShow({
                                     <span className="text-gray-500">Species</span>
                                     <span className="font-semibold capitalize text-gray-900">{pet.species}</span>
                                 </div>
-                                {isApproved && pet.breed && pet.breed !== 'Hidden' && (
+                                {(isApproved || isViewOnlyMode) && pet.breed && pet.breed !== 'Hidden' && (
                                     <div className="flex justify-between border-b border-gray-50 pb-2">
                                         <span className="text-gray-500">Breed</span>
                                         <span className="font-semibold capitalize text-gray-900">{pet.breed}</span>

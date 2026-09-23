@@ -3,9 +3,12 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
-import { Tag, MapPin, Search, Filter, Plus } from 'lucide-react';
+import { Tag, MapPin, Search, Filter, Plus, MoreVertical, Edit3, ExternalLink, Archive, Trash2, Eye } from 'lucide-react';
+import { useThemeTemplate } from '@/hooks/use-theme-template';
+import { cn } from '@/lib/utils';
 
 interface Pet {
     id: number;
@@ -30,6 +33,7 @@ export default function AdminPets({
     pets: { data: Pet[]; links: any };
     filters: any;
 }) {
+    const theme = useThemeTemplate();
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || 'all');
 
@@ -59,7 +63,17 @@ export default function AdminPets({
 
     const handleArchive = (petId: number) => {
         if (confirm('Are you sure you want to archive this pet listing?')) {
-            router.delete(route('admin.pets.destroy', petId));
+            router.delete(route('admin.pets.destroy', petId), {
+                data: { action: 'archive' },
+            });
+        }
+    };
+
+    const handleDelete = (petId: number, petName: string) => {
+        if (confirm(`Are you sure you want to permanently delete "${petName}"? This action cannot be undone and will permanently remove this pet listing and all associated photos.`)) {
+            router.delete(route('admin.pets.destroy', petId), {
+                data: { action: 'delete' },
+            });
         }
     };
 
@@ -74,7 +88,7 @@ export default function AdminPets({
                         <p className="text-xs text-gray-500 dark:text-neutral-400">Manage pet listings, collar tags, and facility housing areas across all shelters.</p>
                     </div>
                     <Link href={route('shelter.pets.create')}>
-                        <Button className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold flex items-center gap-1.5 shadow-sm">
+                        <Button className={cn("text-white font-semibold flex items-center gap-1.5 shadow-sm", theme.primaryButton)}>
                             <Plus className="size-4" /> Add New Pet
                         </Button>
                     </Link>
@@ -134,10 +148,9 @@ export default function AdminPets({
                                     <th className="p-3">Species</th>
                                     <th className="p-3">Breed</th>
                                     <th className="p-3 text-center">Age</th>
-                                    <th className="p-3 text-right">Adoption Fee</th>
                                     <th className="p-3">Shelter</th>
                                     <th className="p-3 text-center">Status</th>
-                                    <th className="p-3">Action</th>
+                                    <th className="p-3 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 text-gray-700">
@@ -166,9 +179,6 @@ export default function AdminPets({
                                         <td className="p-3 text-gray-500 capitalize">{p.species}</td>
                                         <td className="p-3 text-gray-500">{p.breed || '-'}</td>
                                         <td className="p-3 text-center">{p.age_years} yrs</td>
-                                        <td className="p-3 text-right font-medium">
-                                            {parseFloat(p.adoption_fee) === 0 ? 'Free' : `₱${parseFloat(p.adoption_fee).toLocaleString()}`}
-                                        </td>
                                         <td className="p-3 text-gray-500">{p.shelter?.name || '-'}</td>
                                         <td className="p-3 text-center">
                                             <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
@@ -178,26 +188,56 @@ export default function AdminPets({
                                                 {p.status}
                                             </span>
                                         </td>
-                                        <td className="p-3">
-                                            <div className="flex items-center gap-2">
-                                                <Link href={route('shelter.pets.edit', p.id)}>
-                                                    <Button variant="outline" size="sm" className="text-xs">
-                                                        Edit
+                                        <td className="p-3 text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100 rounded-lg cursor-pointer">
+                                                        <MoreVertical className="size-4 text-gray-500" />
+                                                        <span className="sr-only">Open menu</span>
                                                     </Button>
-                                                </Link>
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="sm" 
-                                                    disabled={p.status === 'archived'}
-                                                    className="text-xs text-red-500"
-                                                    onClick={() => handleArchive(p.id)}
-                                                >
-                                                    Archive
-                                                </Button>
-                                            </div>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-48 bg-white border border-gray-200 shadow-lg rounded-xl p-1 text-xs">
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={route('shelter.pets.edit', p.id)} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-gray-700 hover:bg-amber-50 hover:text-amber-800 cursor-pointer">
+                                                            <Edit3 className="size-3.5 text-amber-600" />
+                                                            <span>Edit Pet Details</span>
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={route('pets.show', p.id) + '?view_only=1'} target="_blank" className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-gray-700 hover:bg-theme-light hover:text-theme cursor-pointer">
+                                                            <Eye className="size-3.5 text-theme" />
+                                                            <span>View Pet</span>
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator className="my-1 border-gray-100" />
+                                                    <DropdownMenuItem
+                                                        disabled={p.status === 'archived'}
+                                                        onClick={() => handleArchive(p.id)}
+                                                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-gray-600 hover:bg-orange-50 hover:text-orange-700 cursor-pointer disabled:opacity-50"
+                                                    >
+                                                        <Archive className="size-3.5 text-orange-500" />
+                                                        <span>Archive Pet</span>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        onClick={() => handleDelete(p.id, p.name)}
+                                                        variant="destructive"
+                                                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer"
+                                                    >
+                                                        <Trash2 className="size-3.5 text-red-500" />
+                                                        <span>Delete Permanently</span>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </td>
                                     </tr>
                                 ))}
+                                {pets.data.length === 0 && (
+                                    <tr>
+                                        <td colSpan={8} className="p-6 text-center text-gray-500">
+                                            No pet listings found.
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </CardContent>

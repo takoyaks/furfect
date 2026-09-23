@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Search, Building, MapPin, Phone, Mail, Filter, Plus } from 'lucide-react';
+import { useThemeTemplate } from '@/hooks/use-theme-template';
+import { cn } from '@/lib/utils';
 
 interface Shelter {
     id: number;
@@ -26,6 +28,7 @@ export default function AdminShelters({
     shelters: { data: Shelter[]; links: any };
     filters: any;
 }) {
+    const theme = useThemeTemplate();
     const [search, setSearch] = useState(filters.search || '');
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [editingShelter, setEditingShelter] = useState<Shelter | null>(null);
@@ -84,7 +87,7 @@ export default function AdminShelters({
                     
                     <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                         <DialogTrigger>
-                            <Button className="bg-[#D4A017] hover:bg-[#B8860B] text-white font-semibold flex items-center gap-1.5">
+                            <Button className={cn("text-white font-semibold flex items-center gap-1.5", theme.primaryButton)}>
                                 <Plus className="size-4" /> Add Shelter
                             </Button>
                         </DialogTrigger>
@@ -124,7 +127,7 @@ export default function AdminShelters({
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <Button type="submit" disabled={processing} className="w-full bg-[#D4A017] hover:bg-[#B8860B] text-white">Add Shelter</Button>
+                                <Button type="submit" disabled={processing} className={cn("w-full text-white", theme.primaryButton)}>Add Shelter</Button>
                             </form>
                         </DialogContent>
                     </Dialog>
@@ -177,7 +180,7 @@ export default function AdminShelters({
                                             <Button 
                                                 variant="ghost" 
                                                 size="sm" 
-                                                className="text-xs text-[#D4A017]"
+                                                className={cn("text-xs", theme.iconText)}
                                                 onClick={() => {
                                                     setEditingShelter(s);
                                                     setData({
@@ -246,7 +249,7 @@ export default function AdminShelters({
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <Button type="submit" disabled={processing} className="w-full bg-[#D4A017] hover:bg-[#B8860B] text-white">Save Changes</Button>
+                            <Button type="submit" disabled={processing} className={cn("w-full text-white", theme.primaryButton)}>Save Changes</Button>
                         </form>
                     </DialogContent>
                 </Dialog>

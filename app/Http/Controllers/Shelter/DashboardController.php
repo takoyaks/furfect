@@ -80,12 +80,11 @@ class DashboardController extends Controller
             'cats_adopted' => Pet::where('species', 'cat')->where('status', 'adopted')->count(),
         ];
 
-        // 4. Pet Status Breakdown
+        // 4. Pet Status Breakdown (Core Animal Placement Statuses)
         $petStatusBreakdown = [
             'available' => $petsAvailable,
             'adopted' => $petsAdopted,
             'pending' => $petsPending,
-            'other' => Pet::whereNotIn('status', ['available', 'adopted', 'pending'])->count(),
         ];
 
         // 5. DSS Compatibility Score Tiers

@@ -21,6 +21,8 @@ import {
     TrendingUp
 } from 'lucide-react';
 import ApexChart, { THEME_COLORS } from '@/components/charts/apex-chart';
+import { useThemeTemplate } from '@/hooks/use-theme-template';
+import { cn } from '@/lib/utils';
 
 import type { ApexOptions } from 'apexcharts';
 
@@ -88,6 +90,8 @@ export default function AdminDashboard({
     shelterComparison = [],
     dssScoreDistribution,
 }: AdminDashboardProps) {
+    const theme = useThemeTemplate();
+
     // 1. Monthly Trends Chart Options
     const monthlyTrendsOptions: ApexOptions = {
         chart: {
@@ -322,15 +326,15 @@ export default function AdminDashboard({
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4 md:p-6 bg-[#FCFDF9]">
                 
                 {/* Welcome & Management Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-[#FFF78D]/40 via-amber-50 to-[#467235]/10 border border-[#FFBF00]/40 p-6 rounded-2xl shadow-xs">
+                <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 ${theme.portalBanner} p-6 rounded-2xl shadow-xs`}>
                     <div>
                         <div className="flex items-center gap-3">
-                            <span className="p-2.5 bg-[#FFBF00] text-[#283F24] rounded-xl shadow-xs">
+                            <span className={`p-2.5 ${theme.tabActive} rounded-xl shadow-xs`}>
                                 <ShieldCheck className="size-6" />
                             </span>
                             <div>
-                                <h1 className="text-2xl font-black text-[#283F24] tracking-tight">Admin Operations &amp; Analytics Center</h1>
-                                <p className="text-xs text-[#283F24]/75 mt-0.5">
+                                <h1 className={`text-2xl font-black ${theme.portalBannerTitle} tracking-tight`}>Admin Operations &amp; Analytics Center</h1>
+                                <p className="text-xs text-gray-600 mt-0.5">
                                     Real-time graphical oversight across adoption pipelines, shelter capacities, species demographics, and match scores.
                                 </p>
                             </div>
@@ -339,18 +343,18 @@ export default function AdminDashboard({
 
                     <div className="flex items-center gap-2.5 flex-wrap">
                         <Link href={route('shelter.pets.create')}>
-                            <Button className="bg-[#FFBF00] hover:bg-[#E5A900] text-[#283F24] font-bold flex items-center gap-1.5 shadow-sm text-xs border border-[#FFBF00]">
+                            <Button className={`${theme.tabActive} flex items-center gap-1.5 shadow-sm text-xs`}>
                                 <PlusCircle className="size-4" /> Add Pet
                             </Button>
                         </Link>
                         <Link href={route('admin.reports.index')}>
-                            <Button variant="outline" className="border-[#467235]/40 text-[#283F24] hover:bg-[#467235]/10 text-xs gap-1.5 bg-white">
-                                <FileText className="size-4 text-[#467235]" /> Full Reports
+                            <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50 text-xs gap-1.5 bg-white">
+                                <FileText className="size-4" /> Full Reports
                             </Button>
                         </Link>
                         <Link href={route('admin.cms.announcements.index')}>
-                            <Button variant="outline" className="border-[#FFBF00] text-[#283F24] hover:bg-[#FFF78D]/50 text-xs gap-1.5 bg-white">
-                                <Megaphone className="size-4 text-[#FFBF00]" /> Notices
+                            <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50 text-xs gap-1.5 bg-white">
+                                <Megaphone className="size-4" /> Notices
                             </Button>
                         </Link>
                     </div>
@@ -364,36 +368,36 @@ export default function AdminDashboard({
                             val: metrics.pending_applications,
                             sub: 'Pending initial review',
                             icon: ClipboardList,
-                            color: 'text-[#FFBF00]',
-                            bgColor: 'bg-[#FFF78D]/40',
-                            border: 'border-[#FFBF00]/50',
+                            color: theme.accentIcon,
+                            bgColor: theme.iconBg,
+                            border: theme.kpiBorder,
                         },
                         {
                             title: 'MAO Audit Pending',
                             val: metrics.mao_audit_applications,
                             sub: 'Statutory compliance queue',
                             icon: ShieldAlert,
-                            color: 'text-[#283F24]',
-                            bgColor: 'bg-[#467235]/15',
-                            border: 'border-[#467235]/40',
+                            color: theme.iconText,
+                            bgColor: theme.iconBg,
+                            border: theme.kpiBorder,
                         },
                         {
                             title: 'Pets Available',
                             val: metrics.pets_available,
                             sub: `${metrics.total_pets} total registered pets`,
                             icon: Award,
-                            color: 'text-[#467235]',
-                            bgColor: 'bg-[#467235]/15',
-                            border: 'border-[#467235]/40',
+                            color: theme.iconText,
+                            bgColor: theme.iconBg,
+                            border: theme.kpiBorder,
                         },
                         {
                             title: 'Adoptions Completed',
                             val: metrics.approved_adoptions,
                             sub: 'Successfully placed in homes',
                             icon: CheckCircle2,
-                            color: 'text-[#283F24]',
-                            bgColor: 'bg-[#FFBF00]/20',
-                            border: 'border-[#FFBF00]/50',
+                            color: theme.iconText,
+                            bgColor: theme.iconBg,
+                            border: theme.kpiBorder,
                         },
                     ].map(card => (
                         <Card key={card.title} className={`border ${card.border} shadow-xs hover:shadow-md transition bg-white`}>
@@ -402,7 +406,7 @@ export default function AdminDashboard({
                                     {card.title}
                                 </span>
                                 <div className={`p-2 rounded-lg ${card.bgColor}`}>
-                                    <card.icon className={`h-4 w-4 ${card.color}`} />
+                                    <card.icon className={cn('h-4 w-4', card.color)} />
                                 </div>
                             </CardHeader>
                             <CardContent>
@@ -421,7 +425,7 @@ export default function AdminDashboard({
                         <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-gray-100">
                             <div>
                                 <CardTitle className="text-base font-bold text-[#283F24] flex items-center gap-2">
-                                    <TrendingUp className="size-4 text-[#FFBF00]" />
+                                    <TrendingUp className={cn("size-4", theme.accentIcon)} />
                                     Adoption &amp; Application Velocity
                                 </CardTitle>
                                 <CardDescription className="text-xs text-[#283F24]/60">
@@ -443,7 +447,7 @@ export default function AdminDashboard({
                     <Card className="border-[#467235]/20 shadow-xs bg-white">
                         <CardHeader className="pb-2 border-b border-gray-100">
                             <CardTitle className="text-base font-bold text-[#283F24] flex items-center gap-2">
-                                <PieChartIcon className="size-4 text-[#467235]" />
+                                <PieChartIcon className={cn("size-4", theme.iconText)} />
                                 Application Pipeline Funnel
                             </CardTitle>
                             <CardDescription className="text-xs text-[#283F24]/60">
@@ -469,7 +473,7 @@ export default function AdminDashboard({
                     <Card className="border-[#467235]/20 shadow-xs bg-white">
                         <CardHeader className="pb-2 border-b border-gray-100">
                             <CardTitle className="text-sm font-bold text-[#283F24] flex items-center gap-2">
-                                <Layers className="size-4 text-[#FFBF00]" />
+                                <Layers className={cn("size-4", theme.accentIcon)} />
                                 Pet Demographics &amp; Inventory
                             </CardTitle>
                             <CardDescription className="text-xs text-[#283F24]/60">
@@ -490,7 +494,7 @@ export default function AdminDashboard({
                     <Card className="border-[#467235]/20 shadow-xs bg-white">
                         <CardHeader className="pb-2 border-b border-gray-100">
                             <CardTitle className="text-sm font-bold text-[#283F24] flex items-center gap-2">
-                                <Home className="size-4 text-[#467235]" />
+                                <Home className={cn("size-4", theme.iconText)} />
                                 Shelter Capacity &amp; Placement
                             </CardTitle>
                             <CardDescription className="text-xs text-[#283F24]/60">
@@ -517,7 +521,7 @@ export default function AdminDashboard({
                     <Card className="border-[#467235]/20 shadow-xs bg-white">
                         <CardHeader className="pb-2 border-b border-gray-100">
                             <CardTitle className="text-sm font-bold text-[#283F24] flex items-center gap-2">
-                                <BarChart3 className="size-4 text-[#283F24]" />
+                                <BarChart3 className={cn("size-4", theme.iconText)} />
                                 DSS Match Score Tiers
                             </CardTitle>
                             <CardDescription className="text-xs text-[#283F24]/60">
@@ -540,27 +544,27 @@ export default function AdminDashboard({
                 <div className="bg-white border border-[#467235]/20 rounded-xl p-4 shadow-2xs">
                     <div className="flex items-center justify-between flex-wrap gap-3">
                         <span className="text-xs font-bold text-[#283F24] uppercase tracking-wider flex items-center gap-1.5">
-                            <Activity className="size-4 text-[#FFBF00]" /> Operations Quick Access
+                            <Activity className={cn("size-4", theme.accentIcon)} /> Operations Quick Access
                         </span>
                         <div className="flex items-center gap-2 flex-wrap">
                             <Link href={route('admin.applications.index')}>
                                 <Button variant="ghost" size="sm" className="text-xs text-[#283F24] hover:bg-[#FFF78D]/40">
-                                    <ClipboardList className="size-3.5 mr-1 text-[#FFBF00]" /> Applications ({metrics.pending_applications})
+                                    <ClipboardList className={cn("size-3.5 mr-1", theme.accentIcon)} /> Applications ({metrics.pending_applications})
                                 </Button>
                             </Link>
                             <Link href={route('admin.pets.index')}>
                                 <Button variant="ghost" size="sm" className="text-xs text-[#283F24] hover:bg-[#FFF78D]/40">
-                                    <Award className="size-3.5 mr-1 text-[#467235]" /> Pets Catalog ({metrics.total_pets})
+                                    <Award className={cn("size-3.5 mr-1", theme.iconText)} /> Pets Catalog ({metrics.total_pets})
                                 </Button>
                             </Link>
                             <Link href={route('admin.users.index')}>
                                 <Button variant="ghost" size="sm" className="text-xs text-[#283F24] hover:bg-[#FFF78D]/40">
-                                    <Users className="size-3.5 mr-1 text-[#283F24]" /> Users ({metrics.total_users})
+                                    <Users className={cn("size-3.5 mr-1", theme.iconText)} /> Users ({metrics.total_users})
                                 </Button>
                             </Link>
                             <Link href={route('admin.shelters.index')}>
                                 <Button variant="ghost" size="sm" className="text-xs text-[#283F24] hover:bg-[#FFF78D]/40">
-                                    <Home className="size-3.5 mr-1 text-[#467235]" /> Shelters ({metrics.total_shelters})
+                                    <Home className={cn("size-3.5 mr-1", theme.iconText)} /> Shelters ({metrics.total_shelters})
                                 </Button>
                             </Link>
                             <Link href={route('admin.settings.index')}>

@@ -30,6 +30,10 @@ use Illuminate\Support\Carbon;
  * @property Carbon $submitted_at
  * @property Carbon|null $resolved_at
  * @property Carbon|null $pickup_deadline_at
+ * @property Carbon|null $released_at
+ * @property int|null $releasing_officer_id
+ * @property string|null $releasing_notes
+ * @property array<string, bool>|null $release_checklist
  * @property string|null $certificate_number
  */
 class Application extends Model
@@ -57,6 +61,10 @@ class Application extends Model
         'submitted_at',
         'resolved_at',
         'pickup_deadline_at',
+        'released_at',
+        'releasing_officer_id',
+        'releasing_notes',
+        'release_checklist',
         'certificate_number',
     ];
 
@@ -70,11 +78,13 @@ class Application extends Model
             'fast_track_eligible' => 'boolean',
             'dss_breakdown' => 'array',
             'mao_checklist' => 'array',
+            'release_checklist' => 'array',
             'submitted_at' => 'datetime',
             'reviewed_at' => 'datetime',
             'target_sla_at' => 'datetime',
             'resolved_at' => 'datetime',
             'pickup_deadline_at' => 'datetime',
+            'released_at' => 'datetime',
         ];
     }
 
@@ -155,7 +165,7 @@ class Application extends Model
      */
     public function isSlaBreached(): bool
     {
-        if (in_array($this->status, ['approved', 'rejected'])) {
+        if (in_array($this->status, ['approved', 'rejected', 'completed', 'unclaimed'])) {
             return false;
         }
 
@@ -208,5 +218,13 @@ class Application extends Model
     public function maoOfficer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'mao_officer_id');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function releasingOfficer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'releasing_officer_id');
     }
 }

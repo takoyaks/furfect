@@ -176,7 +176,7 @@ test('featured pets on home page have masked breed and description', function ()
         'listed_at' => now(),
     ]);
 
-    $response = $this->get(route('home'));
+    $response = $this->get(route('landing'));
 
     $response->assertOk();
 

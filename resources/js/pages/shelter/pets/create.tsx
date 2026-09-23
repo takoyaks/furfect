@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/rich-text-editor';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Upload, X, Check, Dog, Cat, Sparkles, ShieldAlert, HeartHandshake, Tag, MapPin, Cpu, Calendar, PawPrint, ImagePlus, Camera } from 'lucide-react';
@@ -318,25 +319,6 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
                                 </Select>
                                 {errors.coat_color && <p className="text-xs text-red-500">{errors.coat_color}</p>}
                             </div>
-
-                            {/* Adoption Fee — only shown when pricing is enabled */}
-                            {pricingEnabled && (
-                            <div className="space-y-2 col-span-1 md:col-span-2">
-                                <Label htmlFor="adoption_fee" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Adoption Fee (₱) *</Label>
-                                <Input
-                                    id="adoption_fee"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    placeholder="0 for free adoption"
-                                    value={data.adoption_fee}
-                                    onChange={e => setData('adoption_fee', e.target.value)}
-                                    leftIcon={<span className="font-semibold text-xs text-muted-foreground">₱</span>}
-                                    required
-                                />
-                                {errors.adoption_fee && <p className="text-xs text-red-500">{errors.adoption_fee}</p>}
-                            </div>
-                            )}
                         </CardContent>
                     </Card>
 
@@ -679,12 +661,12 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
                             {/* Description */}
                             <div className="space-y-2">
                                 <Label htmlFor="description" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Bio / Description</Label>
-                                <Textarea
+                                <RichTextEditor
                                     id="description"
-                                    rows={4}
-                                    placeholder="Describe pet's background, personality, favorite activities, or backstory..."
                                     value={data.description}
-                                    onChange={e => setData('description', e.target.value)}
+                                    onChange={val => setData('description', val)}
+                                    placeholder="Describe pet's background, personality, favorite activities, or backstory..."
+                                    minHeight="200px"
                                 />
                                 {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
                             </div>

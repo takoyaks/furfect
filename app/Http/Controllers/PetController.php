@@ -120,7 +120,15 @@ class PetController extends Controller
         $pet->breed = __('Hidden');
         $pet->description = BreedMaskerService::mask((string) $originalDescription);
 
+        $isStaff = $user && $user->hasAnyRole(['admin', 'shelter_staff', 'mao_officer']);
+        $isViewOnly = $isStaff || $request->boolean('view_only');
+
         if ($user) {
+            if ($isStaff) {
+                $pet->breed = $originalBreed;
+                $pet->description = $originalDescription;
+            }
+
             $isSaved = $user->savedPets()->where('pet_id', $pet->id)->exists();
             $hasActiveApplication = $user->applications()
                 ->whereIn('status', ['pending', 'under_review', 'mao_audit'])
@@ -184,6 +192,7 @@ class PetController extends Controller
             'isSaved' => $isSaved,
             'hasActiveApplication' => $hasActiveApplication,
             'isApproved' => $isApproved,
+            'isViewOnly' => $isViewOnly,
         ]);
     }
 }

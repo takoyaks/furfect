@@ -30,14 +30,15 @@ class ApplicationController extends Controller
                 'pet.shelter',
                 'staff',
                 'maoOfficer',
+                'releasingOfficer',
                 'timelines.actor',
             ]);
 
         if ($targetId) {
             $application = (clone $query)->where('id', $targetId)->first();
         } else {
-            // Load approved or active application first, fallback to latest
-            $application = (clone $query)->whereIn('status', ['approved', 'mao_audit', 'under_review', 'pending'])
+            // Load completed, approved or active application first, fallback to latest
+            $application = (clone $query)->whereIn('status', ['completed', 'approved', 'mao_audit', 'under_review', 'pending'])
                 ->latest('submitted_at')
                 ->first() ?? (clone $query)->latest('submitted_at')->first();
         }

@@ -84,6 +84,13 @@ class SystemSettingsSeeder extends Seeder
                 'description' => 'When enabled, adopters must complete automated ID and facial biometric verification (Didit eKYC) before submitting personal details. When disabled, adopters proceed directly to personal information.',
             ],
             [
+                'key' => 'client_adoption_certificate_enabled',
+                'value' => '0',
+                'type' => 'boolean',
+                'label' => 'Enable Client-Side Digital Adoption Certificate',
+                'description' => 'When enabled, adopters can view and print their official Certificate of Pet Adoption from their application tracker and history. When disabled, certificates remain viewable and printable exclusively by Admin and Shelter Staff.',
+            ],
+            [
                 'key' => 'consent_agreement_label',
                 'value' => 'I agree to the terms and conditions of FurFect Match and the Virac Animal Shelter Adoption policies.',
                 'type' => 'string',

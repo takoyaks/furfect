@@ -12,10 +12,14 @@ import { ApplicationTimelineCard, TimelineEvent } from '@/components/application
 import { IdDocumentInspectorModal } from '@/components/id-document-inspector-modal';
 import { IdentityVerificationReport } from '@/components/identity-verification-report';
 import { IdentityVerificationBadge } from '@/components/identity-verification-badge';
+import { AdoptionCertificateModal } from '@/components/adoption-certificate-modal';
+import { AdoptionPassModal } from '@/components/adoption-pass-modal';
 
 interface ChecklistItem {
     label: string;
     description: string;
+    auto_compliant?: boolean;
+    compliance_reason?: string;
 }
 
 interface Application {
@@ -132,13 +136,15 @@ export default function MaoApplicationShow({ application, dssMatch, defaultCheck
     const profile    = application.adopter.adopter_profile;
     const lifestyle  = application.adopter.lifestyle_profile;
 
-    // Build initial checklist state — if fast-track eligible and not yet resolved, pre-check items
+    // Build initial checklist state:
+    // If already saved in application.mao_checklist (e.g. audited), honor saved state.
+    // Otherwise, default automatically to true if compliant based on system data, or fast_track_eligible.
     const initialChecklist = Object.fromEntries(
         Object.keys(defaultChecklist).map(key => [
             key,
             application.mao_checklist
                 ? Boolean(application.mao_checklist[key])
-                : (application.fast_track_eligible ? true : false),
+                : Boolean(defaultChecklist[key]?.auto_compliant ?? application.fast_track_eligible ?? false),
         ])
     );
 
@@ -195,9 +201,17 @@ export default function MaoApplicationShow({ application, dssMatch, defaultCheck
                             Municipal Agriculture Office (Virac, Catanduanes) &bull; Mandated under RA 8485 &amp; RA 9482 &bull; Ref: <strong className="text-gray-700">{application.reference_number}</strong>
                         </p>
                     </div>
-                    <span className={`text-xs px-3.5 py-1 rounded-full uppercase font-bold tracking-wider ${STATUS_COLOR[application.status] ?? 'bg-amber-100 text-amber-700'}`}>
-                        {application.status.replace(/_/g, ' ')}
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {application.status === 'approved' && (
+                            <>
+                                <AdoptionCertificateModal application={application as any} />
+                                <AdoptionPassModal application={application as any} />
+                            </>
+                        )}
+                        <span className={`text-xs px-3.5 py-1 rounded-full uppercase font-bold tracking-wider ${STATUS_COLOR[application.status] ?? 'bg-amber-100 text-amber-700'}`}>
+                            {application.status.replace(/_/g, ' ')}
+                        </span>
+                    </div>
                 </div>
 
                 {/* ── 8-Factor DSS Score Card ────────────────────────────────────── */}
@@ -494,9 +508,28 @@ export default function MaoApplicationShow({ application, dssMatch, defaultCheck
 
                                         {/* Checklist */}
                                         <div className="space-y-3">
-                                            <Label className="text-xs font-bold text-gray-800 uppercase tracking-wider">
-                                                Statutory Compliance Checklist *
-                                            </Label>
+                                            <div className="flex items-center justify-between">
+                                                <Label className="text-xs font-bold text-gray-800 uppercase tracking-wider">
+                                                    Statutory Compliance Checklist *
+                                                </Label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const recomputed = Object.fromEntries(
+                                                            Object.keys(defaultChecklist).map(key => [
+                                                                key,
+                                                                Boolean(defaultChecklist[key]?.auto_compliant ?? false),
+                                                            ])
+                                                        );
+                                                        setData('checklist', recomputed);
+                                                    }}
+                                                    className="text-[10px] text-purple-700 hover:text-purple-900 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                                                    title="Restore automated compliance evaluation checks"
+                                                >
+                                                    <Sparkles className="size-3 text-purple-600" />
+                                                    <span>Re-apply Auto Checks</span>
+                                                </button>
+                                            </div>
                                             <div className="space-y-2.5">
                                                 {Object.entries(defaultChecklist).map(([key, item]) => (
                                                     <label key={key} className="flex items-start gap-2.5 p-2 rounded-lg border border-gray-200 bg-white hover:bg-purple-50/30 cursor-pointer transition">
@@ -508,9 +541,24 @@ export default function MaoApplicationShow({ application, dssMatch, defaultCheck
                                                         >
                                                             {data.checklist[key] && <Check className="h-3 w-3 text-white" />}
                                                         </div>
-                                                        <div className="text-xs" onClick={() => toggleChecklist(key)}>
+                                                        <div className="text-xs flex-1" onClick={() => toggleChecklist(key)}>
                                                             <div className="font-bold text-gray-800">{item.label}</div>
                                                             <div className="text-gray-400 text-[10px]">{item.description}</div>
+                                                            {item.compliance_reason && (
+                                                                <div className="mt-1 flex items-center gap-1.5">
+                                                                    {item.auto_compliant ? (
+                                                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
+                                                                            <CheckCircle2 className="size-3 text-emerald-600 shrink-0" />
+                                                                            <span>{item.compliance_reason}</span>
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md">
+                                                                            <XCircle className="size-3 text-amber-600 shrink-0" />
+                                                                            <span>{item.compliance_reason}</span>
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </label>
                                                 ))}

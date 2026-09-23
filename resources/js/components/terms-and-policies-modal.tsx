@@ -3,6 +3,7 @@ import { usePage } from '@inertiajs/react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { DEFAULT_AGREEMENT_CONTENT } from '@/config/agreement-content';
+import { useThemeTemplate } from '@/hooks/use-theme-template';
 
 type Tab = 'terms' | 'policies';
 
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function TermsAndPoliciesModal({ trigger, defaultTab = 'terms' }: Props) {
+    const theme = useThemeTemplate();
     const [open, setOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<Tab>(defaultTab);
 
@@ -42,9 +44,9 @@ export function TermsAndPoliciesModal({ trigger, defaultTab = 'terms' }: Props) 
                             key={key}
                             type="button"
                             onClick={() => setActiveTab(key)}
-                            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
                                 activeTab === key
-                                    ? 'border-[#D4A017] text-[#D4A017]'
+                                    ? `border-current ${theme.iconText} font-bold`
                                     : 'border-transparent text-gray-500 hover:text-gray-700'
                             }`}
                         >
@@ -65,9 +67,10 @@ export function TermsAndPoliciesModal({ trigger, defaultTab = 'terms' }: Props) 
                             </p>
 
                             {customTerms ? (
-                                <div className="whitespace-pre-wrap leading-relaxed text-gray-700">
-                                    {customTerms}
-                                </div>
+                                <div 
+                                    className="prose max-w-none text-sm text-gray-700 leading-relaxed space-y-2 [&_h2]:text-base [&_h2]:font-bold [&_h2]:text-gray-900 [&_h3]:text-sm [&_h3]:font-bold [&_h3]:text-gray-900 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-3 [&_blockquote]:italic"
+                                    dangerouslySetInnerHTML={{ __html: customTerms }}
+                                />
                             ) : (
                                 DEFAULT_AGREEMENT_CONTENT.termsSections.map(({ title, body }) => (
                                     <div key={title} className="space-y-1">
@@ -89,9 +92,10 @@ export function TermsAndPoliciesModal({ trigger, defaultTab = 'terms' }: Props) 
                             </p>
 
                             {customPolicies ? (
-                                <div className="whitespace-pre-wrap leading-relaxed text-gray-700">
-                                    {customPolicies}
-                                </div>
+                                <div 
+                                    className="prose max-w-none text-sm text-gray-700 leading-relaxed space-y-2 [&_h2]:text-base [&_h2]:font-bold [&_h2]:text-gray-900 [&_h3]:text-sm [&_h3]:font-bold [&_h3]:text-gray-900 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_blockquote]:border-l-4 [&_blockquote]:border-gray-300 [&_blockquote]:pl-3 [&_blockquote]:italic"
+                                    dangerouslySetInnerHTML={{ __html: customPolicies }}
+                                />
                             ) : (
                                 DEFAULT_AGREEMENT_CONTENT.policiesSections.map(({ title, body }) => (
                                     <div key={title} className="space-y-1">
@@ -108,7 +112,7 @@ export function TermsAndPoliciesModal({ trigger, defaultTab = 'terms' }: Props) 
                     <Button
                         type="button"
                         onClick={() => setOpen(false)}
-                        className="bg-[#D4A017] hover:bg-[#B8860B] text-white"
+                        className={`${theme.primaryButton} text-white font-semibold text-xs`}
                     >
                         Close
                     </Button>

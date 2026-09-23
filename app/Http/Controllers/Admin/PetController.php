@@ -45,17 +45,27 @@ class PetController extends Controller
     }
 
     /**
-     * Delete/Archive a pet.
+     * Archive or permanently delete a pet listing.
      */
-    public function destroy(int $id): RedirectResponse
+    public function destroy(Request $request, int $id): RedirectResponse
     {
         $pet = Pet::findOrFail($id);
-        $pet->update(['status' => 'archived']);
 
-        Inertia::flash('toast', [
-            'type' => 'info',
-            'message' => __('Pet listing archived successfully.'),
-        ]);
+        if ($request->input('action') === 'delete' || $request->boolean('force_delete')) {
+            $pet->delete();
+
+            Inertia::flash('toast', [
+                'type' => 'success',
+                'message' => __('Pet listing permanently deleted.'),
+            ]);
+        } else {
+            $pet->update(['status' => 'archived']);
+
+            Inertia::flash('toast', [
+                'type' => 'info',
+                'message' => __('Pet listing archived successfully.'),
+            ]);
+        }
 
         return back();
     }

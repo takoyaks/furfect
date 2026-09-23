@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import {
     Award,
     History,
@@ -16,6 +16,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useThemeTemplate } from '@/hooks/use-theme-template';
+import { AdoptionCertificateModal } from '@/components/adoption-certificate-modal';
+import { AdoptionPassModal } from '@/components/adoption-pass-modal';
 
 interface TimelineEvent {
     id: number;
@@ -40,6 +43,8 @@ interface ApplicationItem {
     pickup_deadline_at?: string;
     submitted_at: string;
     resolved_at?: string;
+    released_at?: string;
+    releasing_officer?: { name: string };
     pet: {
         id: number;
         name: string;
@@ -79,11 +84,13 @@ interface LifestyleProfileData {
 }
 
 const STATUS_BADGE: Record<string, string> = {
+    completed: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     approved: 'bg-green-100 text-green-800 border-green-200',
     mao_audit: 'bg-purple-100 text-purple-800 border-purple-200',
     under_review: 'bg-blue-100 text-blue-800 border-blue-200',
     pending: 'bg-amber-100 text-amber-800 border-amber-200',
     rejected: 'bg-red-100 text-red-800 border-red-200',
+    unclaimed: 'bg-gray-100 text-gray-800 border-gray-200',
 };
 
 export default function AdopterHistoryPage({
@@ -97,6 +104,12 @@ export default function AdopterHistoryPage({
     adopterProfile: AdopterProfileData | null;
     lifestyleProfile: LifestyleProfileData | null;
 }) {
+    const theme = useThemeTemplate();
+    const { auth, systemSettings } = usePage().props as any;
+    const clientCertificateEnabled = Boolean(systemSettings?.client_adoption_certificate_enabled);
+    const userRoles: string[] = auth?.user?.roles || [];
+    const isStaffOrAdmin = userRoles.includes('admin') || userRoles.includes('shelter_staff') || userRoles.includes('mao_officer');
+    const canViewCertificate = clientCertificateEnabled || isStaffOrAdmin;
     const [activeTab, setActiveTab] = useState<'adopted' | 'applications' | 'background'>('adopted');
 
     return (
@@ -106,11 +119,11 @@ export default function AdopterHistoryPage({
             <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 space-y-8">
                 
                 {/* ── Page Header ── */}
-                <div className="rounded-3xl bg-gradient-to-r from-amber-500/10 via-[#F5EDD7]/60 to-white border border-[#D4A017]/30 p-6 md:p-8 shadow-xs">
+                <div className={cn("rounded-3xl p-6 md:p-8 shadow-xs border", theme.portalBanner)}>
                     <div className="flex items-center justify-between flex-wrap gap-4">
                         <div className="space-y-1.5">
                             <div className="flex items-center gap-2.5">
-                                <div className="h-10 w-10 rounded-2xl bg-[#D4A017] text-white flex items-center justify-center shadow-xs">
+                                <div className={cn("h-10 w-10 rounded-2xl text-white flex items-center justify-center shadow-xs", theme.tabActive)}>
                                     <History className="h-5 w-5" />
                                 </div>
                                 <h1 className="text-2xl font-black text-gray-900">My Pet History &amp; Records</h1>
@@ -139,33 +152,36 @@ export default function AdopterHistoryPage({
                     <div className="flex items-center gap-2 p-1.5 bg-gray-100/90 rounded-2xl w-fit flex-wrap">
                         <button
                             onClick={() => setActiveTab('adopted')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                            className={cn(
+                                "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all",
                                 activeTab === 'adopted'
-                                    ? 'bg-white text-[#B8860B] shadow-xs'
-                                    : 'text-gray-600 hover:text-gray-900'
-                            }`}
+                                    ? cn("bg-white shadow-xs", theme.accentText)
+                                    : "text-gray-600 hover:text-gray-900"
+                            )}
                         >
                             <Award className="h-4 w-4" />
                             Adopted Pets ({adoptedPets.length})
                         </button>
                         <button
                             onClick={() => setActiveTab('applications')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                            className={cn(
+                                "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all",
                                 activeTab === 'applications'
-                                    ? 'bg-white text-[#B8860B] shadow-xs'
-                                    : 'text-gray-600 hover:text-gray-900'
-                            }`}
+                                    ? cn("bg-white shadow-xs", theme.accentText)
+                                    : "text-gray-600 hover:text-gray-900"
+                            )}
                         >
                             <FileText className="h-4 w-4" />
                             Applications ({allApplications.length})
                         </button>
                         <button
                             onClick={() => setActiveTab('background')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                            className={cn(
+                                "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all",
                                 activeTab === 'background'
-                                    ? 'bg-white text-[#B8860B] shadow-xs'
-                                    : 'text-gray-600 hover:text-gray-900'
-                            }`}
+                                    ? cn("bg-white shadow-xs", theme.accentText)
+                                    : "text-gray-600 hover:text-gray-900"
+                            )}
                         >
                             <ShieldCheck className="h-4 w-4" />
                             Pet Background
@@ -187,7 +203,7 @@ export default function AdopterHistoryPage({
                                     <div className="pt-2">
                                         <Link
                                             href={route('pets.index')}
-                                            className={cn(buttonVariants({ variant: 'default' }), "bg-[#D4A017] hover:bg-[#B8860B] text-white text-xs font-bold shadow-xs")}
+                                            className={cn(buttonVariants({ variant: 'default' }), "text-white text-xs font-bold shadow-xs", theme.primaryButton)}
                                         >
                                             Browse Available Rescues
                                         </Link>
@@ -208,7 +224,9 @@ export default function AdopterHistoryPage({
                                                             <div>
                                                                 <div className="flex items-center gap-2">
                                                                     <CardTitle className="text-lg font-black text-gray-900">{app.pet.name}</CardTitle>
-                                                                    <Badge className="bg-green-600 text-white text-[10px] font-bold">Adopted</Badge>
+                                                                    <Badge className={app.status === 'completed' ? "bg-emerald-600 text-white text-[10px] font-bold" : "bg-green-600 text-white text-[10px] font-bold"}>
+                                                                        {app.status === 'completed' ? 'Safely Home' : 'Approved (Pending Pickup)'}
+                                                                    </Badge>
                                                                 </div>
                                                                 <CardDescription className="text-xs text-gray-500 capitalize">
                                                                     {app.pet.species} {app.pet.breed ? `\u2022 ${app.pet.breed}` : ''}
@@ -251,9 +269,13 @@ export default function AdopterHistoryPage({
                                                             <span className="font-medium text-gray-800 truncate block">{app.pet.shelter.name}</span>
                                                         </div>
                                                         <div className="space-y-0.5">
-                                                            <span className="text-[10px] text-gray-400 block uppercase">Adoption Date</span>
+                                                            <span className="text-[10px] text-gray-400 block uppercase">
+                                                                {app.status === 'completed' ? 'Release Date' : 'Adoption Date'}
+                                                            </span>
                                                             <span className="font-medium text-gray-800">
-                                                                {app.resolved_at ? new Date(app.resolved_at).toLocaleDateString() : 'Confirmed'}
+                                                                {app.released_at
+                                                                    ? new Date(app.released_at).toLocaleDateString()
+                                                                    : (app.resolved_at ? new Date(app.resolved_at).toLocaleDateString() : 'Confirmed')}
                                                             </span>
                                                         </div>
                                                         <div className="space-y-0.5">
@@ -262,14 +284,12 @@ export default function AdopterHistoryPage({
                                                         </div>
                                                     </div>
 
-                                                    {/* Action Button */}
-                                                    <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-                                                        <Link
-                                                            href={route('application.show', { id: app.id })}
-                                                            className="text-xs font-bold text-[#B8860B] hover:underline flex items-center gap-1"
-                                                        >
-                                                            View Digital Adoption Pass <ArrowRight className="h-3.5 w-3.5" />
-                                                        </Link>
+                                                    {/* Official Document Action Buttons */}
+                                                    <div className="pt-2.5 border-t border-gray-100 flex items-center justify-between flex-wrap gap-2">
+                                                        <div className="flex items-center gap-2">
+                                                            {canViewCertificate && <AdoptionCertificateModal application={app as any} />}
+                                                            <AdoptionPassModal application={app as any} />
+                                                        </div>
                                                         <Link href={route('pets.show', app.pet.id)} className="text-xs text-gray-400 hover:text-gray-700">
                                                             Pet Profile
                                                         </Link>
@@ -313,7 +333,7 @@ export default function AdopterHistoryPage({
                                                                 <span className="font-bold text-gray-900 text-sm">{app.pet.name}</span>
                                                                 <span className="text-xs text-gray-400 capitalize">({app.pet.species})</span>
                                                                 <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${STATUS_BADGE[app.status] || 'bg-gray-100 text-gray-700'}`}>
-                                                                    {app.status.replace(/_/g, ' ')}
+                                                                    {app.status === 'completed' ? 'RELEASED / ADOPTED' : app.status.replace(/_/g, ' ')}
                                                                 </span>
                                                             </div>
                                                             <p className="text-xs text-gray-500">
@@ -378,7 +398,7 @@ export default function AdopterHistoryPage({
                                     {/* Experience Background */}
                                     <div className="space-y-4 p-4 rounded-2xl bg-gray-50/70 border border-gray-100">
                                         <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                            <UserCheck className="h-4 w-4 text-[#D4A017]" />
+                                            <UserCheck className={cn("h-4 w-4", theme.iconText)} />
                                             Past Pet Experience
                                         </h4>
                                         <div className="space-y-2.5 text-gray-600">
@@ -419,7 +439,7 @@ export default function AdopterHistoryPage({
                                     {/* Current Housing & Care Setup */}
                                     <div className="space-y-4 p-4 rounded-2xl bg-gray-50/70 border border-gray-100">
                                         <h4 className="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                            <Building className="h-4 w-4 text-[#D4A017]" />
+                                            <Building className={cn("h-4 w-4", theme.iconText)} />
                                             Housing &amp; Capacity Setup
                                         </h4>
                                         <div className="space-y-2.5 text-gray-600">

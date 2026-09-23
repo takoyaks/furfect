@@ -20,6 +20,8 @@ import {
     TrendingUp
 } from 'lucide-react';
 import ApexChart, { THEME_COLORS } from '@/components/charts/apex-chart';
+import { useThemeTemplate } from '@/hooks/use-theme-template';
+import { cn } from '@/lib/utils';
 import type { ApexOptions } from 'apexcharts';
 
 interface Metrics {
@@ -90,6 +92,7 @@ export default function MaoDashboard({
     speciesStats,
     dssScoreDistribution,
 }: MaoDashboardProps) {
+    const theme = useThemeTemplate();
     const hasPendingAudits = metrics.pending_audits_count > 0;
 
     // 1. Monthly Compliance Decision Trajectory
@@ -332,17 +335,17 @@ export default function MaoDashboard({
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4 md:p-6 bg-[#FCFDF9]">
 
                 {/* Top Header Row */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[#467235]/20 pb-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-4">
                     <div>
                         <div className="flex items-center gap-3">
-                            <span className="p-2.5 bg-[#467235] text-[#FFF78D] rounded-xl shadow-xs">
+                            <span className={`p-2.5 ${theme.tabActive} rounded-xl shadow-xs`}>
                                 <ShieldCheck className="size-6" />
                             </span>
                             <div>
-                                <h1 className="text-2xl font-black text-[#283F24] tracking-tight">
+                                <h1 className={`text-2xl font-black ${theme.portalBannerTitle} tracking-tight`}>
                                     Municipal Animal Welfare &amp; Statutory Analytics
                                 </h1>
-                                <p className="text-xs text-[#283F24]/75 mt-0.5">
+                                <p className="text-xs text-gray-600 mt-0.5">
                                     Virac Municipal Agriculture Office — Regulatory oversight &amp; compliance analytics (RA 8485 &amp; RA 9482).
                                 </p>
                             </div>
@@ -351,13 +354,13 @@ export default function MaoDashboard({
 
                     <div className="flex items-center gap-2.5">
                         <Link href={route('mao.reports.index')}>
-                            <Button variant="outline" size="sm" className="text-xs border-[#467235]/40 text-[#283F24] gap-1.5 shadow-2xs bg-white">
-                                <Activity className="h-3.5 w-3.5 text-[#467235]" />
+                            <Button variant="outline" size="sm" className="text-xs border-gray-300 text-gray-700 gap-1.5 shadow-2xs bg-white">
+                                <Activity className="h-3.5 w-3.5" />
                                 Reports &amp; Analytics
                             </Button>
                         </Link>
                         <Link href={route('mao.applications.index', { status: 'mao_audit' })}>
-                            <Button className="bg-[#FFBF00] hover:bg-[#E5A900] text-[#283F24] font-bold text-xs gap-1.5 shadow-xs border border-[#FFBF00]">
+                            <Button className={`${theme.tabActive} text-xs gap-1.5 shadow-xs`}>
                                 <ClipboardList className="h-3.5 w-3.5" />
                                 Audit Queue ({metrics.pending_audits_count})
                             </Button>
@@ -367,30 +370,30 @@ export default function MaoDashboard({
 
                 {/* Urgent Pending Approval Notification Banner */}
                 {hasPendingAudits ? (
-                    <div className="bg-gradient-to-r from-[#FFBF00]/25 via-[#FFF78D]/30 to-transparent border-l-4 border-[#FFBF00] rounded-r-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
+                    <div className="bg-amber-50/60 border-l-4 border-amber-500 rounded-r-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
                         <div className="flex items-start gap-3">
-                            <div className="p-2 rounded-lg bg-[#FFBF00] text-[#283F24] shadow-xs shrink-0 mt-0.5 sm:mt-0">
+                            <div className="p-2 rounded-lg bg-amber-500 text-white shadow-xs shrink-0 mt-0.5 sm:mt-0">
                                 <AlertTriangle className="h-5 w-5" />
                             </div>
                             <div>
-                                <h3 className="text-sm font-bold text-[#283F24] flex items-center gap-2">
+                                <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
                                     Action Required: {metrics.pending_audits_count} {metrics.pending_audits_count === 1 ? 'Application Needs' : 'Applications Need'} Statutory Clearance
-                                    <span className="animate-pulse flex h-2 w-2 rounded-full bg-[#FFBF00]" />
+                                    <span className="animate-pulse flex h-2 w-2 rounded-full bg-amber-500" />
                                 </h3>
-                                <p className="text-xs text-[#283F24]/75 mt-0.5">
+                                <p className="text-xs text-gray-600 mt-0.5">
                                     Endorsed by shelter staff awaiting municipal statutory compliance sign-off under RA 8485 before pet release.
                                 </p>
                             </div>
                         </div>
                         <Link href={route('mao.applications.index', { status: 'mao_audit' })} className="shrink-0">
-                            <Button size="sm" className="bg-[#283F24] hover:bg-[#467235] text-white text-xs font-bold gap-1 shadow-xs">
+                            <Button size="sm" className={`${theme.primaryButton} text-xs font-bold gap-1 shadow-xs`}>
                                 Review Queue <ArrowRight className="h-3.5 w-3.5" />
                             </Button>
                         </Link>
                     </div>
                 ) : (
                     <div className="bg-[#467235]/10 border border-[#467235]/30 rounded-xl p-4 flex items-center gap-3">
-                        <CheckCircle2 className="h-5 w-5 text-[#467235] shrink-0" />
+                        <CheckCircle2 className={cn("h-5 w-5 shrink-0", theme.iconText)} />
                         <div>
                             <span className="text-xs font-bold text-[#283F24]">Statutory Audit Queue Clear</span>
                             <p className="text-[11px] text-[#283F24]/75">All submitted applications have undergone statutory compliance evaluation.</p>
@@ -405,7 +408,7 @@ export default function MaoDashboard({
                     <Card className="border-[#FFBF00]/50 shadow-2xs bg-white">
                         <CardHeader className="flex flex-row items-center justify-between pb-1.5 p-3.5">
                             <span className="text-[11px] font-bold text-[#283F24]/70 uppercase tracking-wider">Awaiting Audit</span>
-                            <ShieldAlert className="h-4 w-4 text-[#FFBF00]" />
+                            <ShieldAlert className={cn("h-4 w-4", theme.accentIcon)} />
                         </CardHeader>
                         <CardContent className="p-3.5 pt-0">
                             <div className="text-2xl font-black text-[#283F24]">{metrics.pending_audits_count}</div>
@@ -417,7 +420,7 @@ export default function MaoDashboard({
                     <Card className="border-[#467235]/40 shadow-2xs bg-white">
                         <CardHeader className="flex flex-row items-center justify-between pb-1.5 p-3.5">
                             <span className="text-[11px] font-bold text-[#283F24]/70 uppercase tracking-wider">Approved</span>
-                            <CheckCircle2 className="h-4 w-4 text-[#467235]" />
+                            <CheckCircle2 className={cn("h-4 w-4", theme.iconText)} />
                         </CardHeader>
                         <CardContent className="p-3.5 pt-0">
                             <div className="text-2xl font-black text-[#467235]">{metrics.approved_count}</div>
@@ -441,7 +444,7 @@ export default function MaoDashboard({
                     <Card className="border-[#FFBF00]/50 shadow-2xs bg-white">
                         <CardHeader className="flex flex-row items-center justify-between pb-1.5 p-3.5">
                             <span className="text-[11px] font-bold text-[#283F24]/70 uppercase tracking-wider">Avg DSS Score</span>
-                            <Percent className="h-4 w-4 text-[#FFBF00]" />
+                            <Percent className={cn("h-4 w-4", theme.accentIcon)} />
                         </CardHeader>
                         <CardContent className="p-3.5 pt-0">
                             <div className="text-2xl font-black text-[#283F24]">{metrics.avg_dss_score}%</div>
@@ -453,7 +456,7 @@ export default function MaoDashboard({
                     <Card className="border-[#467235]/40 shadow-2xs bg-white">
                         <CardHeader className="flex flex-row items-center justify-between pb-1.5 p-3.5">
                             <span className="text-[11px] font-bold text-[#283F24]/70 uppercase tracking-wider">Available Pets</span>
-                            <Home className="h-4 w-4 text-[#467235]" />
+                            <Home className={cn("h-4 w-4", theme.iconText)} />
                         </CardHeader>
                         <CardContent className="p-3.5 pt-0">
                             <div className="text-2xl font-black text-[#283F24]">{metrics.total_pets_available}</div>
@@ -465,7 +468,7 @@ export default function MaoDashboard({
                     <Card className="border-[#467235]/40 shadow-2xs bg-white">
                         <CardHeader className="flex flex-row items-center justify-between pb-1.5 p-3.5">
                             <span className="text-[11px] font-bold text-[#283F24]/70 uppercase tracking-wider">Adoptions Placed</span>
-                            <Award className="h-4 w-4 text-[#283F24]" />
+                            <Award className={cn("h-4 w-4", theme.iconText)} />
                         </CardHeader>
                         <CardContent className="p-3.5 pt-0">
                             <div className="text-2xl font-black text-[#283F24]">{metrics.total_pets_adopted}</div>
@@ -482,7 +485,7 @@ export default function MaoDashboard({
                         <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-gray-100">
                             <div>
                                 <CardTitle className="text-base font-bold text-[#283F24] flex items-center gap-2">
-                                    <TrendingUp className="size-4 text-[#467235]" />
+                                    <TrendingUp className={cn("size-4", theme.iconText)} />
                                     Statutory Compliance &amp; Audit Trajectory
                                 </CardTitle>
                                 <CardDescription className="text-xs text-[#283F24]/60">
@@ -504,7 +507,7 @@ export default function MaoDashboard({
                     <Card className="border-[#467235]/20 shadow-xs bg-white">
                         <CardHeader className="pb-2 border-b border-gray-100">
                             <CardTitle className="text-base font-bold text-[#283F24] flex items-center gap-2">
-                                <PieChartIcon className="size-4 text-[#FFBF00]" />
+                                <PieChartIcon className={cn("size-4", theme.accentIcon)} />
                                 Statutory Decision Outcomes
                             </CardTitle>
                             <CardDescription className="text-xs text-[#283F24]/60">
@@ -530,7 +533,7 @@ export default function MaoDashboard({
                     <Card className="border-[#467235]/20 shadow-xs bg-white">
                         <CardHeader className="pb-2 border-b border-gray-100">
                             <CardTitle className="text-sm font-bold text-[#283F24] flex items-center gap-2">
-                                <Home className="size-4 text-[#467235]" />
+                                <Home className={cn("size-4", theme.iconText)} />
                                 Shelter Capacity &amp; Velocity
                             </CardTitle>
                             <CardDescription className="text-xs text-[#283F24]/60">
@@ -557,7 +560,7 @@ export default function MaoDashboard({
                     <Card className="border-[#467235]/20 shadow-xs bg-white">
                         <CardHeader className="pb-2 border-b border-gray-100">
                             <CardTitle className="text-sm font-bold text-[#283F24] flex items-center gap-2">
-                                <Layers className="size-4 text-[#FFBF00]" />
+                                <Layers className={cn("size-4", theme.accentIcon)} />
                                 Municipal Species Breakdown
                             </CardTitle>
                             <CardDescription className="text-xs text-[#283F24]/60">
@@ -578,7 +581,7 @@ export default function MaoDashboard({
                     <Card className="border-[#467235]/20 shadow-xs bg-white">
                         <CardHeader className="pb-2 border-b border-gray-100">
                             <CardTitle className="text-sm font-bold text-[#283F24] flex items-center gap-2">
-                                <BarChart3 className="size-4 text-[#283F24]" />
+                                <BarChart3 className={cn("size-4", theme.iconText)} />
                                 Compatibility Match Ratings
                             </CardTitle>
                             <CardDescription className="text-xs text-[#283F24]/60">
@@ -601,7 +604,7 @@ export default function MaoDashboard({
                 <div className="bg-[#FFF78D]/20 border border-[#FFBF00]/40 rounded-xl p-4 shadow-2xs">
                     <div className="flex items-center justify-between flex-wrap gap-4">
                         <div className="flex items-center gap-3">
-                            <ShieldCheck className="size-5 text-[#467235]" />
+                            <ShieldCheck className={cn("size-5", theme.iconText)} />
                             <div>
                                 <h4 className="text-xs font-bold text-[#283F24] uppercase tracking-wider">
                                     Statutory Mandate: Republic Acts 8485 &amp; 9482
@@ -615,7 +618,7 @@ export default function MaoDashboard({
                         <div className="flex items-center gap-2">
                             <Link href={route('mao.applications.index')}>
                                 <Button size="sm" variant="outline" className="text-xs border-[#467235]/40 text-[#283F24] bg-white hover:bg-[#FFF78D]/40">
-                                    <ClipboardList className="size-3.5 mr-1 text-[#467235]" /> All Applications
+                                    <ClipboardList className={cn("size-3.5 mr-1", theme.iconText)} /> All Applications
                                 </Button>
                             </Link>
                             <Link href={route('mao.reports.index')}>

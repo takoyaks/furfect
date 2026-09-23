@@ -20,6 +20,9 @@ export function UserMenuContent({ user }: Props) {
     const cleanup = useMobileNavigation();
     const { version } = usePage().props as { version?: string };
 
+    const roles = (user?.roles as string[]) || [];
+    const isStaffOrAdminOrMao = roles.some((r) => ['admin', 'shelter_staff', 'mao_officer'].includes(r));
+
     const handleLogout = () => {
         cleanup();
         router.flushAll();
@@ -36,17 +39,19 @@ export function UserMenuContent({ user }: Props) {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-                <DropdownMenuItem asChild>
-                    <Link
-                        className="flex items-center w-full cursor-pointer"
-                        href={route('history.index')}
-                        prefetch
-                        onClick={cleanup}
-                    >
-                        <Award className="mr-2 h-4 w-4" />
-                        <span>My Pet History</span>
-                    </Link>
-                </DropdownMenuItem>
+                {!isStaffOrAdminOrMao && (
+                    <DropdownMenuItem asChild>
+                        <Link
+                            className="flex items-center w-full cursor-pointer"
+                            href={route('history.index')}
+                            prefetch
+                            onClick={cleanup}
+                        >
+                            <Award className="mr-2 h-4 w-4" />
+                            <span>My Pet History</span>
+                        </Link>
+                    </DropdownMenuItem>
+                )}
                 <DropdownMenuItem asChild>
                     <Link
                         className="flex items-center w-full cursor-pointer"

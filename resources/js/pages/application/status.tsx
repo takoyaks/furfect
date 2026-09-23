@@ -2,12 +2,14 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, ClipboardList, ShieldAlert, Award, FileCheck, Clock, MapPin, Phone, Calendar, ArrowRight, Sparkles, Building, QrCode, Tag, HeartHandshake, Zap, Users, Printer } from 'lucide-react';
+import { Check, X, ClipboardList, ShieldAlert, Award, FileCheck, Clock, MapPin, Phone, Calendar, ArrowRight, Sparkles, Building, QrCode, Tag, HeartHandshake, Zap, Users, Printer, ShieldCheck } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { ApplicationTimelineCard, TimelineEvent } from '@/components/application-timeline-card';
 import { DssScoreCard } from '@/components/dss-score-card';
 import { AdoptionPickupPass } from '@/components/adoption-pickup-pass';
 import { AdoptionPassModal } from '@/components/adoption-pass-modal';
+import { AdoptionCertificate } from '@/components/adoption-certificate';
+import { AdoptionCertificateModal } from '@/components/adoption-certificate-modal';
 import { cn } from '@/lib/utils';
 
 interface PetRecommendation {
@@ -33,7 +35,7 @@ interface Application {
     dss_score: string;
     fast_track_eligible?: boolean;
     dss_breakdown?: any;
-    status: 'pending' | 'under_review' | 'mao_audit' | 'approved' | 'rejected';
+    status: 'pending' | 'under_review' | 'mao_audit' | 'approved' | 'rejected' | 'completed' | 'unclaimed';
     staff_decision?: string;
     staff_notes?: string;
     reviewed_at?: string;
@@ -44,6 +46,9 @@ interface Application {
     mao_remarks?: string;
     resolved_at?: string;
     submitted_at: string;
+    released_at?: string | null;
+    releasing_notes?: string | null;
+    releasing_officer?: { name: string } | null;
     pet: {
         id: number;
         name: string;
@@ -67,8 +72,12 @@ export default function ApplicationStatus({
     isWaitlisted?: boolean;
     recommendedPets?: PetRecommendation[];
 }) {
-    const { systemSettings } = usePage().props as any;
+    const { auth, systemSettings } = usePage().props as any;
     const pricingEnabled = systemSettings?.pricing_enabled ?? false;
+    const clientCertificateEnabled = Boolean(systemSettings?.client_adoption_certificate_enabled);
+    const userRoles: string[] = auth?.user?.roles || [];
+    const isStaffOrAdmin = userRoles.includes('admin') || userRoles.includes('shelter_staff') || userRoles.includes('mao_officer');
+    const canViewCertificate = clientCertificateEnabled || isStaffOrAdmin;
 
     if (!application) {
         return (
@@ -100,7 +109,7 @@ export default function ApplicationStatus({
         ? (rawPhoto.startsWith('http') || rawPhoto.startsWith('/') ? rawPhoto : `/storage/${rawPhoto}`)
         : '/placeholder-pet.png';
 
-    // Multi-stage status determination
+    // Multi-stage status determination (5 milestones)
     const steps = [
         {
             num: 1,
@@ -118,27 +127,39 @@ export default function ApplicationStatus({
             num: 3,
             title: 'MAO Compliance Audit',
             desc: 'Municipal Agriculture Office review (RA 8485)',
-            date: application.status === 'mao_audit' || application.resolved_at ? (application.reviewed_at || application.submitted_at) : null,
+            date: application.status === 'mao_audit' || application.resolved_at || application.status === 'completed' ? (application.reviewed_at || application.submitted_at) : null,
         },
         {
             num: 4,
-            title: 'Official Resolution',
-            desc: application.status === 'approved' ? 'Adoption Approved' : (application.status === 'rejected' ? 'Application Closed' : 'Final Certificate Issuance'),
+            title: 'Approval & Pass Issued',
+            desc: application.status === 'rejected' ? 'Application Closed' : 'Adoption Pass & Certificate Generated',
             date: application.resolved_at,
+        },
+        {
+            num: 5,
+            title: 'Pet Released & Home',
+            desc: application.status === 'completed'
+                ? 'Pet Picked Up & Safely Home'
+                : (application.status === 'unclaimed' ? 'Forfeited / Unclaimed' : 'Physical Handover at Shelter'),
+            date: application.released_at,
         },
     ];
 
     const getStageIndex = () => {
         switch (application.status) {
             case 'pending':
-                return 1;
             case 'under_review':
                 return 1;
             case 'mao_audit':
                 return 2;
             case 'approved':
+                return 4; // Step 4 (idx 4) is awaiting pet pickup
+            case 'completed':
+                return 5; // All 5 steps completed!
             case 'rejected':
                 return 3;
+            case 'unclaimed':
+                return 4;
             default:
                 return 0;
         }
@@ -191,13 +212,15 @@ export default function ApplicationStatus({
                                 </span>
                             </div>
                             <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                                application.status === 'approved'
+                                application.status === 'completed'
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                    : application.status === 'approved'
                                     ? 'bg-green-100 text-green-800 border border-green-200'
-                                    : application.status === 'rejected'
+                                    : application.status === 'rejected' || application.status === 'unclaimed'
                                     ? 'bg-red-100 text-red-800 border border-red-200'
                                     : 'bg-amber-100 text-amber-800 border border-amber-200'
                             }`}>
-                                {application.status.replace(/_/g, ' ')}
+                                {application.status === 'completed' ? 'RELEASED / ADOPTED' : application.status.replace(/_/g, ' ')}
                             </span>
                         </div>
                     </div>
@@ -252,7 +275,7 @@ export default function ApplicationStatus({
                                 <Clock className="h-4 w-4 text-[#D4A017]" />
                                 Multi-Agency Adoption Workflow Status
                             </CardTitle>
-                            {application.target_sla_at && application.status !== 'approved' && application.status !== 'rejected' && (
+                            {application.target_sla_at && application.status !== 'approved' && application.status !== 'completed' && application.status !== 'rejected' && application.status !== 'unclaimed' && (
                                 <span className="text-xs text-gray-500 font-medium flex items-center gap-1">
                                     <Clock className="h-3.5 w-3.5 text-amber-500" />
                                     Target SLA: {new Date(application.target_sla_at).toLocaleDateString()}
@@ -261,11 +284,11 @@ export default function ApplicationStatus({
                         </div>
                     </CardHeader>
                     <CardContent className="p-6">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 relative">
                             {steps.map((s, idx) => {
-                                const isPassed = currentStageIdx > idx || (currentStageIdx === idx && application.status === 'approved');
-                                const isCurrent = currentStageIdx === idx && application.status !== 'approved' && application.status !== 'rejected';
-                                const isDisapproved = currentStageIdx === idx && application.status === 'rejected';
+                                const isPassed = currentStageIdx > idx;
+                                const isCurrent = currentStageIdx === idx && application.status !== 'completed' && application.status !== 'rejected' && application.status !== 'unclaimed';
+                                const isDisapproved = currentStageIdx === idx && (application.status === 'rejected' || application.status === 'unclaimed');
 
                                 return (
                                     <div
@@ -311,7 +334,111 @@ export default function ApplicationStatus({
                     </CardContent>
                 </Card>
 
-                {/* ── 3. Approved State: Digital Adoption Pass / Certificate ─────── */}
+                {/* ── 3a. Completed State: Official Pet Turnover & Celebratory Banner ─ */}
+                {application.status === 'completed' && (
+                    <Card className="border-emerald-300 bg-gradient-to-br from-emerald-50/90 via-white to-green-50/50 shadow-md overflow-hidden">
+                        <CardHeader className="border-b border-emerald-200 bg-emerald-100/40 p-6">
+                            <div className="flex items-center justify-between flex-wrap gap-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md">
+                                        <Award className="h-7 w-7" />
+                                    </div>
+                                    <div>
+                                        <div className="text-xs font-bold uppercase tracking-wider text-emerald-700">Official Municipal Adoption Complete</div>
+                                        <CardTitle className="text-xl font-black text-gray-900">
+                                            {application.pet.name} is Officially Home!
+                                        </CardTitle>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    {application.certificate_number && (
+                                        <div className="bg-white border border-emerald-300 px-3.5 py-1.5 rounded-xl text-center shadow-xs">
+                                            <span className="text-[10px] uppercase font-bold text-gray-400 block">Certificate No.</span>
+                                            <span className="font-mono font-black text-sm text-emerald-800">{application.certificate_number}</span>
+                                        </div>
+                                    )}
+                                    {canViewCertificate && <AdoptionCertificateModal application={application as any} />}
+                                    <AdoptionPassModal application={application as any} />
+                                </div>
+                            </div>
+                        </CardHeader>
+
+                        <CardContent className="p-6 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="md:col-span-2 space-y-4">
+                                    <div className="p-4 bg-white border border-emerald-200 rounded-2xl space-y-2 shadow-xs">
+                                        <h4 className="font-bold text-sm text-emerald-950 flex items-center gap-2">
+                                            <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                                            Pet Handover Confirmed by Shelter Staff
+                                        </h4>
+                                        <p className="text-xs text-gray-700 leading-relaxed">
+                                            Congratulations! The physical handover and turnover for <strong>{application.pet.name}</strong> has been officially confirmed. {application.pet.name} is now registered under your care in the Municipal Agriculture Office (MAO) registry under RA 8485.
+                                        </p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs border-t border-gray-100">
+                                            <div>
+                                                <span className="text-gray-400 block text-[11px]">Turnover Date</span>
+                                                <span className="font-bold text-gray-800">
+                                                    {application.released_at ? new Date(application.released_at).toLocaleDateString() : 'Recorded in registry'}
+                                                </span>
+                                            </div>
+                                            {application.releasing_officer && (
+                                                <div>
+                                                    <span className="text-gray-400 block text-[11px]">Turnover Handled By</span>
+                                                    <span className="font-bold text-gray-800">{application.releasing_officer.name}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {application.releasing_notes && (
+                                            <p className="text-xs italic text-gray-600 pt-1">
+                                                Shelter notes: "{application.releasing_notes}"
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Post Adoption Care Guide */}
+                                    <div className="bg-emerald-50/50 border border-emerald-200/80 rounded-2xl p-4 text-xs text-emerald-900 space-y-2">
+                                        <h5 className="font-bold text-xs uppercase tracking-wider text-emerald-800">
+                                            Responsible Pet Ownership Reminders:
+                                        </h5>
+                                        <ul className="list-disc pl-5 space-y-1 text-emerald-950 text-xs">
+                                            <li>Allow your new companion 3 days to decompress, 3 weeks to learn routines, and 3 months to feel fully at home (the 3-3-3 rule).</li>
+                                            <li>Keep your digital adoption certificate saved for your records and veterinary visits.</li>
+                                            <li>Ensure annual anti-rabies vaccination at the Virac Municipal Agriculture Office or your preferred licensed veterinary clinic.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 flex flex-col justify-between bg-white border border-emerald-200 rounded-2xl p-5 text-center shadow-xs">
+                                    <div className="space-y-2">
+                                        <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto border border-emerald-200">
+                                            <Award className="h-8 w-8" />
+                                        </div>
+                                        <h5 className="font-bold text-sm text-gray-900">Certificate &amp; Pass Always Available</h5>
+                                        <p className="text-[11px] text-gray-500">
+                                            You can view, save, and print your official adoption documents anytime from your Pet History.
+                                        </p>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Link
+                                            href={route('history.index')}
+                                            className={cn(buttonVariants({ variant: 'default' }), "w-full text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white")}
+                                        >
+                                            View My Pet History
+                                        </Link>
+                                        <Link
+                                            href={route('pets.show', application.pet.id)}
+                                            className={cn(buttonVariants({ variant: 'outline' }), "w-full text-xs font-semibold border-gray-200")}
+                                        >
+                                            View Pet Profile
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* ── 3b. Approved State: Digital Adoption Pass / Certificate ─────── */}
                 {application.status === 'approved' && (
                     <Card className="border-green-300 bg-gradient-to-br from-green-50/80 via-white to-emerald-50/40 shadow-md overflow-hidden">
                         <CardHeader className="border-b border-green-200 bg-green-100/40 p-6">
@@ -327,13 +454,14 @@ export default function ApplicationStatus({
                                         </CardTitle>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                     {application.certificate_number && (
                                         <div className="bg-white border border-green-300 px-3.5 py-1.5 rounded-xl text-center shadow-xs">
                                             <span className="text-[10px] uppercase font-bold text-gray-400 block">Certificate No.</span>
                                             <span className="font-mono font-black text-sm text-green-800">{application.certificate_number}</span>
                                         </div>
                                     )}
+                                    {canViewCertificate && <AdoptionCertificateModal application={application as any} />}
                                     <AdoptionPassModal application={application as any} />
                                 </div>
                             </div>
@@ -364,11 +492,11 @@ export default function ApplicationStatus({
                                                 <span className="font-bold text-gray-700 block">Pickup Facility:</span>
                                                 <span>{application.pet.shelter.name} &bull; {application.pet.shelter.location}</span>
                                             </div>
-                                            <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-200/50 space-y-1 sm:col-span-2">
-                                                <span className="font-bold text-blue-900 block">Designated Animal Housing Location:</span>
+                                            <div className="p-3 bg-theme-light rounded-xl border border-theme/20 space-y-1 sm:col-span-2">
+                                                <span className="font-bold text-theme-hover block">Designated Animal Housing Location:</span>
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     <span className="font-semibold text-gray-800 flex items-center gap-1">
-                                                        <MapPin className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                                                        <MapPin className="h-3.5 w-3.5 text-theme shrink-0" />
                                                         {application.pet.housing_area || 'Main Shelter Bay'}
                                                     </span>
                                                     {application.pet.tag_number && (
@@ -410,6 +538,45 @@ export default function ApplicationStatus({
                                         View Unlocked Pet Details &rarr;
                                     </Link>
                                 </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* ── 3c. Unclaimed State ────────────────────────────────────────── */}
+                {application.status === 'unclaimed' && (
+                    <Card className="border-red-300 bg-red-50/40 shadow-sm overflow-hidden">
+                        <CardHeader className="border-b border-red-200 bg-red-100/40 p-5">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0">
+                                    <Clock className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-base font-bold text-red-900">
+                                        Adoption Forfeited — Pickup Window Expired
+                                    </CardTitle>
+                                    <CardDescription className="text-xs text-red-700">
+                                        The 7-day pickup deadline for this approved application has elapsed
+                                    </CardDescription>
+                                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-6 space-y-3 text-xs text-gray-700">
+                            <p>
+                                Because the pet was not picked up within the mandated period, the adoption reservation has been released and the pet returned to the public adoption catalog.
+                            </p>
+                            {application.releasing_notes && (
+                                <p className="italic text-gray-600 bg-white p-3 rounded-xl border border-gray-200">
+                                    "{application.releasing_notes}"
+                                </p>
+                            )}
+                            <div className="pt-2">
+                                <Link
+                                    href={route('pets.index')}
+                                    className={cn(buttonVariants({ variant: 'default' }), "bg-[#D4A017] hover:bg-[#B8860B] text-white text-xs font-semibold")}
+                                >
+                                    Browse Available Pets
+                                </Link>
                             </div>
                         </CardContent>
                     </Card>
@@ -576,13 +743,6 @@ export default function ApplicationStatus({
                     certificateNumber={application.certificate_number}
                 />
             </div>
-
-            {/* ── 7. Clean Print-Only Formal Adoption Pass ─────────────────────── */}
-            {application.status === 'approved' && (
-                <div className="hidden print:block w-full">
-                    <AdoptionPickupPass application={application as any} />
-                </div>
-            )}
         </AppLayout>
     );
 }

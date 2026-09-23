@@ -3,6 +3,7 @@ import { ShieldCheck, Sparkles, Heart } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
+import { TermsAndPoliciesModal } from '@/components/terms-and-policies-modal';
 
 export default function AuthSimpleLayout({
     children,
@@ -33,8 +34,8 @@ export default function AuthSimpleLayout({
             {/* Center Split Screen Layout Container */}
             <div className="relative z-10 my-auto mx-auto flex w-full max-w-5xl flex-col items-center justify-center gap-8 lg:flex-row lg:gap-14">
                 
-                {/* Left Side: Elevated Brand Showcase */}
-                <div className="flex w-full flex-col items-center justify-center text-center lg:w-1/2 lg:py-6">
+                {/* Left Side: Elevated Brand Showcase (Hidden on Mobile) */}
+                <div className="hidden w-full flex-col items-center justify-center text-center lg:flex lg:w-1/2 lg:py-6">
                     {/* Municipal Pill Badge */}
                     <div className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-[#FFBF00]/40 bg-[#FFF78D]/50 px-3.5 py-1 text-xs font-semibold text-[#283F24] shadow-2xs dark:bg-amber-950/40 dark:text-amber-300">
                         <span>🐾</span>
@@ -42,7 +43,7 @@ export default function AuthSimpleLayout({
                     </div>
 
                     <Link
-                        href={home()}
+                        href="/landing"
                         className="group flex flex-col items-center transition-transform duration-300 hover:scale-[1.02]"
                     >
                         {/* Logo with ambient soft backlight */}
@@ -92,9 +93,9 @@ export default function AuthSimpleLayout({
                         {/* Top Gradient Accent Bar */}
                         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#FFBF00] via-[#FFF78D] to-[#467235]" />
 
-                        {/* Top Card Icon Badge */}
-                        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border border-amber-300/60 bg-gradient-to-b from-[#FFFDF0] to-[#FFF78D]/50 p-2.5 shadow-2xs">
-                            <AppLogoIcon className="h-full w-full object-contain" />
+                        {/* Top Card Icon (Floating & Blending without square box) */}
+                        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center">
+                            <AppLogoIcon className="h-full w-full object-contain drop-shadow-sm transition-transform duration-300 hover:scale-105" />
                         </div>
 
                         {/* Card Heading */}
@@ -113,16 +114,37 @@ export default function AuthSimpleLayout({
                         {children}
                     </div>
 
+                    {/* Guest Landing Page Navigation */}
+                    <div className="mt-3.5 text-center">
+                        <Link
+                            href="/landing"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#467235] hover:text-[#283F24] hover:underline dark:text-amber-400"
+                        >
+                            <span>Explore FurFect &amp; Available Pets as Guest</span>
+                            <span>&rarr;</span>
+                        </Link>
+                    </div>
+
                     {/* Bottom Municipal Subtext */}
-                    <div className="mt-5 max-w-md space-y-1 px-2 text-center">
+                    <div className="mt-4 max-w-md space-y-1.5 px-2 text-center">
                         <p className="text-[11px] text-neutral-500 sm:text-xs dark:text-neutral-400">
                             Virac Animal Shelter &amp; Municipal Agriculture Office &bull; Adoption Platform
                         </p>
-                        {version && (
-                            <p className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500">
-                                {version}
-                            </p>
-                        )}
+                        <div className="flex items-center justify-center gap-2 text-[11px] text-neutral-400 dark:text-neutral-500">
+                            <TermsAndPoliciesModal
+                                trigger={
+                                    <button type="button" className="hover:text-[#467235] dark:hover:text-amber-400 hover:underline cursor-pointer font-medium">
+                                        Terms and Agreements
+                                    </button>
+                                }
+                            />
+                            {version && (
+                                <>
+                                    <span>&bull;</span>
+                                    <span className="font-mono text-[10px]">{version}</span>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Megaphone, Plus, Edit, Trash2, Calendar, Image as ImageIcon, Search } from 'lucide-react';
 import InputError from '@/components/input-error';
+import { RichTextEditor } from '@/components/rich-text-editor';
 
 interface Announcement {
     id: number;
@@ -171,7 +172,9 @@ export default function AnnouncementsIndex({ announcements, filters }: Props) {
                                             </TableCell>
                                             <TableCell>
                                                 <div className="font-bold text-gray-900 text-sm">{item.title}</div>
-                                                <div className="text-xs text-gray-500 line-clamp-1">{item.content}</div>
+                                                <div className="text-xs text-gray-500 line-clamp-1 max-w-md" title={item.content?.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}>
+                                                    {item.content?.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}
+                                                </div>
                                             </TableCell>
                                             <TableCell>
                                                 <span className="text-[11px] font-semibold text-[#B8860B] bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
@@ -214,7 +217,7 @@ export default function AnnouncementsIndex({ announcements, filters }: Props) {
 
                 {/* Create / Edit Modal */}
                 <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                    <DialogContent className="max-w-lg">
+                    <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>{editingItem ? 'Edit Announcement' : 'Create New Announcement'}</DialogTitle>
                         </DialogHeader>
@@ -243,14 +246,13 @@ export default function AnnouncementsIndex({ announcements, filters }: Props) {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="content">Content Body *</Label>
-                                <Textarea
+                                <Label htmlFor="content">Announcement Content Body (Rich Text) *</Label>
+                                <RichTextEditor
                                     id="content"
                                     value={data.content}
-                                    onChange={(e) => setData('content', e.target.value)}
-                                    placeholder="Write full details of the announcement..."
-                                    rows={4}
-                                    required
+                                    onChange={(val) => setData('content', val)}
+                                    placeholder="Write full details of the announcement with headings, font styles, colors, and lists..."
+                                    minHeight="220px"
                                 />
                                 <InputError message={errors.content} />
                             </div>

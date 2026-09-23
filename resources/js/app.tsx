@@ -12,6 +12,7 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 const routesMap: Record<string, string> = {
     'home': '/',
+    'landing': '/landing',
     'dashboard': '/dashboard',
     'how-it-works': '/how-it-works',
     'about': '/about',

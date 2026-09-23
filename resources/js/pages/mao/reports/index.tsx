@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import ReportFilterBar, { ReportFilterState } from '@/components/report-filter-bar';
+import { useThemeTemplate } from '@/hooks/use-theme-template';
 
 interface Stats {
     total_applications: number;
@@ -83,6 +84,7 @@ export default function MaoReports({
     filters: ReportFilterState;
     activeFilterDescriptions: Record<string, string>;
 }) {
+    const theme = useThemeTemplate();
     const queryParams = new URLSearchParams();
     Object.entries(filters).forEach(([key, val]) => {
         if (val && val !== 'all') {
@@ -130,7 +132,7 @@ export default function MaoReports({
                             </Button>
                         </a>
                         <a href={excelUrl}>
-                            <Button className="bg-[#D4A017] hover:bg-[#B8860B] text-white text-xs flex items-center gap-1.5 shadow-xs">
+                            <Button className={`${theme.primaryButton} text-white text-xs flex items-center gap-1.5 shadow-xs`}>
                                 <Download className="h-4 w-4" />
                                 Download Excel (CSV)
                             </Button>
@@ -196,10 +198,10 @@ export default function MaoReports({
                     <Card className="border-gray-200/80 shadow-2xs">
                         <CardHeader className="flex flex-row items-center justify-between pb-1.5 p-3.5">
                             <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Avg DSS Score</span>
-                            <Percent className="h-4 w-4 text-[#D4A017]" />
+                            <Percent className={`h-4 w-4 ${theme.accentIcon}`} />
                         </CardHeader>
                         <CardContent className="p-3.5 pt-0">
-                            <div className="text-2xl font-black text-[#D4A017]">{stats.avg_dss_score}%</div>
+                            <div className={`text-2xl font-black ${theme.iconText}`}>{stats.avg_dss_score}%</div>
                             <span className="text-[10px] text-gray-400">compatibility average</span>
                         </CardContent>
                     </Card>
@@ -270,7 +272,7 @@ export default function MaoReports({
                                             <td className="p-3 font-semibold text-gray-900">
                                                 <Link 
                                                     href={route('mao.applications.show', app.id)} 
-                                                    className="hover:text-[#D4A017] hover:underline"
+                                                    className="hover:text-theme hover:underline"
                                                 >
                                                     {app.reference_number}
                                                 </Link>
@@ -287,7 +289,7 @@ export default function MaoReports({
                                             <td className="p-3 text-center">
                                                 <span className={`font-bold ${
                                                     app.dss_score >= 80 ? 'text-green-600' : 
-                                                    app.dss_score >= 50 ? 'text-[#D4A017]' : 'text-red-500'
+                                                    app.dss_score >= 50 ? theme.iconText : 'text-red-500'
                                                 }`}>
                                                     {Math.round(app.dss_score)}%
                                                 </span>
@@ -304,7 +306,7 @@ export default function MaoReports({
                                             </td>
                                             <td className="p-3 text-right">
                                                 <Link href={route('mao.applications.show', app.id)}>
-                                                    <Button variant="ghost" size="sm" className="h-7 text-xs text-[#D4A017] hover:bg-[#D4A017]/10">
+                                                    <Button variant="ghost" size="sm" className={`h-7 text-xs ${theme.iconText} hover:bg-theme-light`}>
                                                         Audit
                                                     </Button>
                                                 </Link>
@@ -326,7 +328,7 @@ export default function MaoReports({
                                 variant={link.active ? 'default' : 'ghost'}
                                 size="sm"
                                 disabled={!link.url}
-                                className={`text-xs min-w-8 h-7 px-2 ${link.active ? 'bg-[#D4A017] hover:bg-[#B8860B] text-white' : ''}`}
+                                className={`text-xs min-w-8 h-7 px-2 ${link.active ? `${theme.primaryButton} text-white` : ''}`}
                                 onClick={() => link.url && router.get(link.url, {}, { preserveState: true, replace: true, preserveScroll: true })}
                                 dangerouslySetInnerHTML={{ __html: link.label }}
                             />

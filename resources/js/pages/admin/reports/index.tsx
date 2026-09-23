@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import ReportFilterBar, { ReportFilterState } from '@/components/report-filter-bar';
+import { useThemeTemplate } from '@/hooks/use-theme-template';
+import { cn } from '@/lib/utils';
 
 interface Stats {
     total_applications: number;
@@ -78,6 +80,7 @@ export default function AdminReports({
     filters: ReportFilterState;
     activeFilterDescriptions: Record<string, string>;
 }) {
+    const theme = useThemeTemplate();
     // Generate export URLs preserving query parameters
     const queryParams = new URLSearchParams();
     Object.entries(filters).forEach(([key, val]) => {
@@ -123,7 +126,7 @@ export default function AdminReports({
                             </Button>
                         </a>
                         <a href={excelUrl}>
-                            <Button className="bg-[#D4A017] hover:bg-[#B8860B] text-white text-xs flex items-center gap-1.5 shadow-xs">
+                            <Button className={cn("text-white text-xs flex items-center gap-1.5 shadow-xs", theme.primaryButton)}>
                                 <Download className="h-4 w-4" />
                                 Download Excel (CSV)
                             </Button>
@@ -189,10 +192,10 @@ export default function AdminReports({
                     <Card className="border-gray-200/80 shadow-2xs">
                         <CardHeader className="flex flex-row items-center justify-between pb-1.5 p-3.5">
                             <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Avg DSS Score</span>
-                            <Percent className="h-4 w-4 text-[#D4A017]" />
+                            <Percent className={cn("h-4 w-4", theme.accentIcon)} />
                         </CardHeader>
                         <CardContent className="p-3.5 pt-0">
-                            <div className="text-2xl font-black text-[#D4A017]">{stats.avg_dss_score}%</div>
+                            <div className={cn("text-2xl font-black", theme.accentText)}>{stats.avg_dss_score}%</div>
                             <span className="text-[10px] text-gray-400">compatibility average</span>
                         </CardContent>
                     </Card>
@@ -200,7 +203,7 @@ export default function AdminReports({
                     <Card className="border-gray-200/80 shadow-2xs">
                         <CardHeader className="flex flex-row items-center justify-between pb-1.5 p-3.5">
                             <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Species Split</span>
-                            <Activity className="h-4 w-4 text-blue-500" />
+                            <Activity className={cn("h-4 w-4", theme.iconText)} />
                         </CardHeader>
                         <CardContent className="p-3.5 pt-0">
                             <div className="flex items-center justify-between text-xs font-bold pt-1">
@@ -327,7 +330,7 @@ export default function AdminReports({
                                 variant={link.active ? 'default' : 'ghost'}
                                 size="sm"
                                 disabled={!link.url}
-                                className={`text-xs min-w-8 h-7 px-2 ${link.active ? 'bg-[#D4A017] hover:bg-[#B8860B] text-white' : ''}`}
+                                className={cn("text-xs min-w-8 h-7 px-2", link.active ? theme.primaryButton : '')}
                                 onClick={() => link.url && router.get(link.url, {}, { preserveState: true, replace: true, preserveScroll: true })}
                                 dangerouslySetInnerHTML={{ __html: link.label }}
                             />

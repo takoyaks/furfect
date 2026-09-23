@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/rich-text-editor';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Upload, X, Check, Dog, Cat, Sparkles, ShieldAlert, HeartHandshake, Tag, MapPin, Cpu, Calendar, PawPrint, ImagePlus, Camera } from 'lucide-react';
+import { ArrowLeft, Upload, X, Check, Dog, Cat, Sparkles, ShieldAlert, HeartHandshake, Tag, MapPin, Cpu, Calendar, PawPrint, ImagePlus, Camera, Trash2 } from 'lucide-react';
 import { CameraCaptureModal } from '@/components/camera-capture-modal';
 
 interface PetPhoto {
@@ -112,14 +113,23 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
         requires_no_children: pet.requires_no_children || false,
         requires_no_other_pets: pet.requires_no_other_pets || false,
         housing_compatible: pet.housing_compatible || ['house_with_yard', 'apartment'],
-        adoption_fee: String(pet.adoption_fee || 0),
+        adoption_fee: '0',
         description: pet.description || '',
         status: pet.status || 'available',
         photos: [] as File[],
+        deleted_photo_ids: [] as number[],
     });
 
     const [previewUrls, setPreviewUrls] = useState<string[]>([]);
     const [cameraOpen, setCameraOpen] = useState(false);
+
+    const toggleDeleteExistingPhoto = (photoId: number) => {
+        if (data.deleted_photo_ids.includes(photoId)) {
+            setData('deleted_photo_ids', data.deleted_photo_ids.filter(id => id !== photoId));
+        } else {
+            setData('deleted_photo_ids', [...data.deleted_photo_ids, photoId]);
+        }
+    };
 
     const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files) return;
@@ -363,24 +373,6 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                                 </Select>
                                 {errors.coat_color && <p className="text-xs text-red-500">{errors.coat_color}</p>}
                             </div>
-
-                            {/* Adoption Fee — only shown when pricing is enabled */}
-                            {pricingEnabled && (
-                            <div className="space-y-2 col-span-1 md:col-span-2">
-                                <Label htmlFor="adoption_fee" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Adoption Fee (₱) *</Label>
-                                <Input
-                                    id="adoption_fee"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={data.adoption_fee}
-                                    onChange={e => setData('adoption_fee', e.target.value)}
-                                    leftIcon={<span className="font-semibold text-xs text-muted-foreground">₱</span>}
-                                    required
-                                />
-                                {errors.adoption_fee && <p className="text-xs text-red-500">{errors.adoption_fee}</p>}
-                            </div>
-                            )}
                         </CardContent>
                     </Card>
 
@@ -699,30 +691,79 @@ export default function EditPet({ pet, shelters = [] }: { pet: Pet; shelters: Sh
                         <CardContent className="pt-6 space-y-5">
                             <div className="space-y-2">
                                 <Label htmlFor="description" className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Bio / Description</Label>
-                                <Textarea
+                                <RichTextEditor
                                     id="description"
-                                    rows={4}
-                                    placeholder="Describe pet's background, personality, favorite activities, or backstory..."
                                     value={data.description}
-                                    onChange={e => setData('description', e.target.value)}
+                                    onChange={val => setData('description', val)}
+                                    placeholder="Describe pet's background, personality, favorite activities, or backstory..."
+                                    minHeight="200px"
                                 />
+                                {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
                             </div>
 
                             {/* Existing Photos */}
                             {pet.photos && pet.photos.length > 0 && (
                                 <div className="space-y-2">
-                                    <Label className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Current Photos</Label>
+                                    <div className="flex items-center justify-between">
+                                        <Label className="font-semibold text-xs text-gray-700 dark:text-neutral-300">Current Photos</Label>
+                                        {data.deleted_photo_ids.length > 0 && (
+                                            <span className="text-[11px] text-red-600 font-semibold">
+                                                {data.deleted_photo_ids.length} photo(s) staged for removal
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                        {pet.photos.map(p => (
-                                            <div key={p.id} className="relative aspect-square rounded-xl overflow-hidden border border-gray-200 dark:border-neutral-700 shadow-xs group">
-                                                <img src={p.photo_path} alt="Pet photo" className="size-full object-cover group-hover:scale-105 transition-transform duration-200" />
-                                                {p.is_primary && (
-                                                    <span className="absolute top-2 left-2 bg-[#D4A017] text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm flex items-center gap-1">
-                                                        <Sparkles className="size-3" /> Primary
-                                                    </span>
-                                                )}
-                                            </div>
-                                        ))}
+                                        {pet.photos.map(p => {
+                                            const isMarkedForDeletion = data.deleted_photo_ids.includes(p.id);
+                                            return (
+                                                <div 
+                                                    key={p.id} 
+                                                    className={`relative aspect-square rounded-xl overflow-hidden border shadow-xs group transition-all duration-200 ${
+                                                        isMarkedForDeletion 
+                                                            ? 'border-red-500 ring-2 ring-red-400/50 opacity-75' 
+                                                            : 'border-gray-200 dark:border-neutral-700'
+                                                    }`}
+                                                >
+                                                    <img 
+                                                        src={p.photo_path} 
+                                                        alt="Pet photo" 
+                                                        className={`size-full object-cover transition-all duration-200 ${
+                                                            isMarkedForDeletion ? 'grayscale blur-[1px]' : 'group-hover:scale-105'
+                                                        }`} 
+                                                    />
+                                                    
+                                                    {p.is_primary && !isMarkedForDeletion && (
+                                                        <span className="absolute top-2 left-2 bg-[#D4A017] text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm flex items-center gap-1">
+                                                            <Sparkles className="size-3" /> Primary
+                                                        </span>
+                                                    )}
+
+                                                    {isMarkedForDeletion ? (
+                                                        <div className="absolute inset-0 bg-red-950/60 flex flex-col items-center justify-center p-2 text-center gap-1.5">
+                                                            <span className="text-white text-[11px] font-bold bg-red-600 px-2 py-0.5 rounded shadow-sm">
+                                                                Will be Deleted
+                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => toggleDeleteExistingPhoto(p.id)}
+                                                                className="text-xs text-white underline hover:text-amber-200 font-semibold cursor-pointer"
+                                                            >
+                                                                Undo
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleDeleteExistingPhoto(p.id)}
+                                                            className="absolute top-2 right-2 p-1.5 bg-red-600/90 hover:bg-red-700 text-white rounded-lg shadow-sm transition-transform hover:scale-110 cursor-pointer"
+                                                            title="Delete this photo"
+                                                        >
+                                                            <Trash2 className="size-3.5" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}

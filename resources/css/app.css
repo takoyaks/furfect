@@ -67,6 +67,11 @@
     --color-forest-muted: #467235;
     --color-yellow-vibrant: #FFBF00;
     --color-yellow-pale: #FFF78D;
+
+    --color-theme-primary: var(--theme-primary);
+    --color-theme-hover: var(--theme-primary-hover);
+    --color-theme-accent: var(--theme-accent);
+    --color-theme-accent-light: var(--theme-accent-light);
 }
 
 :root {
@@ -135,6 +140,182 @@
         oklch(0.922 0 0);
     --sidebar-ring:
         oklch(0.708 0 0);
+}
+
+/* Dynamic Theme Template Variables */
+[data-theme="honey_warm"],
+:root:not([data-theme]) {
+    --theme-primary: #467235;
+    --theme-primary-hover: #283F24;
+    --theme-accent: #FFBF00;
+    --theme-accent-light: #FFF78D;
+    --sidebar-primary: #467235;
+    --sidebar-accent: #FFF78D40;
+    --sidebar-accent-foreground: #283F24;
+}
+
+[data-theme="emerald_nature"] {
+    --theme-primary: #059669;
+    --theme-primary-hover: #047857;
+    --theme-accent: #10B981;
+    --theme-accent-light: #D1FAE5;
+    --sidebar-primary: #059669;
+    --sidebar-accent: #D1FAE550;
+    --sidebar-accent-foreground: #065F46;
+}
+
+[data-theme="modern_slate"] {
+    --theme-primary: #3B82F6;
+    --theme-primary-hover: #2563EB;
+    --theme-accent: #60A5FA;
+    --theme-accent-light: #DBEAFE;
+    --sidebar-primary: #3B82F6;
+    --sidebar-accent: #DBEAFE50;
+    --sidebar-accent-foreground: #1E40AF;
+}
+
+/* Dynamic Theme Icon & Element Utility Classes */
+.text-theme {
+    color: var(--theme-primary);
+}
+.text-theme-hover:hover {
+    color: var(--theme-primary-hover);
+}
+.text-theme-accent {
+    color: var(--theme-accent);
+}
+.bg-theme {
+    background-color: var(--theme-primary);
+}
+.bg-theme-light {
+    background-color: var(--theme-accent-light);
+}
+.border-theme {
+    border-color: var(--theme-primary);
+}
+
+/* Multi-line truncation / line clamp utilities */
+@utility line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+}
+
+@utility line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+@utility line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+
+@utility line-clamp-4 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+}
+
+/* Universal Theme Overrides for legacy hardcoded gold and accent elements */
+[data-theme="emerald_nature"] .bg-\[\#D4A017\],
+[data-theme="modern_slate"] .bg-\[\#D4A017\] {
+    background-color: var(--theme-primary) !important;
+}
+
+[data-theme="emerald_nature"] .hover\:bg-\[\#B8860B\]:hover,
+[data-theme="modern_slate"] .hover\:bg-\[\#B8860B\]:hover {
+    background-color: var(--theme-primary-hover) !important;
+}
+
+[data-theme="emerald_nature"] .text-\[\#D4A017\],
+[data-theme="modern_slate"] .text-\[\#D4A017\] {
+    color: var(--theme-primary) !important;
+}
+
+[data-theme="emerald_nature"] .text-\[\#B8860B\],
+[data-theme="modern_slate"] .text-\[\#B8860B\] {
+    color: var(--theme-accent) !important;
+}
+
+[data-theme="emerald_nature"] .border-\[\#D4A017\],
+[data-theme="modern_slate"] .border-\[\#D4A017\] {
+    border-color: var(--theme-primary) !important;
+}
+
+[data-theme="emerald_nature"] .border-\[\#D4A017\]\/40,
+[data-theme="modern_slate"] .border-\[\#D4A017\]\/40,
+[data-theme="emerald_nature"] .border-\[\#D4A017\]\/30,
+[data-theme="modern_slate"] .border-\[\#D4A017\]\/30,
+[data-theme="emerald_nature"] .border-\[\#D4A017\]\/20,
+[data-theme="modern_slate"] .border-\[\#D4A017\]\/20,
+[data-theme="emerald_nature"] .border-\[\#D4A017\]\/25,
+[data-theme="modern_slate"] .border-\[\#D4A017\]\/25,
+[data-theme="emerald_nature"] .border-\[\#D4A017\]\/10,
+[data-theme="modern_slate"] .border-\[\#D4A017\]\/10 {
+    border-color: color-mix(in srgb, var(--theme-primary) 30%, transparent) !important;
+}
+
+[data-theme="emerald_nature"] .focus\:border-\[\#D4A017\]:focus,
+[data-theme="modern_slate"] .focus\:border-\[\#D4A017\]:focus {
+    border-color: var(--theme-primary) !important;
+}
+
+[data-theme="emerald_nature"] .focus\:ring-\[\#D4A017\]:focus,
+[data-theme="modern_slate"] .focus\:ring-\[\#D4A017\]:focus,
+[data-theme="emerald_nature"] .focus-visible\:ring-\[\#D4A017\]:focus-visible,
+[data-theme="modern_slate"] .focus-visible\:ring-\[\#D4A017\]:focus-visible {
+    --tw-ring-color: var(--theme-primary) !important;
+}
+
+[data-theme="emerald_nature"] .hover\:text-\[\#D4A017\]:hover,
+[data-theme="modern_slate"] .hover\:text-\[\#D4A017\]:hover {
+    color: var(--theme-primary-hover) !important;
+}
+
+[data-theme="emerald_nature"] .data-\[state\=checked\]\:bg-\[\#D4A017\][data-state="checked"],
+[data-theme="modern_slate"] .data-\[state\=checked\]\:bg-\[\#D4A017\][data-state="checked"] {
+    background-color: var(--theme-primary) !important;
+}
+
+[data-theme="emerald_nature"] .bg-\[\#F5EDD7\],
+[data-theme="emerald_nature"] .bg-\[\#F5EDD7\]\/50,
+[data-theme="emerald_nature"] .bg-\[\#F5EDD7\]\/60 {
+    background-color: var(--theme-accent-light) !important;
+}
+
+[data-theme="modern_slate"] .bg-\[\#F5EDD7\],
+[data-theme="modern_slate"] .bg-\[\#F5EDD7\]\/50,
+[data-theme="modern_slate"] .bg-\[\#F5EDD7\]\/60 {
+    background-color: var(--theme-accent-light) !important;
+}
+
+/* Also map #FFBF00 gold text and borders to theme accent */
+[data-theme="emerald_nature"] .text-\[\#FFBF00\],
+[data-theme="modern_slate"] .text-\[\#FFBF00\] {
+    color: var(--theme-accent) !important;
+}
+
+[data-theme="emerald_nature"] .border-\[\#FFBF00\]\/50,
+[data-theme="modern_slate"] .border-\[\#FFBF00\]\/50,
+[data-theme="emerald_nature"] .border-\[\#FFBF00\]\/40,
+[data-theme="modern_slate"] .border-\[\#FFBF00\]\/40 {
+    border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent) !important;
+}
+
+[data-theme="emerald_nature"] .bg-\[\#FFF78D\]\/40,
+[data-theme="modern_slate"] .bg-\[\#FFF78D\]\/40,
+[data-theme="emerald_nature"] .bg-\[\#FFF78D\]\/60,
+[data-theme="modern_slate"] .bg-\[\#FFF78D\]\/60,
+[data-theme="emerald_nature"] .bg-\[\#FFF78D\]\/20,
+[data-theme="modern_slate"] .bg-\[\#FFF78D\]\/20 {
+    background-color: var(--theme-accent-light) !important;
 }
 
 .dark {
@@ -301,18 +482,21 @@
 
 @media print {
     @page {
-        size: A4 portrait;
-        margin: 8mm 10mm;
+        size: auto;
+        margin: 5mm 6mm !important;
     }
 
     html, body {
         background: #ffffff !important;
         color: #000000 !important;
-        font-size: 10pt !important;
+        font-size: 9pt !important;
+        line-height: 1.2 !important;
         margin: 0 !important;
         padding: 0 !important;
-        min-height: 0 !important;
-        height: auto !important;
+        width: 100% !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        overflow: hidden !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
@@ -322,29 +506,53 @@
     [data-slot="sidebar"],
     [data-slot="dialog-overlay"],
     [data-slot="dialog-portal"],
-    [data-slot="dialog-content"] {
+    [data-slot="dialog-content"],
+    [data-slot="dialog"] {
         display: none !important;
     }
 
-    main {
-        padding: 0 !important;
-        margin: 0 !important;
-        min-height: 0 !important;
-        height: auto !important;
-        display: block !important;
+    /* When printing a dedicated certificate or pass portal (#furfect-print-root) */
+    body:has(#furfect-print-root) > *:not(#furfect-print-root),
+    body.is-printing > *:not(#furfect-print-root) {
+        display: none !important;
     }
 
-    .print-pass-document {
+    #furfect-print-root {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+        position: static !important;
+        background: transparent !important;
+    }
+
+    #furfect-print-root .print-pass-document,
+    #furfect-print-root .print-certificate-document,
+    .print-pass-document,
+    .print-certificate-document {
         display: block !important;
         width: 100% !important;
-        max-width: 100% !important;
-        margin: 0 !important;
-        padding: 14px 18px !important;
+        max-width: 195mm !important;
+        margin: auto !important;
+        padding: 6px 10px !important;
         box-shadow: none !important;
-        border: 2px solid #111827 !important;
+        box-sizing: border-box !important;
         page-break-inside: avoid !important;
         page-break-before: avoid !important;
         page-break-after: avoid !important;
         break-inside: avoid !important;
+    }
+
+    .print-pass-document {
+        border: 2px solid #111827 !important;
+    }
+
+    .print-certificate-document {
+        border: 3px double #111827 !important;
     }
 }

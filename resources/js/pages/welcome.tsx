@@ -164,9 +164,9 @@ export default function Welcome({ config, featuredPets = [], announcements = [],
                 {/* ── 2. Statistics Counter Bar ──────────────────────────────────── */}
                 {sections.show_stats && stats && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <Card className="border-amber-200/60 bg-amber-50/40 shadow-sm">
+                        <Card className="border-theme/30 bg-theme-light/30 shadow-sm">
                             <CardContent className="p-6 flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-[#D4A017] text-white flex items-center justify-center shrink-0 shadow-md">
+                                <div className={cn("w-12 h-12 rounded-2xl text-white flex items-center justify-center shrink-0 shadow-md", theme.tabActive)}>
                                     <Heart className="h-6 w-6" />
                                 </div>
                                 <div>
@@ -176,9 +176,9 @@ export default function Welcome({ config, featuredPets = [], announcements = [],
                             </CardContent>
                         </Card>
 
-                        <Card className="border-green-200/60 bg-green-50/40 shadow-sm">
+                        <Card className="border-gray-200/80 bg-white shadow-sm">
                             <CardContent className="p-6 flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-green-600 text-white flex items-center justify-center shrink-0 shadow-md">
+                                <div className={cn("w-12 h-12 rounded-2xl text-white flex items-center justify-center shrink-0 shadow-md", theme.primaryButton)}>
                                     <CheckCircle2 className="h-6 w-6" />
                                 </div>
                                 <div>
@@ -188,9 +188,9 @@ export default function Welcome({ config, featuredPets = [], announcements = [],
                             </CardContent>
                         </Card>
 
-                        <Card className="border-blue-200/60 bg-blue-50/40 shadow-sm">
+                        <Card className="border-gray-200/80 bg-white shadow-sm">
                             <CardContent className="p-6 flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-md">
+                                <div className="w-12 h-12 rounded-2xl bg-slate-700 text-white flex items-center justify-center shrink-0 shadow-md">
                                     <Users className="h-6 w-6" />
                                 </div>
                                 <div>
@@ -350,8 +350,10 @@ export default function Welcome({ config, featuredPets = [], announcements = [],
                                                     <span className={`text-[10px] font-bold ${theme.announcementBadge} px-2 py-0.5 rounded uppercase`}>
                                                         {item.category}
                                                     </span>
-                                                    <h3 className={`font-bold text-sm text-gray-900 group-hover:${theme.accentText} transition-colors`}>{item.title}</h3>
-                                                    <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed">{item.content}</p>
+                                                    <h3 className={`font-bold text-sm text-gray-900 group-hover:${theme.accentText} transition-colors line-clamp-1`}>{item.title}</h3>
+                                                    <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed" title={item.content?.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}>
+                                                        {item.content?.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}
+                                                    </p>
                                                 </div>
                                             </div>
                                             {item.published_at && (

@@ -7,6 +7,7 @@ use App\Models\LandingPageConfig;
 use App\Services\CloudinaryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -102,6 +103,7 @@ class LandingPageBuilderController extends Controller
         unset($validated['hero_image']);
 
         $config->update($validated);
+        Cache::forget('active_theme_config');
 
         Inertia::flash('toast', [
             'type' => 'success',

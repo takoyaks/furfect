@@ -32,7 +32,26 @@ use App\Http\Controllers\Shelter\ReportController as ShelterReportController;
 use Illuminate\Support\Facades\Route;
 
 // Public / Guest Routes
-Route::get('/', [PageController::class, 'home'])->name('home');
+Route::get('/', function () {
+    if (auth()->check()) {
+        $user = auth()->user();
+        if ($user->hasRole('admin')) {
+            return redirect()->route('admin.dashboard');
+        }
+        if ($user->hasRole('shelter_staff')) {
+            return redirect()->route('shelter.pets.index');
+        }
+        if ($user->hasRole('mao_officer')) {
+            return redirect()->route('mao.dashboard');
+        }
+
+        return redirect()->route('dashboard');
+    }
+
+    return redirect()->route('login');
+})->name('home');
+
+Route::get('/landing', [PageController::class, 'home'])->name('landing');
 Route::get('/pets', [PetController::class, 'index'])->name('pets.index');
 Route::get('/pets/{id}', [PetController::class, 'show'])->name('pets.show');
 Route::get('/announcements', [PageController::class, 'announcements'])->name('announcements.index');
@@ -82,6 +101,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/applications', [ShelterApplicationController::class, 'index'])->name('applications.index');
         Route::get('/applications/{id}', [ShelterApplicationController::class, 'show'])->name('applications.show');
         Route::patch('/applications/{id}', [ShelterApplicationController::class, 'update'])->name('applications.update');
+        Route::post('/applications/{id}/release', [ShelterApplicationController::class, 'confirmRelease'])->name('applications.release');
+        Route::post('/applications/{id}/unclaimed', [ShelterApplicationController::class, 'markUnclaimed'])->name('applications.unclaimed');
 
         Route::get('/pets', [ShelterPetController::class, 'index'])->name('pets.index');
         Route::get('/pets/create', [ShelterPetController::class, 'create'])->name('pets.create');
@@ -119,6 +140,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/applications', [AdminApplicationController::class, 'index'])->name('applications.index');
         Route::get('/applications/{id}', [AdminApplicationController::class, 'show'])->name('applications.show');
+        Route::post('/applications/{id}/release', [AdminApplicationController::class, 'confirmRelease'])->name('applications.release');
+        Route::post('/applications/{id}/unclaimed', [AdminApplicationController::class, 'markUnclaimed'])->name('applications.unclaimed');
         Route::delete('/applications/{id}', [AdminApplicationController::class, 'destroy'])->name('applications.destroy');
 
         Route::get('/pets', [AdminPetController::class, 'index'])->name('pets.index');

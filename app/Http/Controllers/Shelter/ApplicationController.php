@@ -19,17 +19,119 @@ class ApplicationController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = Application::with(['adopter.adopterProfile', 'pet.shelter'])->latest('submitted_at');
+        $query = Application::with(['adopter.adopterProfile', 'pet.shelter']);
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
         }
 
+        if ($request->filled('year') && $request->input('year') !== 'all') {
+            $query->whereYear('submitted_at', (int) $request->input('year'));
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->input('search'));
+            $query->where(function ($q) use ($search): void {
+                $q->where('reference_number', 'like', "%{$search}%")
+                    ->orWhereHas('adopter', function ($adopterQ) use ($search): void {
+                        $adopterQ->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('pet', function ($petQ) use ($search): void {
+                        $petQ->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $sort = $request->input('sort', 'newest');
+        match ($sort) {
+            'oldest' => $query->oldest('submitted_at'),
+            'dss_high' => $query->orderByDesc('dss_score'),
+            'dss_low' => $query->orderBy('dss_score'),
+            default => $query->latest('submitted_at'),
+        };
+
         $applications = $query->paginate(10)->withQueryString();
+
+        // Resolve selected application
+        $selectedId = $request->input('selected');
+        $selectedApplication = null;
+
+        if ($selectedId) {
+            $selectedApplication = Application::with([
+                'adopter.adopterProfile',
+                'adopter.latestDiditVerification',
+                'adopter.lifestyleProfile',
+                'pet.photos',
+                'pet.shelter',
+                'staff',
+                'maoOfficer',
+                'releasingOfficer',
+                'timelines.actor',
+            ])->find($selectedId);
+        }
+
+        if (! $selectedApplication && $applications->isNotEmpty()) {
+            $firstId = $applications->first()->id;
+            $selectedApplication = Application::with([
+                'adopter.adopterProfile',
+                'adopter.latestDiditVerification',
+                'adopter.lifestyleProfile',
+                'pet.photos',
+                'pet.shelter',
+                'staff',
+                'maoOfficer',
+                'releasingOfficer',
+                'timelines.actor',
+            ])->find($firstId);
+        }
+
+        $dssMatch = null;
+        $competingApplications = collect();
+        $adopterTrackRecord = null;
+
+        if ($selectedApplication) {
+            $dssMatch = DssMatchScore::where('user_id', $selectedApplication->user_id)
+                ->where('pet_id', $selectedApplication->pet_id)
+                ->first();
+
+            $competingApplications = Application::where('pet_id', $selectedApplication->pet_id)
+                ->where('id', '!=', $selectedApplication->id)
+                ->whereIn('status', ['pending', 'under_review', 'mao_audit'])
+                ->with(['adopter.adopterProfile', 'adopter.lifestyleProfile'])
+                ->orderByDesc('dss_score')
+                ->get();
+
+            $adopterHistory = Application::where('user_id', $selectedApplication->user_id)
+                ->where('id', '!=', $selectedApplication->id)
+                ->with(['pet.shelter'])
+                ->latest('submitted_at')
+                ->get();
+
+            $adopterTrackRecord = [
+                'total_applications' => Application::where('user_id', $selectedApplication->user_id)->count(),
+                'prior_adopted_count' => $adopterHistory->where('status', 'approved')->count(),
+                'prior_adopted_pets' => $adopterHistory->where('status', 'approved')->values(),
+                'prior_rejected_count' => $adopterHistory->where('status', 'rejected')->count(),
+                'surrendered_pet' => $selectedApplication->adopter?->adopterProfile?->surrendered_pet ?? false,
+                'had_pets_before' => $selectedApplication->adopter?->adopterProfile?->had_pets_before ?? 'none',
+                'previous_pet_notes' => $selectedApplication->adopter?->adopterProfile?->previous_pet_notes,
+                'pet_stay' => $selectedApplication->adopter?->adopterProfile?->pet_stay ?? 'inside',
+            ];
+        }
 
         return Inertia::render('shelter/applications/index', [
             'applications' => $applications,
-            'filters' => $request->only(['status']),
+            'selectedApplication' => $selectedApplication,
+            'dssMatch' => $dssMatch,
+            'competingApplications' => $competingApplications,
+            'adopterTrackRecord' => $adopterTrackRecord,
+            'filters' => [
+                'status' => $request->input('status', 'all'),
+                'search' => $request->input('search', ''),
+                'sort' => $sort,
+                'year' => $request->input('year', 'all'),
+                'selected' => $selectedApplication?->id,
+            ],
         ]);
     }
 

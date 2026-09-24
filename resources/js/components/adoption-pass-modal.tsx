@@ -46,7 +46,7 @@ export function AdoptionPassModal({ application, trigger }: AdoptionPassModalPro
                     )}
                 </DialogTrigger>
 
-                <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-gray-100 dark:bg-neutral-900 border-none print:hidden">
+                <DialogContent showCloseButton={false} className="sm:max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-gray-100 dark:bg-neutral-900 border-none print:hidden">
                     {/* Modal Header */}
                     <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700">
                         <div>

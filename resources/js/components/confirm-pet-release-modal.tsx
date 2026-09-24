@@ -117,7 +117,7 @@ export function ConfirmPetReleaseModal({
                 )}
             </DialogTrigger>
 
-            <DialogContent className="sm:max-w-2xl max-h-[92vh] flex flex-col p-0 overflow-hidden bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 shadow-2xl">
+            <DialogContent showCloseButton={false} className="sm:max-w-2xl max-h-[92vh] flex flex-col p-0 overflow-hidden bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 shadow-2xl">
                 {/* Header Banner */}
                 <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-emerald-700 to-teal-800 text-white">
                     <div className="flex items-center gap-3">

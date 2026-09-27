@@ -19,22 +19,132 @@ class ApplicationController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = Application::with(['adopter.adopterProfile', 'pet.shelter'])
-            ->whereIn('status', ['mao_audit', 'approved', 'rejected'])
-            ->latest('submitted_at');
+        $query = Application::query()
+            ->whereIn('status', ['mao_audit', 'approved', 'rejected']);
 
-        if ($request->filled('status')) {
+        if ($request->filled('status') && $request->input('status') !== 'all') {
             $query->where('status', $request->input('status'));
         } else {
             // Default to showing pending audits first
             $query->orderByRaw("CASE WHEN status = 'mao_audit' THEN 0 ELSE 1 END");
         }
 
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('reference_number', 'like', "%{$search}%")
+                    ->orWhereHas('adopter', fn ($aq) => $aq->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('pet', fn ($pq) => $pq->where('name', 'like', "%{$search}%"));
+            });
+        }
+
+        if ($request->filled('year') && $request->input('year') !== 'all') {
+            $query->whereYear('submitted_at', $request->input('year'));
+        }
+
+        $sort = $request->input('sort', 'newest');
+        match ($sort) {
+            'oldest' => $query->oldest('submitted_at'),
+            'dss_high' => $query->orderByDesc('dss_score'),
+            'dss_low' => $query->orderBy('dss_score'),
+            default => $query->latest('submitted_at'),
+        };
+
         $applications = $query->paginate(10)->withQueryString();
+
+        // Eager load full relations for all applications on the current page
+        $applications->load([
+            'adopter.adopterProfile',
+            'adopter.latestDiditVerification',
+            'adopter.lifestyleProfile',
+            'pet.photos',
+            'pet.shelter',
+            'staff',
+            'maoOfficer',
+            'timelines.actor',
+        ]);
+
+        $userIds = $applications->pluck('user_id')->unique()->filter()->values();
+        $petIds = $applications->pluck('pet_id')->unique()->filter()->values();
+
+        // Bulk load DSS match scores for all applications on this page
+        $dssMatches = DssMatchScore::whereIn('user_id', $userIds)
+            ->whereIn('pet_id', $petIds)
+            ->get()
+            ->keyBy(fn ($item) => "{$item->user_id}_{$item->pet_id}");
+
+        // Bulk load competing applications for pet IDs on this page
+        $competingByPet = Application::whereIn('pet_id', $petIds)
+            ->whereIn('status', ['pending', 'under_review', 'mao_audit'])
+            ->with(['adopter.adopterProfile', 'adopter.lifestyleProfile'])
+            ->orderByDesc('dss_score')
+            ->get()
+            ->groupBy('pet_id');
+
+        // Bulk load adopter history records for user IDs on this page
+        $allAdopterHistory = Application::whereIn('user_id', $userIds)
+            ->with(['pet.shelter'])
+            ->latest('submitted_at')
+            ->get()
+            ->groupBy('user_id');
+
+        $dossierData = [];
+        foreach ($applications as $app) {
+            $key = "{$app->user_id}_{$app->pet_id}";
+            $dss = $dssMatches->get($key);
+
+            $competing = ($competingByPet->get($app->pet_id) ?? collect())
+                ->filter(fn ($c) => $c->id !== $app->id)
+                ->values();
+
+            $userHistory = ($allAdopterHistory->get($app->user_id) ?? collect())
+                ->filter(fn ($h) => $h->id !== $app->id);
+
+            $trackRecord = [
+                'total_applications' => ($allAdopterHistory->get($app->user_id) ?? collect())->count(),
+                'prior_adopted_count' => $userHistory->where('status', 'approved')->count(),
+                'prior_adopted_pets' => $userHistory->where('status', 'approved')->values(),
+                'prior_rejected_count' => $userHistory->where('status', 'rejected')->count(),
+                'surrendered_pet' => $app->adopter?->adopterProfile?->surrendered_pet ?? false,
+                'had_pets_before' => $app->adopter?->adopterProfile?->had_pets_before ?? 'none',
+                'previous_pet_notes' => $app->adopter?->adopterProfile?->previous_pet_notes,
+                'pet_stay' => $app->adopter?->adopterProfile?->pet_stay ?? 'inside',
+            ];
+
+            $checklist = $this->evaluateStatutoryCompliance($app, $dss, $trackRecord);
+
+            $dossierData[$app->id] = [
+                'application' => $app,
+                'dssMatch' => $dss,
+                'competingApplications' => $competing,
+                'adopterTrackRecord' => $trackRecord,
+                'defaultChecklist' => $checklist,
+            ];
+        }
+
+        // Resolve initially selected application
+        $selectedId = (int) $request->input('selected');
+        if (! $selectedId || ! isset($dossierData[$selectedId])) {
+            $selectedId = $applications->first()?->id;
+        }
+
+        $selectedBundle = $selectedId && isset($dossierData[$selectedId]) ? $dossierData[$selectedId] : null;
 
         return Inertia::render('mao/applications/index', [
             'applications' => $applications,
-            'filters' => $request->only(['status']),
+            'dossierData' => $dossierData,
+            'selectedApplication' => $selectedBundle ? $selectedBundle['application'] : null,
+            'dssMatch' => $selectedBundle ? $selectedBundle['dssMatch'] : null,
+            'competingApplications' => $selectedBundle ? $selectedBundle['competingApplications'] : collect(),
+            'adopterTrackRecord' => $selectedBundle ? $selectedBundle['adopterTrackRecord'] : null,
+            'defaultChecklist' => $selectedBundle ? $selectedBundle['defaultChecklist'] : null,
+            'filters' => [
+                'status' => $request->input('status', 'all'),
+                'search' => $request->input('search', ''),
+                'sort' => $request->input('sort', 'newest'),
+                'year' => $request->input('year', 'all'),
+                'selected' => $selectedId,
+            ],
         ]);
     }
 

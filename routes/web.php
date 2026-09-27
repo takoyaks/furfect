@@ -140,6 +140,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/applications', [AdminApplicationController::class, 'index'])->name('applications.index');
         Route::get('/applications/{id}', [AdminApplicationController::class, 'show'])->name('applications.show');
+        Route::patch('/applications/{id}', [AdminApplicationController::class, 'update'])->name('applications.update');
         Route::post('/applications/{id}/release', [AdminApplicationController::class, 'confirmRelease'])->name('applications.release');
         Route::post('/applications/{id}/unclaimed', [AdminApplicationController::class, 'markUnclaimed'])->name('applications.unclaimed');
         Route::delete('/applications/{id}', [AdminApplicationController::class, 'destroy'])->name('applications.destroy');

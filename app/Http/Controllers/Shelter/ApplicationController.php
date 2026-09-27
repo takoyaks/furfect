@@ -52,85 +52,95 @@ class ApplicationController extends Controller
 
         $applications = $query->paginate(10)->withQueryString();
 
-        // Resolve selected application
-        $selectedId = $request->input('selected');
-        $selectedApplication = null;
+        // Eager load full relations for all applications on the current page
+        $applications->load([
+            'adopter.adopterProfile',
+            'adopter.latestDiditVerification',
+            'adopter.lifestyleProfile',
+            'pet.photos',
+            'pet.shelter',
+            'staff',
+            'maoOfficer',
+            'releasingOfficer',
+            'timelines.actor',
+        ]);
 
-        if ($selectedId) {
-            $selectedApplication = Application::with([
-                'adopter.adopterProfile',
-                'adopter.latestDiditVerification',
-                'adopter.lifestyleProfile',
-                'pet.photos',
-                'pet.shelter',
-                'staff',
-                'maoOfficer',
-                'releasingOfficer',
-                'timelines.actor',
-            ])->find($selectedId);
-        }
+        $userIds = $applications->pluck('user_id')->unique()->filter()->values();
+        $petIds = $applications->pluck('pet_id')->unique()->filter()->values();
 
-        if (! $selectedApplication && $applications->isNotEmpty()) {
-            $firstId = $applications->first()->id;
-            $selectedApplication = Application::with([
-                'adopter.adopterProfile',
-                'adopter.latestDiditVerification',
-                'adopter.lifestyleProfile',
-                'pet.photos',
-                'pet.shelter',
-                'staff',
-                'maoOfficer',
-                'releasingOfficer',
-                'timelines.actor',
-            ])->find($firstId);
-        }
+        // Bulk load DSS match scores for all applications on this page
+        $dssMatches = DssMatchScore::whereIn('user_id', $userIds)
+            ->whereIn('pet_id', $petIds)
+            ->get()
+            ->keyBy(fn ($item) => "{$item->user_id}_{$item->pet_id}");
 
-        $dssMatch = null;
-        $competingApplications = collect();
-        $adopterTrackRecord = null;
+        // Bulk load competing applications for pet IDs on this page
+        $competingByPet = Application::whereIn('pet_id', $petIds)
+            ->whereIn('status', ['pending', 'under_review', 'mao_audit'])
+            ->with(['adopter.adopterProfile', 'adopter.lifestyleProfile'])
+            ->orderByDesc('dss_score')
+            ->get()
+            ->groupBy('pet_id');
 
-        if ($selectedApplication) {
-            $dssMatch = DssMatchScore::where('user_id', $selectedApplication->user_id)
-                ->where('pet_id', $selectedApplication->pet_id)
-                ->first();
+        // Bulk load adopter history records for user IDs on this page
+        $allAdopterHistory = Application::whereIn('user_id', $userIds)
+            ->with(['pet.shelter'])
+            ->latest('submitted_at')
+            ->get()
+            ->groupBy('user_id');
 
-            $competingApplications = Application::where('pet_id', $selectedApplication->pet_id)
-                ->where('id', '!=', $selectedApplication->id)
-                ->whereIn('status', ['pending', 'under_review', 'mao_audit'])
-                ->with(['adopter.adopterProfile', 'adopter.lifestyleProfile'])
-                ->orderByDesc('dss_score')
-                ->get();
+        $dossierData = [];
+        foreach ($applications as $app) {
+            $key = "{$app->user_id}_{$app->pet_id}";
+            $dss = $dssMatches->get($key);
 
-            $adopterHistory = Application::where('user_id', $selectedApplication->user_id)
-                ->where('id', '!=', $selectedApplication->id)
-                ->with(['pet.shelter'])
-                ->latest('submitted_at')
-                ->get();
+            $competing = ($competingByPet->get($app->pet_id) ?? collect())
+                ->filter(fn ($c) => $c->id !== $app->id)
+                ->values();
 
-            $adopterTrackRecord = [
-                'total_applications' => Application::where('user_id', $selectedApplication->user_id)->count(),
-                'prior_adopted_count' => $adopterHistory->where('status', 'approved')->count(),
-                'prior_adopted_pets' => $adopterHistory->where('status', 'approved')->values(),
-                'prior_rejected_count' => $adopterHistory->where('status', 'rejected')->count(),
-                'surrendered_pet' => $selectedApplication->adopter?->adopterProfile?->surrendered_pet ?? false,
-                'had_pets_before' => $selectedApplication->adopter?->adopterProfile?->had_pets_before ?? 'none',
-                'previous_pet_notes' => $selectedApplication->adopter?->adopterProfile?->previous_pet_notes,
-                'pet_stay' => $selectedApplication->adopter?->adopterProfile?->pet_stay ?? 'inside',
+            $userHistory = ($allAdopterHistory->get($app->user_id) ?? collect())
+                ->filter(fn ($h) => $h->id !== $app->id);
+
+            $trackRecord = [
+                'total_applications' => ($allAdopterHistory->get($app->user_id) ?? collect())->count(),
+                'prior_adopted_count' => $userHistory->where('status', 'approved')->count(),
+                'prior_adopted_pets' => $userHistory->where('status', 'approved')->values(),
+                'prior_rejected_count' => $userHistory->where('status', 'rejected')->count(),
+                'surrendered_pet' => $app->adopter?->adopterProfile?->surrendered_pet ?? false,
+                'had_pets_before' => $app->adopter?->adopterProfile?->had_pets_before ?? 'none',
+                'previous_pet_notes' => $app->adopter?->adopterProfile?->previous_pet_notes,
+                'pet_stay' => $app->adopter?->adopterProfile?->pet_stay ?? 'inside',
+            ];
+
+            $dossierData[$app->id] = [
+                'application' => $app,
+                'dssMatch' => $dss,
+                'competingApplications' => $competing,
+                'adopterTrackRecord' => $trackRecord,
             ];
         }
 
+        // Resolve initially selected application
+        $selectedId = (int) $request->input('selected');
+        if (! $selectedId || ! isset($dossierData[$selectedId])) {
+            $selectedId = $applications->first()?->id;
+        }
+
+        $selectedBundle = $selectedId && isset($dossierData[$selectedId]) ? $dossierData[$selectedId] : null;
+
         return Inertia::render('shelter/applications/index', [
             'applications' => $applications,
-            'selectedApplication' => $selectedApplication,
-            'dssMatch' => $dssMatch,
-            'competingApplications' => $competingApplications,
-            'adopterTrackRecord' => $adopterTrackRecord,
+            'dossierData' => $dossierData,
+            'selectedApplication' => $selectedBundle ? $selectedBundle['application'] : null,
+            'dssMatch' => $selectedBundle ? $selectedBundle['dssMatch'] : null,
+            'competingApplications' => $selectedBundle ? $selectedBundle['competingApplications'] : collect(),
+            'adopterTrackRecord' => $selectedBundle ? $selectedBundle['adopterTrackRecord'] : null,
             'filters' => [
                 'status' => $request->input('status', 'all'),
                 'search' => $request->input('search', ''),
                 'sort' => $sort,
                 'year' => $request->input('year', 'all'),
-                'selected' => $selectedApplication?->id,
+                'selected' => $selectedId,
             ],
         ]);
     }

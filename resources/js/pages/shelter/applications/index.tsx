@@ -187,10 +187,11 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function ShelterApplicationIndex({
     applications,
-    selectedApplication,
-    dssMatch,
-    competingApplications = [],
-    adopterTrackRecord,
+    selectedApplication: initialSelectedApp,
+    dssMatch: initialDssMatch,
+    competingApplications: initialCompeting = [],
+    adopterTrackRecord: initialTrackRecord,
+    dossierData = {},
     filters,
 }: {
     applications: PaginatedApplications;
@@ -198,6 +199,12 @@ export default function ShelterApplicationIndex({
     dssMatch?: any;
     competingApplications?: CompetingApp[];
     adopterTrackRecord?: AdopterTrackRecord | null;
+    dossierData?: Record<number, {
+        application: Application;
+        dssMatch?: any;
+        competingApplications?: CompetingApp[];
+        adopterTrackRecord?: AdopterTrackRecord | null;
+    }>;
     filters: {
         status?: string;
         search?: string;
@@ -213,6 +220,29 @@ export default function ShelterApplicationIndex({
     const [statusFilter, setStatusFilter] = useState(filters.status || 'all');
     const [yearFilter, setYearFilter] = useState(filters.year || 'all');
     const [sortFilter, setSortFilter] = useState(filters.sort || 'newest');
+
+    // Selected ID state for 0ms instant client-side switching
+    const [selectedId, setSelectedId] = useState<number | null>(
+        filters.selected ? Number(filters.selected) : (initialSelectedApp?.id ?? applications.data[0]?.id ?? null)
+    );
+
+    // Keep selectedId in sync when server returns new initial selection
+    useEffect(() => {
+        if (initialSelectedApp?.id) {
+            setSelectedId(initialSelectedApp.id);
+        }
+    }, [initialSelectedApp?.id]);
+
+    // Active bundle from preloaded dossierData, falling back to initial props or applications.data
+    const currentBundle = selectedId && dossierData[selectedId] ? dossierData[selectedId] : null;
+
+    const selectedApplication = currentBundle?.application
+        ?? (selectedId ? applications.data.find(a => a.id === selectedId) : null)
+        ?? initialSelectedApp;
+
+    const dssMatch = currentBundle?.dssMatch ?? initialDssMatch;
+    const competingApplications = currentBundle?.competingApplications ?? initialCompeting;
+    const adopterTrackRecord = currentBundle?.adopterTrackRecord ?? initialTrackRecord;
 
     const tabsListRef = useRef<HTMLDivElement>(null);
 
@@ -243,25 +273,19 @@ export default function ShelterApplicationIndex({
     }, [selectedApplication?.id]);
 
     const handleSelectApplication = (appId: number) => {
-        if (appId === selectedApplication?.id) {
+        if (appId === selectedId) {
             return;
         }
 
-        router.get(
-            route('shelter.applications.index'),
-            {
-                search: searchTerm || undefined,
-                status: statusFilter === 'all' ? undefined : statusFilter,
-                year: yearFilter === 'all' ? undefined : yearFilter,
-                sort: sortFilter !== 'newest' ? sortFilter : undefined,
-                selected: appId,
-            },
-            {
-                preserveState: true,
-                preserveScroll: true,
-                only: ['selectedApplication', 'dssMatch', 'competingApplications', 'adopterTrackRecord', 'filters'],
-            }
-        );
+        setSelectedId(appId);
+        setSelectedPhotoIdx(0);
+
+        // Update URL query string silently without triggering Inertia network visit or loading bar
+        if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            url.searchParams.set('selected', String(appId));
+            window.history.replaceState({}, '', url.toString());
+        }
     };
 
     const handleFilterChange = (updates: Partial<{ search: string; status: string; year: string; sort: string }>) => {

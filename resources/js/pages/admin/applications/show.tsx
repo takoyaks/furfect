@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -113,6 +113,20 @@ export default function AdminApplicationShow({
     });
 
     const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+    const [isVerifyingAdopter, setIsVerifyingAdopter] = useState(false);
+
+    const handleManualVerifyAdopter = () => {
+        if (!application.adopter?.id) return;
+        const isVerified = Boolean(profile?.is_identity_verified);
+        const actionText = isVerified ? 'revoke identity verification for' : 'manually approve and verify identity for';
+        if (confirm(`Are you sure you want to ${actionText} ${application.adopter.name}? This will bypass Didit verification.`)) {
+            setIsVerifyingAdopter(true);
+            router.post(route('admin.users.toggle-verification', application.adopter.id), {}, {
+                preserveScroll: true,
+                onFinish: () => setIsVerifyingAdopter(false),
+            });
+        }
+    };
 
     const buildInitialChecklistState = (app: Application, checklist: Record<string, ChecklistItem>) => {
         return Object.fromEntries(
@@ -238,8 +252,24 @@ export default function AdminApplicationShow({
                         {/* Adopter details */}
                         {profile && (
                             <Card className="border-gray-200 shadow-md">
-                                <CardHeader className="flex flex-row items-center justify-between">
-                                    <CardTitle className="text-sm font-bold text-gray-800">Adopter Profile</CardTitle>
+                                <CardHeader className="flex flex-row items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2.5">
+                                        <CardTitle className="text-sm font-bold text-gray-800">Adopter Profile</CardTitle>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            disabled={isVerifyingAdopter}
+                                            onClick={handleManualVerifyAdopter}
+                                            className={`h-6 text-[10px] px-2 rounded-md font-semibold ${
+                                                profile?.is_identity_verified
+                                                    ? 'text-red-700 hover:bg-red-50 hover:text-red-800'
+                                                    : 'text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 border border-emerald-300'
+                                            }`}
+                                        >
+                                            {isVerifyingAdopter ? 'Updating...' : (profile?.is_identity_verified ? 'Revoke Verification' : 'Manual Verify Adopter')}
+                                        </Button>
+                                    </div>
                                     <IdentityVerificationBadge
                                         isVerified={profile.is_identity_verified}
                                         faceMatchScore={profile.face_match_score}

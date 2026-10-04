@@ -159,7 +159,8 @@ class DiditVerificationController extends Controller
             'verified_at' => $profile?->identity_verified_at?->toIso8601String() ?? ($verification?->verified_at?->toIso8601String()),
             'liveness_verified' => (bool) ($profile?->liveness_verified ?? $verification?->isLivenessPassed()),
             'face_match_score' => $profile?->face_match_score ?? $verification?->face_match_score,
-            'verification_status' => $verification?->status ?? 'none',
+            'verification_status' => $isVerified ? 'approved' : ($verification?->status ?? 'none'),
+            'can_proceed' => $isVerified,
             'extracted_data' => $verification?->extracted_data,
             'failure_reasons' => $verification?->failure_reasons,
         ]);

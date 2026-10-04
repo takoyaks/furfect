@@ -158,20 +158,18 @@ class UserController extends Controller
                 $profileData
             );
 
-            $existingVerification = DiditVerification::where('user_id', $user->id)->first();
+            DiditVerification::where('user_id', $user->id)->update([
+                'adopter_profile_id' => $profile->id,
+                'status' => 'approved',
+                'id_verification_status' => 'approved',
+                'liveness_status' => 'passed',
+                'face_match_status' => 'matched',
+                'face_match_score' => 100.0,
+                'liveness_score' => 100.0,
+                'verified_at' => now(),
+            ]);
 
-            if ($existingVerification) {
-                $existingVerification->update([
-                    'adopter_profile_id' => $profile->id,
-                    'status' => 'approved',
-                    'id_verification_status' => 'approved',
-                    'liveness_status' => 'passed',
-                    'face_match_status' => 'matched',
-                    'face_match_score' => 100.0,
-                    'liveness_score' => 100.0,
-                    'verified_at' => now(),
-                ]);
-            } else {
+            if (! DiditVerification::where('user_id', $user->id)->exists()) {
                 DiditVerification::create([
                     'user_id' => $user->id,
                     'adopter_profile_id' => $profile->id,

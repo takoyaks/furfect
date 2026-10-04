@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AdopterProfile;
+use App\Models\DiditVerification;
 use App\Models\LifestyleProfile;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -167,4 +168,70 @@ test('non-admin user cannot reset passwords or verify adopters', function (): vo
         'password_confirmation' => 'unauthorized-pass-123',
     ]);
     $response2->assertForbidden();
+});
+
+test('manual verification overrides previous failed didit attempts and allows adopter to auto-proceed to step 2 skipping didit', function (): void {
+    // 1. Simulate an adopter who attempted Didit twice and was declined
+    DiditVerification::create([
+        'user_id' => $this->adopter->id,
+        'session_id' => 'sess_failed_1',
+        'status' => 'declined',
+        'id_verification_status' => 'declined',
+    ]);
+
+    DiditVerification::create([
+        'user_id' => $this->adopter->id,
+        'session_id' => 'sess_failed_2',
+        'status' => 'declined',
+        'id_verification_status' => 'declined',
+    ]);
+
+    // Initial check: Adopter is unverified
+    expect($this->adopter->fresh()->isIdentityVerified())->toBeFalse();
+
+    // Polling status endpoint returns is_verified = false
+    $pollResponse1 = $this->actingAs($this->adopter)->getJson(route('identity.verification.status'));
+    $pollResponse1->assertOk()
+        ->assertJson([
+            'is_verified' => false,
+            'can_proceed' => false,
+        ]);
+
+    // eKYC show page renders ekyc component (not redirected)
+    $ekycResponse = $this->actingAs($this->adopter)->get(route('onboarding.ekyc.show'));
+    $ekycResponse->assertOk()
+        ->assertInertia(fn ($page) => $page->component('onboarding/ekyc'));
+
+    // Attempting to access Step 2 directly redirects back to eKYC
+    $step2Response = $this->actingAs($this->adopter)->get(route('onboarding.personal.edit'));
+    $step2Response->assertRedirect(route('onboarding.ekyc.show'));
+
+    // 2. Admin performs manual verification override
+    $adminToggle = $this->actingAs($this->admin)->post(route('admin.users.toggle-verification', $this->adopter->id));
+    $adminToggle->assertRedirect();
+
+    // 3. Verify database state
+    $profile = $this->adopter->fresh()->adopterProfile;
+    expect($profile->is_identity_verified)->toBeTrue();
+    expect($profile->identity_verification_provider)->toBe('manual_admin');
+    expect($this->adopter->fresh()->isIdentityVerified())->toBeTrue();
+    expect($this->adopter->fresh()->latestDiditVerification->isApproved())->toBeTrue();
+
+    // 4. Polling status endpoint now returns is_verified = true, verification_status = 'approved', can_proceed = true
+    $pollResponse2 = $this->actingAs($this->adopter->fresh())->getJson(route('identity.verification.status'));
+    $pollResponse2->assertOk()
+        ->assertJson([
+            'is_verified' => true,
+            'verification_status' => 'approved',
+            'can_proceed' => true,
+        ]);
+
+    // 5. Adopter visiting /onboarding/ekyc is now automatically forwarded to Step 2 (skipping Didit!)
+    $ekycRedirect = $this->actingAs($this->adopter->fresh())->get(route('onboarding.ekyc.show'));
+    $ekycRedirect->assertRedirect(route('onboarding.personal.edit'));
+
+    // 6. Adopter can view Step 2: Personal Information directly
+    $step2Allowed = $this->actingAs($this->adopter->fresh())->get(route('onboarding.personal.edit'));
+    $step2Allowed->assertOk()
+        ->assertInertia(fn ($page) => $page->component('onboarding/personal-info'));
 });

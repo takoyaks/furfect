@@ -55,11 +55,14 @@ export default function OnboardingEkyc({
     useEffect(() => {
         if (isVerified) {
             setAutoRedirecting(true);
-            window.location.href = route('onboarding.personal.edit');
+            const timer = setTimeout(() => {
+                window.location.href = route('onboarding.personal.edit');
+            }, 400);
+            return () => clearTimeout(timer);
         }
     }, [isVerified]);
 
-    // Live status polling if verification is in progress
+    // Live status polling if verification is in progress or manual admin approval occurs
     useEffect(() => {
         if (isVerified) return;
 
@@ -70,9 +73,12 @@ export default function OnboardingEkyc({
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.is_verified || data.verification_status === 'approved') {
+                    if (data.is_verified || data.verification_status === 'approved' || data.can_proceed) {
                         setAutoRedirecting(true);
-                        window.location.href = route('onboarding.personal.edit');
+                        clearInterval(interval);
+                        setTimeout(() => {
+                            window.location.href = route('onboarding.personal.edit');
+                        }, 600);
                     }
                 }
             } catch {
@@ -102,6 +108,21 @@ export default function OnboardingEkyc({
                         </div>
                     </div>
                 </div>
+
+                {/* Auto-Advancing Toast Banner when Admin Approves Identity */}
+                {autoRedirecting && (
+                    <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-4 shadow-sm flex items-center gap-3.5 animate-in fade-in duration-300">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                        </div>
+                        <div className="flex-1">
+                            <h4 className="text-sm font-bold text-emerald-950">Identity Verification Approved!</h4>
+                            <p className="text-xs text-emerald-800 mt-0.5">
+                                Your identity has been successfully verified. Automatically advancing to Step 2: Personal Information...
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Main Verification Section */}
                 {isVerified ? (
@@ -244,6 +265,17 @@ export default function OnboardingEkyc({
                             verifiedAt={profile?.identity_verified_at}
                             returnTo="onboarding"
                         />
+
+                        {/* Manual Verification Info Banner */}
+                        {/* <div className="rounded-xl border border-amber-200/90 bg-amber-50/70 p-4 text-xs space-y-1.5 shadow-2xs">
+                            <div className="flex items-center gap-2 font-bold text-amber-900">
+                                <AlertCircle className="size-4 text-amber-600 shrink-0" />
+                                <span>Having Trouble with Didit Automated Verification?</span>
+                            </div>
+                            <p className="text-amber-800 text-[11px] leading-relaxed">
+                                If you experience camera connectivity issues, lack a supported digital ID, or automated verification fails, our shelter administrator can manually verify your identity profile. Once verified by an administrator, this page will automatically unlock and advance you directly to Step 2.
+                            </p>
+                        </div> */}
 
                         {/* Why Verification Matters Card */}
                         <Card className="border-gray-200 shadow-2xs">

@@ -182,7 +182,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/database', [DatabaseManagerController::class, 'index'])->name('database.index');
         Route::post('/database', [DatabaseManagerController::class, 'resetAll']);
         Route::get('/database/users/{id}', [DatabaseManagerController::class, 'show'])->name('database.users.show');
+        Route::patch('/database/users/{id}', [DatabaseManagerController::class, 'updateUser'])->name('database.users.update');
+        Route::post('/database/users/{id}/reset-password', [DatabaseManagerController::class, 'resetUserPassword'])->name('database.users.reset-password');
         Route::delete('/database/users/{id}', [DatabaseManagerController::class, 'destroy'])->name('database.users.destroy');
+        Route::patch('/database/pets/{id}', [DatabaseManagerController::class, 'updatePet'])->name('database.pets.update');
+        Route::post('/database/applications/{id}/override-status', [DatabaseManagerController::class, 'overrideApplicationStatus'])->name('database.applications.override-status');
         Route::post('/database/reset-all', [DatabaseManagerController::class, 'resetAll'])->name('database.reset-all');
         Route::post('/database/logs/clear', [DatabaseManagerController::class, 'clearLogs'])->name('database.logs.clear');
 

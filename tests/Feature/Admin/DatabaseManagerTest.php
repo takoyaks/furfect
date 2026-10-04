@@ -82,7 +82,7 @@ test('kerbie can access level 2 database manager page', function (): void {
 test('other admin cannot access level 2 database manager page', function (): void {
     $response = $this->actingAs($this->admin)->get(route('admin.database.index'));
 
-    $response->assertForbidden();
+    $response->assertNotFound();
 });
 
 test('non-admin cannot access level 2 database manager page', function (): void {
@@ -299,4 +299,169 @@ test('kerbie can reset Didit verification data', function (): void {
     expect($profile->is_identity_verified)->toBeFalse();
     expect($profile->didit_session_id)->toBeNull();
     expect(DiditVerification::count())->toBe(0);
+});
+
+test('kerbie can update normal user name and email', function (): void {
+    $targetUser = User::factory()->create([
+        'name' => 'Old Name',
+        'email' => 'oldemail@example.com',
+    ]);
+
+    $response = $this->actingAs($this->kerbie)->patch(route('admin.database.users.update', $targetUser->id), [
+        'name' => 'Corrected Name',
+        'email' => 'newemail@example.com',
+    ]);
+
+    $response->assertRedirect();
+    $targetUser->refresh();
+    expect($targetUser->name)->toBe('Corrected Name');
+    expect($targetUser->email)->toBe('newemail@example.com');
+});
+
+test('kerbie can reset password of normal user directly', function (): void {
+    $targetUser = User::factory()->create([
+        'password' => Hash::make('original-password'),
+    ]);
+
+    $response = $this->actingAs($this->kerbie)->post(route('admin.database.users.reset-password', $targetUser->id), [
+        'password' => 'new-secret-12345',
+    ]);
+
+    $response->assertRedirect();
+    $targetUser->refresh();
+    expect(Hash::check('new-secret-12345', $targetUser->password))->toBeTrue();
+});
+
+test('kerbie can update pet profile name and status', function (): void {
+    $shelter = Shelter::create([
+        'name' => 'Shelter One',
+        'type' => 'Municipal',
+        'location' => 'Virac',
+        'contact' => '123',
+        'email' => 'shelter1@test.com',
+    ]);
+
+    $pet = Pet::create([
+        'shelter_id' => $shelter->id,
+        'name' => 'Milo Mistake',
+        'species' => 'dog',
+        'age_years' => 2,
+        'gender' => 'male',
+        'size' => 'medium',
+        'status' => 'available',
+    ]);
+
+    $response = $this->actingAs($this->kerbie)->patch(route('admin.database.pets.update', $pet->id), [
+        'name' => 'Milo The Great',
+        'status' => 'archived',
+    ]);
+
+    $response->assertRedirect();
+    $pet->refresh();
+    expect($pet->name)->toBe('Milo The Great');
+    expect($pet->status)->toBe('archived');
+});
+
+test('kerbie can override application status forward and sync pet to adopted', function (): void {
+    $shelter = Shelter::create([
+        'name' => 'Shelter Two',
+        'type' => 'Municipal',
+        'location' => 'Virac',
+        'contact' => '123',
+        'email' => 'shelter2@test.com',
+    ]);
+
+    $pet = Pet::create([
+        'shelter_id' => $shelter->id,
+        'name' => 'Buddy',
+        'species' => 'dog',
+        'age_years' => 1,
+        'gender' => 'male',
+        'size' => 'small',
+        'status' => 'available',
+    ]);
+
+    $application = Application::create([
+        'user_id' => $this->adopter->id,
+        'pet_id' => $pet->id,
+        'status' => 'under_review',
+        'submitted_at' => now(),
+    ]);
+
+    $response = $this->actingAs($this->kerbie)->post(route('admin.database.applications.override-status', $application->id), [
+        'status' => 'released',
+        'reason' => 'Direct handoff completed at facility.',
+        'sync_pet_status' => true,
+    ]);
+
+    $response->assertRedirect();
+    $application->refresh();
+    $pet->refresh();
+
+    expect($application->status)->toBe('released');
+    expect($application->released_at)->not->toBeNull();
+    expect($pet->status)->toBe('adopted');
+
+    // Verify timeline entry
+    $timeline = $application->timelines()->latest('id')->first();
+    expect($timeline)->not->toBeNull();
+    expect($timeline->stage)->toBe('super_admin_override');
+    expect($timeline->description)->toContain('Direct handoff completed at facility.');
+});
+
+test('kerbie can rollback application status backward and sync pet to available', function (): void {
+    $shelter = Shelter::create([
+        'name' => 'Shelter Three',
+        'type' => 'Municipal',
+        'location' => 'Virac',
+        'contact' => '123',
+        'email' => 'shelter3@test.com',
+    ]);
+
+    $pet = Pet::create([
+        'shelter_id' => $shelter->id,
+        'name' => 'Luna',
+        'species' => 'cat',
+        'age_years' => 1,
+        'gender' => 'female',
+        'size' => 'small',
+        'status' => 'adopted',
+    ]);
+
+    $application = Application::create([
+        'user_id' => $this->adopter->id,
+        'pet_id' => $pet->id,
+        'status' => 'approved',
+        'submitted_at' => now(),
+    ]);
+
+    $response = $this->actingAs($this->kerbie)->post(route('admin.database.applications.override-status', $application->id), [
+        'status' => 'under_review',
+        'reason' => 'Adopter requested re-review of requirements.',
+        'sync_pet_status' => true,
+    ]);
+
+    $response->assertRedirect();
+    $application->refresh();
+    $pet->refresh();
+
+    expect($application->status)->toBe('under_review');
+    expect($pet->status)->toBe('available');
+
+    // Verify timeline entry noted rollback
+    $timeline = $application->timelines()->latest('id')->first();
+    expect($timeline)->not->toBeNull();
+    expect($timeline->action)->toBe('status_rollback');
+    expect($timeline->description)->toContain('Adopter requested re-review of requirements.');
+});
+
+test('other admin cannot access or execute manipulation endpoints', function (): void {
+    $targetUser = User::factory()->create();
+
+    $response = $this->actingAs($this->admin)->patch(route('admin.database.users.update', $targetUser->id), [
+        'name' => 'Hacked Name',
+        'email' => 'hacked@example.com',
+    ]);
+
+    $response->assertNotFound();
 });

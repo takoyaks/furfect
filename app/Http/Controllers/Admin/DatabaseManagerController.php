@@ -21,6 +21,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,13 +31,14 @@ class DatabaseManagerController extends Controller
 {
     /**
      * Enforce super admin access strictly for 'kerbie'.
+     * Returns 404 so the route remains invisible and hidden to other users.
      */
     private function authorizeSuperAdmin(Request $request): void
     {
         $user = $request->user();
 
         if (! $user || ($user->name !== 'kerbie' && $user->email !== 'kerbie@furfect.com')) {
-            abort(403, 'Unauthorized access.');
+            abort(404);
         }
     }
 
@@ -84,8 +86,51 @@ class DatabaseManagerController extends Controller
             $query->role($request->input('role'));
         }
 
-        $users = $query->paginate(20)->withQueryString();
+        $users = $query->paginate(20, ['*'], 'users_page')->withQueryString();
         $roles = Role::pluck('name');
+
+        // Fetch pets
+        $petsQuery = Pet::with('shelter:id,name')->latest('id');
+        if ($request->filled('pet_search')) {
+            $petSearch = $request->input('pet_search');
+            $petsQuery->where(function ($q) use ($petSearch): void {
+                $q->where('name', 'like', "%{$petSearch}%")
+                    ->orWhere('breed', 'like', "%{$petSearch}%")
+                    ->orWhere('species', 'like', "%{$petSearch}%")
+                    ->orWhere('id', $petSearch);
+            });
+        }
+        if ($request->filled('pet_status') && ! in_array($request->input('pet_status'), ['all', 'All'], true)) {
+            $petsQuery->where('status', $request->input('pet_status'));
+        }
+        $pets = $petsQuery->paginate(20, ['*'], 'pets_page')->withQueryString();
+
+        // Fetch applications with recent timeline
+        $appsQuery = Application::with([
+            'pet:id,name,status,species',
+            'user:id,name,email',
+            'timelines' => fn ($t) => $t->latest('created_at')->limit(3),
+        ])->latest('id');
+
+        if ($request->filled('app_search')) {
+            $appSearch = $request->input('app_search');
+            $appsQuery->where(function ($q) use ($appSearch): void {
+                $q->where('reference_number', 'like', "%{$appSearch}%")
+                    ->orWhere('id', $appSearch)
+                    ->orWhereHas('user', function ($uq) use ($appSearch): void {
+                        $uq->where('name', 'like', "%{$appSearch}%")
+                            ->orWhere('email', 'like', "%{$appSearch}%");
+                    })
+                    ->orWhereHas('pet', function ($pq) use ($appSearch): void {
+                        $pq->where('name', 'like', "%{$appSearch}%");
+                    });
+            });
+        }
+
+        if ($request->filled('app_status') && ! in_array($request->input('app_status'), ['all', 'All'], true)) {
+            $appsQuery->where('status', $request->input('app_status'));
+        }
+        $applications = $appsQuery->paginate(20, ['*'], 'apps_page')->withQueryString();
 
         // Read last 150 lines of system logs
         $logPath = storage_path('logs/laravel.log');
@@ -100,8 +145,10 @@ class DatabaseManagerController extends Controller
         return Inertia::render('admin/database/index', [
             'stats' => $stats,
             'users' => $users,
+            'pets' => $pets,
+            'applications' => $applications,
             'roles' => $roles,
-            'filters' => $request->only(['search', 'role']),
+            'filters' => $request->only(['search', 'role', 'pet_search', 'pet_status', 'app_search', 'app_status', 'tab']),
             'logs' => $recentLogs,
         ]);
     }
@@ -289,6 +336,165 @@ class DatabaseManagerController extends Controller
         Inertia::flash('toast', [
             'type' => 'success',
             'message' => __('System logs cleared successfully.'),
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Level 2: Update normal user details (name, email).
+     */
+    public function updateUser(Request $request, int $id): RedirectResponse
+    {
+        $this->authorizeSuperAdmin($request);
+
+        $user = User::findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
+        ]);
+
+        $user->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+        ]);
+
+        if ($user->adopterProfile) {
+            $user->adopterProfile->update([
+                'full_name' => $validated['name'],
+            ]);
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('User #:id (:name) updated successfully.', ['id' => $user->id, 'name' => $user->name]),
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Level 2: Emergency reset password for normal user.
+     */
+    public function resetUserPassword(Request $request, int $id): RedirectResponse
+    {
+        $this->authorizeSuperAdmin($request);
+
+        $user = User::findOrFail($id);
+
+        $validated = $request->validate([
+            'password' => ['required', 'string', 'min:8'],
+        ]);
+
+        $user->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Password for user :name (ID #:id) has been reset.', ['name' => $user->name, 'id' => $user->id]),
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Level 2: Update pet profile name and status.
+     */
+    public function updatePet(Request $request, int $id): RedirectResponse
+    {
+        $this->authorizeSuperAdmin($request);
+
+        $pet = Pet::findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'status' => ['required', 'string', 'in:available,adopted,archived'],
+        ]);
+
+        $pet->update([
+            'name' => $validated['name'],
+            'status' => $validated['status'],
+        ]);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Pet #:id (:name) updated successfully.', ['id' => $pet->id, 'name' => $pet->name]),
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Level 2: Super Admin Override or Rollback Application Status.
+     */
+    public function overrideApplicationStatus(Request $request, int $id): RedirectResponse
+    {
+        $this->authorizeSuperAdmin($request);
+
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:pending,under_review,mao_audit,approved,released,rejected,unclaimed,closed'],
+            'reason' => ['required', 'string', 'max:500'],
+            'sync_pet_status' => ['nullable', 'boolean'],
+        ]);
+
+        $application = Application::with('pet')->findOrFail($id);
+        $oldStatus = $application->status;
+        $newStatus = $validated['status'];
+        $syncPet = $validated['sync_pet_status'] ?? true;
+
+        DB::transaction(function () use ($application, $oldStatus, $newStatus, $syncPet, $validated): void {
+            $updateData = [
+                'status' => $newStatus,
+            ];
+
+            if (in_array($newStatus, ['approved', 'rejected', 'released', 'closed', 'unclaimed'])) {
+                $updateData['resolved_at'] = now();
+            } else {
+                $updateData['resolved_at'] = null;
+            }
+
+            if ($newStatus === 'released') {
+                $updateData['released_at'] = now();
+                $updateData['releasing_officer_id'] = auth()->id();
+            }
+
+            $application->update($updateData);
+
+            if ($syncPet && $application->pet) {
+                if (in_array($newStatus, ['released', 'completed'])) {
+                    $application->pet->update(['status' => 'adopted']);
+                } elseif (in_array($newStatus, ['pending', 'under_review', 'mao_audit', 'rejected', 'closed', 'unclaimed'])) {
+                    $application->pet->update(['status' => 'available']);
+                }
+            }
+
+            $isRollback = in_array($newStatus, ['pending', 'under_review', 'mao_audit']) && in_array($oldStatus, ['approved', 'released', 'rejected', 'closed']);
+
+            $application->logTimeline(
+                stage: 'super_admin_override',
+                action: $isRollback ? 'status_rollback' : 'status_override',
+                title: sprintf('Status %s by Super Admin Kerbie', $isRollback ? 'Rolled Back' : 'Overridden'),
+                description: sprintf('Status changed from [%s] to [%s]. Notes: %s', $oldStatus, $newStatus, $validated['reason']),
+                actor: auth()->user(),
+                metadata: [
+                    'previous_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'reason' => $validated['reason'],
+                    'is_rollback' => $isRollback,
+                    'synced_pet_status' => $syncPet,
+                ]
+            );
+        });
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Application :ref status changed from :old to :new.', [
+                'ref' => $application->reference_number,
+                'old' => $oldStatus,
+                'new' => $newStatus,
+            ]),
         ]);
 
         return back();

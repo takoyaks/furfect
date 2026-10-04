@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Heart, Search, Eye, Sparkles, AlertCircle } from 'lucide-react';
+import { Heart, Search, Eye, Sparkles, AlertCircle, HelpCircle } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { EnergyMaintenanceGuideDialog } from '@/components/energy-maintenance-guide-dialog';
+import { cn } from '@/lib/utils';
 
 interface Pet {
     id: number;
@@ -49,6 +51,8 @@ export default function PetsIndex({
     const [maintenance, setMaintenance] = useState(filters.maintenance || 'Any');
     const [color, setColor] = useState(filters.color || 'Any');
     const [fee, setFee] = useState(filters.fee || 'all');
+    const [perPage, setPerPage] = useState<string>(String(filters.per_page || '12'));
+    const [guideOpen, setGuideOpen] = useState(false);
 
     const updateFilter = (newFilters: Partial<{
         search: string;
@@ -59,6 +63,7 @@ export default function PetsIndex({
         maintenance: string;
         color: string;
         fee: string;
+        per_page: string | number;
     }>) => {
         const nextFilters = {
             search,
@@ -69,8 +74,13 @@ export default function PetsIndex({
             maintenance,
             color,
             fee,
+            per_page: perPage,
             ...newFilters,
         };
+
+        if (newFilters.per_page && typeof window !== 'undefined') {
+            localStorage.setItem('pets_per_page', String(newFilters.per_page));
+        }
 
         router.get(route('pets.index'), {
             search: nextFilters.search || undefined,
@@ -81,6 +91,7 @@ export default function PetsIndex({
             maintenance: nextFilters.maintenance === 'Any' ? undefined : nextFilters.maintenance,
             color: nextFilters.color === 'Any' ? undefined : nextFilters.color,
             fee: nextFilters.fee === 'all' ? undefined : nextFilters.fee,
+            per_page: nextFilters.per_page && String(nextFilters.per_page) !== '12' ? nextFilters.per_page : undefined,
         }, { preserveState: true, replace: true });
     };
 
@@ -98,6 +109,10 @@ export default function PetsIndex({
         setMaintenance('Any');
         setColor('Any');
         setFee('all');
+        setPerPage('12');
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('pets_per_page');
+        }
         router.get(route('pets.index'), {}, { preserveState: true, replace: true });
     };
 
@@ -213,6 +228,30 @@ export default function PetsIndex({
                                     </Select>
                                 </div>
 
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-gray-500 uppercase">Pets Per Page</label>
+                                    <Select value={perPage} onValueChange={val => { setPerPage(val); updateFilter({ per_page: val }); }}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="6">6 Pets</SelectItem>
+                                            <SelectItem value="12">12 Pets (Default)</SelectItem>
+                                            <SelectItem value="24">24 Pets</SelectItem>
+                                            <SelectItem value="48">48 Pets</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="pt-2 border-t border-gray-100">
+                                    <button
+                                        type="button"
+                                        onClick={() => setGuideOpen(true)}
+                                        className="w-full text-xs font-semibold text-[#D4A017] hover:text-[#B8860B] hover:underline flex items-center justify-center gap-1.5 py-1"
+                                    >
+                                        <HelpCircle className="h-3.5 w-3.5" />
+                                        Energy &amp; Maintenance Guide
+                                    </button>
+                                </div>
+
                                 <Button 
                                     type="button"
                                     variant="outline"
@@ -240,6 +279,25 @@ export default function PetsIndex({
                             </div>
                             <Button type="submit" variant="secondary">Search</Button>
                         </form>
+
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-gray-500 bg-white border border-gray-200/80 px-4 py-2.5 rounded-xl shadow-2xs">
+                            <div>
+                                Showing <span className="font-semibold text-gray-800">{pets.data.length}</span> of{' '}
+                                <span className="font-semibold text-gray-800">{pets.meta?.total ?? pets.data.length}</span> available pets
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span>Show:</span>
+                                <Select value={perPage} onValueChange={val => { setPerPage(val); updateFilter({ per_page: val }); }}>
+                                    <SelectTrigger className="h-7 w-28 text-xs bg-gray-50"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="6">6 per page</SelectItem>
+                                        <SelectItem value="12">12 per page</SelectItem>
+                                        <SelectItem value="24">24 per page</SelectItem>
+                                        <SelectItem value="48">48 per page</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {pets.data.map(pet => {
@@ -330,8 +388,36 @@ export default function PetsIndex({
                                 );
                             })}
                         </div>
+
+                        {/* Pagination Links */}
+                        {pets.links && pets.links.length > 3 && (
+                            <div className="flex flex-wrap justify-center items-center gap-1.5 pt-4">
+                                {pets.links.map((link: any, idx: number) => (
+                                    <Link
+                                        key={idx}
+                                        href={link.url || '#'}
+                                        preserveState
+                                        preserveScroll
+                                        className={cn(
+                                            "px-3 py-1.5 text-xs rounded-lg border transition-colors",
+                                            link.active
+                                                ? "bg-[#D4A017] text-white border-[#D4A017] font-bold shadow-xs"
+                                                : link.url
+                                                ? "bg-white text-gray-700 hover:bg-gray-50 border-gray-200"
+                                                : "bg-gray-50 text-gray-400 border-gray-200 pointer-events-none cursor-not-allowed"
+                                        )}
+                                        dangerouslySetInnerHTML={{ __html: link.label }}
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
+
+                <EnergyMaintenanceGuideDialog
+                    open={guideOpen}
+                    onOpenChange={setGuideOpen}
+                />
             </div>
         </AppLayout>
     );

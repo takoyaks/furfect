@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Laravel\Fortify\Contracts\LoginResponse;
 use Laravel\Fortify\Contracts\RegisterResponse;
@@ -51,11 +52,11 @@ class FortifyServiceProvider extends ServiceProvider
                             return redirect()->route('shelter.pets.index');
                         }
 
-                        if ($user->hasRole('mao_officer')) {
+                        if ($user->hasRole('mao_staff')) {
                             return redirect()->route('mao.dashboard');
                         }
 
-                        if (! $user->hasAnyRole(['admin', 'shelter_staff', 'mao_officer']) && ! $user->adopterProfile?->profile_completed_at) {
+                        if (! $user->hasAnyRole(['admin', 'shelter_staff', 'mao_staff']) && ! $user->adopterProfile?->profile_completed_at) {
                             return redirect()->route('onboarding.personal.edit');
                         }
                     }
@@ -118,11 +119,62 @@ class FortifyServiceProvider extends ServiceProvider
                 ->orWhere('name', $login)
                 ->first();
 
-            if ($user && Hash::check($password, $user->password)) {
+            if (! $user) {
+                return null;
+            }
+
+            // Check if user account is currently suspended or locked out
+            if ($user->isSuspended()) {
+                if ($user->suspended_at !== null) {
+                    $reason = $user->suspended_reason ?: __('Administrative suspension.');
+                    throw ValidationException::withMessages([
+                        Fortify::username() => __('Your account has been suspended: :reason Please contact an administrator for assistance.', ['reason' => $reason]),
+                    ]);
+                }
+
+                if ($user->lockout_until !== null && $user->lockout_until->isFuture()) {
+                    $minutes = (int) ceil(now()->diffInSeconds($user->lockout_until) / 60);
+                    throw ValidationException::withMessages([
+                        Fortify::username() => __('Your account is temporarily locked due to multiple failed login attempts. Please try again in :minutes minute(s).', ['minutes' => max(1, $minutes)]),
+                    ]);
+                }
+            }
+
+            if (Hash::check($password, $user->password)) {
+                // Reset failed attempts upon successful login
+                if ($user->failed_login_attempts > 0 || $user->lockout_until !== null) {
+                    $user->update([
+                        'failed_login_attempts' => 0,
+                        'lockout_until' => null,
+                    ]);
+                }
+
                 return $user;
             }
 
-            return null;
+            // Password check failed - increment failed login attempts
+            $attempts = (int) $user->failed_login_attempts + 1;
+            if ($attempts >= 5) {
+                $user->update([
+                    'failed_login_attempts' => $attempts,
+                    'suspended_at' => now(),
+                    'suspended_reason' => __('Suspended automatically after 5 consecutive failed login attempts.'),
+                ]);
+
+                throw ValidationException::withMessages([
+                    Fortify::username() => __('Your account has been suspended due to 5 consecutive failed login attempts. Please contact an administrator.'),
+                ]);
+            }
+
+            $user->update([
+                'failed_login_attempts' => $attempts,
+            ]);
+
+            $remaining = 5 - $attempts;
+
+            throw ValidationException::withMessages([
+                Fortify::username() => __('These credentials do not match our records. You have :count attempt(s) remaining before account suspension.', ['count' => $remaining]),
+            ]);
         });
     }
 

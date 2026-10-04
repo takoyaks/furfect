@@ -61,16 +61,16 @@ class SampleDataSeeder extends Seeder
         );
         $shelterStaff->assignRole('shelter_staff');
 
-        // ── MAO Officer ────────────────────────────────────────────
+        // ── MAO Staff ──────────────────────────────────────────────
         $maoOfficer = User::firstOrCreate(
             ['email' => 'mao@virac.gov.ph'],
             [
-                'name' => 'MAO Officer Romero',
+                'name' => 'MAO Staff Romero',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
             ]
         );
-        $maoOfficer->assignRole('mao_officer');
+        $maoOfficer->syncRoles(['mao_staff']);
 
         // ── Sample Adopter ─────────────────────────────────────────
         $adopter = User::firstOrCreate(
@@ -276,7 +276,7 @@ class SampleDataSeeder extends Seeder
             [
                 ['Admin', 'admin@furfect.com', 'password'],
                 ['Shelter Staff', 'lizabel@gmail.com', 'password'],
-                ['MAO Officer', 'mao@virac.gov.ph', 'password'],
+                ['MAO Staff', 'mao@virac.gov.ph', 'password'],
                 ['Adopter', 'mariacielo@gmail.com', 'password'],
             ]
         );

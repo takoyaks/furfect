@@ -11,7 +11,7 @@ beforeEach(function (): void {
     $this->artisan('db:seed', ['--class' => 'SystemSettingsSeeder']);
 
     $this->mao = User::factory()->create();
-    $this->mao->assignRole('mao_officer');
+    $this->mao->assignRole('mao_staff');
 
     $this->adopter = User::factory()->create();
     $this->adopter->assignRole('adopter');

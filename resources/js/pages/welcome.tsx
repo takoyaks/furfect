@@ -6,6 +6,7 @@ import { Sparkles, Heart, ArrowRight, ShieldCheck, Calendar, Users, CheckCircle2
 import { AppFooter } from '@/components/app-footer';
 import { login, register } from '@/routes';
 import { getTheme } from '@/lib/theme-templates';
+import { cn } from '@/lib/utils';
 
 interface Pet {
     id: number;
@@ -119,9 +120,11 @@ export default function Welcome({ config, featuredPets = [], announcements = [],
                                 <h1 className="text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight">
                                     {config?.hero_title || 'Find Your Perfect Companion in Virac'}
                                 </h1>
-                                <p className="text-gray-600 text-base md:text-lg leading-relaxed max-w-2xl">
-                                    {config?.hero_subtitle || 'FurFect Match pairs you with rescued pets using our Decision Support System (DSS) compatibility matching engine.'}
-                                </p>
+                                {config?.hero_subtitle ? (
+                                    <p className="text-gray-600 text-base md:text-lg leading-relaxed max-w-2xl">
+                                        {config.hero_subtitle}
+                                    </p>
+                                ) : null}
                                 <div className="flex flex-wrap gap-4 pt-2">
                                     <Link href={config?.hero_cta_link || route('pets.index')}>
                                         <Button className={`${theme.primaryButton} font-bold text-sm px-6 py-2.5 rounded-xl shadow-md transition-all gap-2`}>
@@ -296,15 +299,22 @@ export default function Welcome({ config, featuredPets = [], announcements = [],
                             {steps.map((item, idx) => {
                                 const Icon = icons[idx % icons.length];
                                 return (
-                                    <div key={item.step || idx} className="bg-white border border-gray-200 p-5 rounded-2xl space-y-2 relative overflow-hidden shadow-xs">
-                                        <div className={`text-3xl font-black ${theme.stepNumberText} absolute top-2 right-3 select-none`}>
-                                            {item.step || `0${idx + 1}`}
-                                        </div>
-                                        <div className={`w-9 h-9 rounded-lg ${theme.stepIconBg} ${theme.stepIconText} flex items-center justify-center font-bold text-xs`}>
-                                            <Icon className="h-5 w-5" />
+                                    <div key={item.step || idx} className="bg-white border border-gray-200 p-5 rounded-2xl space-y-3 shadow-xs hover:shadow-md transition-shadow">
+                                        <div className="flex items-center justify-between">
+                                            <div className={`w-9 h-9 rounded-lg ${theme.stepIconBg} ${theme.stepIconText} flex items-center justify-center font-bold text-xs`}>
+                                                <Icon className="h-5 w-5" />
+                                            </div>
+                                            <span className={`text-2xl font-black ${theme.stepNumberText} select-none tracking-tight`}>
+                                                {item.step || `0${idx + 1}`}
+                                            </span>
                                         </div>
                                         <h4 className="font-bold text-sm text-gray-900">{item.title}</h4>
-                                        <p className="text-xs text-gray-500 leading-relaxed line-clamp-3">{item.description}</p>
+                                        {item.description && (
+                                            <div 
+                                                className="text-xs text-gray-500 leading-relaxed line-clamp-3 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                                                dangerouslySetInnerHTML={{ __html: item.description }}
+                                            />
+                                        )}
                                     </div>
                                 );
                             })}

@@ -75,7 +75,7 @@ class HandleInertiaRequests extends Middleware
                 $notificationData['pendingShelterCount'] = Application::whereIn('status', ['pending', 'under_review'])->count();
             }
 
-            if (in_array('mao_officer', $roles) || in_array('admin', $roles)) {
+            if (in_array('mao_staff', $roles) || in_array('admin', $roles)) {
                 $notificationData['pendingMaoCount'] = Application::where('status', 'mao_audit')->count();
             }
         }

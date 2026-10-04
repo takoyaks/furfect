@@ -286,7 +286,7 @@ export function AdoptionPickupPass({ application, className = '' }: AdoptionPick
                             {/* Line for physical or stamp endorsement */}
                         </div>
                         <span className="font-bold uppercase text-gray-900 block text-[10px] print:text-[8px] pt-1 print:pt-0.5">
-                            {application.mao_officer?.name || 'Authorized MAO Officer'}
+                            {application.mao_officer?.name || 'Authorized MAO Staff'}
                         </span>
                         <span className="text-gray-500 text-[9px] print:text-[7px] block">
                             Municipal Agriculture Office (MAO)

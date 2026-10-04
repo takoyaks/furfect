@@ -38,8 +38,8 @@ class AdoptionNotificationService
                 new ApplicationStatusUpdatedNotification($application, 'shelter_endorsed_adopter')
             );
 
-            // Notify all MAO officers that audit is needed
-            $this->notifyRole('mao_officer', $application, 'mao_audit_pending');
+            // Notify all MAO staff that audit is needed
+            $this->notifyRole('mao_staff', $application, 'mao_audit_pending');
         } else {
             // Notify adopter about rejection feedback
             $application->adopter?->notify(
@@ -76,16 +76,13 @@ class AdoptionNotificationService
 
     /**
      * Send a notification to all users with a specific role.
+     *
+     * @param  string|array<int, string>  $roleName
      */
-    private function notifyRole(string $roleName, Application $application, string $event): void
+    private function notifyRole(string|array $roleName, Application $application, string $event): void
     {
-        $role = Role::where('name', $roleName)->first();
-
-        if (! $role) {
-            return;
-        }
-
-        $users = User::role($roleName)->get();
+        $roleNames = (array) $roleName;
+        $users = User::role($roleNames)->get()->unique('id');
 
         foreach ($users as $user) {
             $user->notify(

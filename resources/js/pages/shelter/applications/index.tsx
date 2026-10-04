@@ -12,6 +12,7 @@ import {
     ChevronLeft,
     ChevronRight,
     FileText,
+    ShieldCheck,
 } from 'lucide-react';
 import {
     Dialog,
@@ -691,6 +692,12 @@ export default function ShelterApplicationIndex({
                                                         >
                                                             Approve
                                                         </Button>
+                                                    )}
+                                                    {selectedApplication.status === 'mao_audit' && (
+                                                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-50 border border-purple-200 text-purple-800 text-xs font-semibold">
+                                                            <ShieldCheck className="size-3.5 text-purple-600" />
+                                                            <span>Pending Municipal Compliance Audit (MAO)</span>
+                                                        </div>
                                                     )}
                                                     {selectedApplication.status === 'approved' && (
                                                         <>

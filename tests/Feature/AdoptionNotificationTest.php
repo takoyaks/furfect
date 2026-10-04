@@ -96,7 +96,7 @@ test('shelter staff endorsement notifies adopter and mao officers', function () 
 
     $adopter = createNotificationAdopter();
     $staff = createStaffUser('shelter_staff');
-    $maoOfficer = createStaffUser('mao_officer');
+    $maoOfficer = createStaffUser('mao_staff');
     $shelter = Shelter::factory()->create();
     $pet = Pet::factory()->create(['shelter_id' => $shelter->id, 'status' => 'available']);
 
@@ -133,7 +133,7 @@ test('mao officer approval notifies adopter with certificate and shelter staff',
 
     $adopter = createNotificationAdopter();
     $staff = createStaffUser('shelter_staff');
-    $maoOfficer = createStaffUser('mao_officer');
+    $maoOfficer = createStaffUser('mao_staff');
     $shelter = Shelter::factory()->create();
     $pet = Pet::factory()->create(['shelter_id' => $shelter->id, 'status' => 'available']);
 

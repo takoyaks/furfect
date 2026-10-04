@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Wand2, Save, LayoutTemplate, Palette, Image as ImageIcon, Eye, Check, HelpCircle, Info } from 'lucide-react';
 import InputError from '@/components/input-error';
 import { getTheme } from '@/lib/theme-templates';
+import { RichTextEditor } from '@/components/rich-text-editor';
 
 interface TemplateOption {
     id: string;
@@ -295,14 +296,13 @@ export default function Builder({ config, templates }: Props) {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="hero_subtitle">Hero Subtitle Paragraph *</Label>
+                                    <Label htmlFor="hero_subtitle">Hero Subtitle Paragraph (Optional)</Label>
                                     <Textarea
                                         id="hero_subtitle"
                                         value={data.hero_subtitle}
                                         onChange={(e) => setData('hero_subtitle', e.target.value)}
                                         placeholder="Describe the adoption mission or system compatibility benefits..."
                                         rows={3}
-                                        required
                                     />
                                     <InputError message={errors.hero_subtitle} />
                                 </div>
@@ -380,11 +380,12 @@ export default function Builder({ config, templates }: Props) {
                                         </div>
                                         <div className="space-y-2">
                                             <Label className="text-xs font-semibold">Step Description</Label>
-                                            <Textarea
-                                                value={step.description}
-                                                onChange={(e) => updateStep(idx, 'description', e.target.value)}
-                                                rows={2}
-                                                className="text-xs bg-white"
+                                            <RichTextEditor
+                                                id={`step-description-${idx}`}
+                                                value={step.description || ''}
+                                                onChange={(val) => updateStep(idx, 'description', val)}
+                                                minHeight="140px"
+                                                placeholder="Enter step details with formatted text, lists, or highlights..."
                                             />
                                         </div>
                                     </div>
@@ -509,7 +510,9 @@ export default function Builder({ config, templates }: Props) {
                                 <div className={`p-8 rounded-2xl ${previewTheme.heroGradient} space-y-4`}>
                                     <span className={`text-[10px] font-bold ${previewTheme.heroBadge} px-2.5 py-0.5 rounded-full uppercase`}>Preview Hero</span>
                                     <h2 className="text-2xl font-extrabold text-gray-900">{data.hero_title}</h2>
-                                    <p className="text-sm text-gray-600">{data.hero_subtitle}</p>
+                                    {data.hero_subtitle && (
+                                        <p className="text-sm text-gray-600 leading-relaxed">{data.hero_subtitle}</p>
+                                    )}
                                     <Button className={`${previewTheme.primaryButton} font-bold text-xs px-4 py-2 rounded-lg shadow-sm`}>
                                         {data.hero_cta_text}
                                     </Button>
@@ -524,7 +527,12 @@ export default function Builder({ config, templates }: Props) {
                                             <div key={i} className="bg-white p-3 rounded-xl border border-gray-200 space-y-1">
                                                 <span className={`text-[10px] font-bold ${previewTheme.accentText}`}>Step {st.step || `0${i + 1}`}</span>
                                                 <h4 className="font-bold text-xs text-gray-900">{st.title}</h4>
-                                                <p className="text-[11px] text-gray-500 line-clamp-2">{st.description}</p>
+                                                {st.description && (
+                                                    <div 
+                                                        className="text-[11px] text-gray-500 line-clamp-3 leading-relaxed [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                                                        dangerouslySetInnerHTML={{ __html: st.description }}
+                                                    />
+                                                )}
                                             </div>
                                         ))}
                                     </div>

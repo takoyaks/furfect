@@ -12,7 +12,7 @@ use Spatie\Permission\Models\Role;
 beforeEach(function (): void {
     Role::firstOrCreate(['name' => 'adopter']);
     Role::firstOrCreate(['name' => 'shelter_staff']);
-    Role::firstOrCreate(['name' => 'mao_officer']);
+    Role::firstOrCreate(['name' => 'mao_staff']);
     Role::firstOrCreate(['name' => 'admin']);
     $this->artisan('db:seed', ['--class' => 'SystemSettingsSeeder']);
 });

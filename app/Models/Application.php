@@ -66,6 +66,10 @@ class Application extends Model
         'releasing_notes',
         'release_checklist',
         'certificate_number',
+        'close_reason',
+        'close_notes',
+        'closed_at',
+        'closed_by_id',
     ];
 
     /**
@@ -85,6 +89,7 @@ class Application extends Model
             'resolved_at' => 'datetime',
             'pickup_deadline_at' => 'datetime',
             'released_at' => 'datetime',
+            'closed_at' => 'datetime',
         ];
     }
 
@@ -124,8 +129,8 @@ class Application extends Model
         if ($actor) {
             if ($actor->hasRole('admin')) {
                 $actorRole = 'admin';
-            } elseif ($actor->hasRole('mao_officer')) {
-                $actorRole = 'mao_officer';
+            } elseif ($actor->hasRole('mao_staff')) {
+                $actorRole = 'mao_staff';
             } elseif ($actor->hasRole('shelter_staff')) {
                 $actorRole = 'shelter_staff';
             } elseif ($actor->hasRole('adopter')) {
@@ -226,5 +231,13 @@ class Application extends Model
     public function releasingOfficer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'releasing_officer_id');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function closedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'closed_by_id');
     }
 }

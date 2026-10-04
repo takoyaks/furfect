@@ -208,13 +208,13 @@ export function AdoptionCertificate({ application, className = '' }: AdoptionCer
                     </div>
 
                     <div className="grid grid-cols-3 gap-3 print:gap-2 text-center text-[10px] print:text-[8px]">
-                        {/* Municipal Agriculture Officer (MAO) */}
+                        {/* Municipal Agriculture Office (MAO) */}
                         <div className="space-y-0.5 flex flex-col justify-end">
                             <div className="h-8 print:h-5 border-b border-gray-900 flex items-end justify-center pb-0.5">
                                 {/* Line for signature */}
                             </div>
                             <span className="font-bold uppercase text-gray-900 block text-[10px] print:text-[8px] pt-0.5">
-                                {application.mao_officer?.name || 'Municipal Agriculture Officer'}
+                                {application.mao_officer?.name || 'Municipal Agriculture Office Staff'}
                             </span>
                             <span className="text-gray-500 text-[9px] print:text-[7px] block">
                                 Municipal Agriculture Office (MAO)

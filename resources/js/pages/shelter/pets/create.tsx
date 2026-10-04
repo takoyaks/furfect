@@ -559,7 +559,7 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
                             <CardTitle className="text-base font-semibold flex items-center gap-2 text-gray-800 dark:text-neutral-200">
                                 <Tag className="w-4 h-4 text-[#D4A017]" /> Physical Identity &amp; Shelter Facility Location
                             </CardTitle>
-                            <CardDescription>Collar tags, microchip, and housing zone to allow staff and MAO officers to locate the pet quickly.</CardDescription>
+                            <CardDescription>Collar tags, microchip, and housing zone to allow staff and MAO staff to locate the pet quickly.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6 space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

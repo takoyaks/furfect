@@ -9,6 +9,8 @@ import React, {
 import { usePage } from '@inertiajs/react';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
 import AppHeaderLayout from '@/layouts/app/app-header-layout';
+import { useInactivityTimer } from '@/hooks/use-inactivity-timer';
+import { InactivityWarningModal } from '@/components/inactivity-warning-modal';
 import type { BreadcrumbItem } from '@/types';
 
 // ─── Breadcrumbs context ────────────────────────────────────────────────────
@@ -85,8 +87,11 @@ function AppLayoutOuter({
     const user = auth.user;
     const roles = (user?.roles as string[]) || [];
 
-    const isStaff = roles.some((r) => ['admin', 'shelter_staff', 'mao_officer'].includes(r));
+    const isStaff = roles.some((r) => ['admin', 'shelter_staff', 'mao_staff'].includes(r));
     const AppLayoutTemplate = isStaff ? AppSidebarLayout : AppHeaderLayout;
+    const { isWarningOpen, secondsRemaining, resetTimer, performLogout } = useInactivityTimer({
+        enabled: Boolean(user),
+    });
 
     const [breadcrumbs, setBreadcrumbs] =
         useState<BreadcrumbItem[]>(initialBreadcrumbs);
@@ -113,6 +118,14 @@ function AppLayoutOuter({
                 <AppLayoutTemplate breadcrumbs={breadcrumbs}>
                     {children}
                 </AppLayoutTemplate>
+                {user && (
+                    <InactivityWarningModal
+                        isOpen={isWarningOpen}
+                        secondsRemaining={secondsRemaining}
+                        onStayLoggedIn={resetTimer}
+                        onLogoutNow={performLogout}
+                    />
+                )}
             </BreadcrumbsContext.Provider>
         </AppLayoutContext.Provider>
     );

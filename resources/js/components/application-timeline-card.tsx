@@ -44,7 +44,7 @@ export function ApplicationTimelineCard({
 
     const getActorIcon = (role?: string) => {
         switch (role) {
-            case 'mao_officer':
+            case 'mao_staff':
                 return <ShieldCheck className="h-4 w-4 text-purple-600" />;
             case 'shelter_staff':
                 return <Building className="h-4 w-4 text-theme" />;
@@ -70,9 +70,9 @@ export function ApplicationTimelineCard({
                     </div>
 
                     {slaTarget && (
-                        <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-white border border-gray-200 px-3 py-1 rounded-full font-medium shadow-xs">
-                            <Clock className="h-3.5 w-3.5 text-amber-500" />
-                            <span>Target SLA: {new Date(slaTarget).toLocaleDateString()}</span>
+                        <div className="flex items-center gap-1.5 text-xs text-amber-900 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full font-semibold shadow-2xs">
+                            <Clock className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                            <span>Review SLA: {new Date(slaTarget).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
                     )}
                 </div>

@@ -8,7 +8,7 @@ use Spatie\Permission\Models\Role;
 beforeEach(function (): void {
     Role::firstOrCreate(['name' => 'adopter']);
     Role::firstOrCreate(['name' => 'shelter_staff']);
-    Role::firstOrCreate(['name' => 'mao_officer']);
+    Role::firstOrCreate(['name' => 'mao_staff']);
     Role::firstOrCreate(['name' => 'admin']);
     $this->artisan('db:seed', ['--class' => 'SystemSettingsSeeder']);
 });
@@ -197,7 +197,7 @@ test('shelter staff, mao officer, and admin can inspect applicant ID document', 
 
     // Test mao_officer
     $mao = User::factory()->create();
-    $mao->assignRole('mao_officer');
+    $mao->assignRole('mao_staff');
     $resMao = $this->actingAs($mao)->get(route('adopter.id-document.show', [
         'profile' => $profile->id,
         'side' => 'front',

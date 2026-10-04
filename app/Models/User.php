@@ -19,12 +19,13 @@ use Spatie\Permission\Traits\HasRoles;
  * @property int $id
  * @property string $name
  * @property string $email
+ * @property string|null $google_id
  * @property string|null $avatar
  * @property string|null $phone
  * @property string|null $address
  * @property string|null $bio
  * @property Carbon|null $email_verified_at
- * @property string $password
+ * @property string|null $password
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
@@ -32,7 +33,21 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'avatar', 'phone', 'address', 'bio'])]
+#[Fillable([
+    'name',
+    'email',
+    'email_verified_at',
+    'google_id',
+    'password',
+    'avatar',
+    'phone',
+    'address',
+    'bio',
+    'failed_login_attempts',
+    'suspended_at',
+    'suspended_reason',
+    'lockout_until',
+])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -49,7 +64,50 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'failed_login_attempts' => 'integer',
+            'suspended_at' => 'datetime',
+            'lockout_until' => 'datetime',
         ];
+    }
+
+    /**
+     * Determine if the user is suspended or locked out.
+     */
+    public function isSuspended(): bool
+    {
+        if ($this->suspended_at !== null) {
+            return true;
+        }
+
+        if ($this->lockout_until !== null && $this->lockout_until->isFuture()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Suspend the user account with a reason.
+     */
+    public function suspend(string $reason): void
+    {
+        $this->update([
+            'suspended_at' => now(),
+            'suspended_reason' => $reason,
+        ]);
+    }
+
+    /**
+     * Unsuspend and unlock the user account.
+     */
+    public function unsuspend(): void
+    {
+        $this->update([
+            'failed_login_attempts' => 0,
+            'suspended_at' => null,
+            'suspended_reason' => null,
+            'lockout_until' => null,
+        ]);
     }
 
     /**
@@ -149,5 +207,13 @@ class User extends Authenticatable
             && $this->adopterProfile->profile_completed_at !== null
             && $this->lifestyleProfile !== null
             && $this->lifestyleProfile->submitted_at !== null;
+    }
+
+    /**
+     * Check if user has linked their Google account.
+     */
+    public function hasGoogleLinked(): bool
+    {
+        return ! empty($this->google_id);
     }
 }

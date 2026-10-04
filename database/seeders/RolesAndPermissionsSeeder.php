@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -14,7 +15,7 @@ class RolesAndPermissionsSeeder extends Seeder
     public function run(): void
     {
         // Reset cached roles and permissions
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         // Create permissions
         $permissions = [
@@ -68,15 +69,24 @@ class RolesAndPermissionsSeeder extends Seeder
             'generate-reports',
         ]);
 
-        // MAO Officer — audit and final decision
-        $maoOfficer = Role::firstOrCreate(['name' => 'mao_officer']);
-        $maoOfficer->syncPermissions([
+        // MAO Staff — audit and final decision
+        $maoStaff = Role::firstOrCreate(['name' => 'mao_staff']);
+        $maoStaff->syncPermissions([
             'view-pets',
             'view-applications',
             'audit-applications',
             'generate-reports',
             'export-reports',
         ]);
+
+        // Clean up legacy mao_officer role if present
+        $legacyRole = Role::where('name', 'mao_officer')->first();
+        if ($legacyRole) {
+            foreach ($legacyRole->users as $legacyUser) {
+                $legacyUser->assignRole('mao_staff');
+            }
+            $legacyRole->delete();
+        }
 
         // Admin — full access
         $admin = Role::firstOrCreate(['name' => 'admin']);

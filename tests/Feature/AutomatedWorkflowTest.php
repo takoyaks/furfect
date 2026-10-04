@@ -120,7 +120,7 @@ test('shelter staff marking suitable transitions application to mao_audit and lo
 
 test('mao officer approval issues adoption certificate, sets 7-day pickup and marks pet adopted', function () {
     $adopter = createTestOnboardedAdopter();
-    $maoOfficer = createTestStaff('mao_officer');
+    $maoOfficer = createTestStaff('mao_staff');
     $shelter = Shelter::factory()->create();
     $pet = Pet::factory()->create(['shelter_id' => $shelter->id, 'status' => 'available']);
 
@@ -163,7 +163,7 @@ test('mao officer approval issues adoption certificate, sets 7-day pickup and ma
 
 test('mao officer rejection releases pet back to available and logs disapproval', function () {
     $adopter = createTestOnboardedAdopter();
-    $maoOfficer = createTestStaff('mao_officer');
+    $maoOfficer = createTestStaff('mao_staff');
     $shelter = Shelter::factory()->create();
     $pet = Pet::factory()->create(['shelter_id' => $shelter->id, 'status' => 'available']);
 

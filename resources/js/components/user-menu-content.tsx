@@ -21,7 +21,7 @@ export function UserMenuContent({ user }: Props) {
     const { version } = usePage().props as { version?: string };
 
     const roles = (user?.roles as string[]) || [];
-    const isStaffOrAdminOrMao = roles.some((r) => ['admin', 'shelter_staff', 'mao_officer'].includes(r));
+    const isStaffOrAdminOrMao = roles.some((r) => ['admin', 'shelter_staff', 'mao_staff'].includes(r));
 
     const handleLogout = () => {
         cleanup();

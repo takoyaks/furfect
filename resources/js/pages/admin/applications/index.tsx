@@ -12,6 +12,14 @@ import {
     ChevronLeft,
     ChevronRight,
     FileText,
+    ShieldCheck,
+    Check,
+    Sparkles,
+    CheckCircle2,
+    XCircle,
+    AlertTriangle,
+    Home,
+    Archive,
 } from 'lucide-react';
 import {
     Dialog,
@@ -29,6 +37,13 @@ import { IdentityVerificationReport } from '@/components/identity-verification-r
 import { IdentityVerificationBadge } from '@/components/identity-verification-badge';
 import { DssScoreCard } from '@/components/dss-score-card';
 import { ApplicationTimelineCard, TimelineEvent } from '@/components/application-timeline-card';
+
+interface ChecklistItem {
+    label: string;
+    description: string;
+    auto_compliant?: boolean;
+    compliance_reason?: string;
+}
 
 interface CompetingApp {
     id: number;
@@ -64,6 +79,9 @@ interface Application {
     released_at?: string | null;
     releasing_notes?: string | null;
     certificate_number?: string | null;
+    mao_decision?: string | null;
+    mao_remarks?: string | null;
+    mao_checklist?: Record<string, boolean> | null;
     submitted_at: string;
     user_id: number;
     pet_id: number;
@@ -142,6 +160,10 @@ interface Application {
     staff?: { id: number; name: string } | null;
     releasing_officer?: { id: number; name: string } | null;
     timelines?: TimelineEvent[];
+    close_reason?: string | null;
+    close_notes?: string | null;
+    closed_at?: string | null;
+    closed_by?: { id: number; name: string } | null;
 }
 
 interface AdopterTrackRecord {
@@ -173,6 +195,7 @@ const STATUS_BADGE: Record<string, string> = {
     rejected:     'bg-red-100 text-red-800 border-red-200',
     completed:    'bg-emerald-100 text-emerald-800 border-emerald-300',
     unclaimed:    'bg-gray-100 text-gray-700 border-gray-300',
+    archived:     'bg-zinc-100 text-zinc-800 border-zinc-300',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -183,6 +206,7 @@ const STATUS_LABELS: Record<string, string> = {
     rejected:     'REJECTED',
     completed:    'RELEASED',
     unclaimed:    'UNCLAIMED',
+    archived:     'ARCHIVED / CLOSED',
 };
 
 export default function ShelterApplicationIndex({
@@ -191,6 +215,7 @@ export default function ShelterApplicationIndex({
     dssMatch: initialDssMatch,
     competingApplications: initialCompeting = [],
     adopterTrackRecord: initialTrackRecord,
+    defaultChecklist: initialChecklistObj,
     dossierData = {},
     filters,
 }: {
@@ -199,11 +224,13 @@ export default function ShelterApplicationIndex({
     dssMatch?: any;
     competingApplications?: CompetingApp[];
     adopterTrackRecord?: AdopterTrackRecord | null;
+    defaultChecklist?: Record<string, ChecklistItem> | null;
     dossierData?: Record<number, {
         application: Application;
         dssMatch?: any;
         competingApplications?: CompetingApp[];
         adopterTrackRecord?: AdopterTrackRecord | null;
+        defaultChecklist?: Record<string, ChecklistItem>;
     }>;
     filters: {
         status?: string;
@@ -243,6 +270,7 @@ export default function ShelterApplicationIndex({
     const dssMatch = currentBundle?.dssMatch ?? initialDssMatch;
     const competingApplications = currentBundle?.competingApplications ?? initialCompeting;
     const adopterTrackRecord = currentBundle?.adopterTrackRecord ?? initialTrackRecord;
+    const activeChecklist = currentBundle?.defaultChecklist ?? initialChecklistObj ?? {};
 
     const tabsListRef = useRef<HTMLDivElement>(null);
 
@@ -255,18 +283,50 @@ export default function ShelterApplicationIndex({
     // Screening decision modal state
     const [isScreeningModalOpen, setIsScreeningModalOpen] = useState(false);
 
+    // MAO Statutory Compliance Audit Modal state
+    const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+
+    // Build initial checklist boolean map based on saved checklist or auto-compliant status
+    const buildInitialChecklistState = (app: Application | null, checklist: Record<string, ChecklistItem>) => {
+        if (!app) return {};
+        return Object.fromEntries(
+            Object.keys(checklist).map(key => [
+                key,
+                app.mao_checklist
+                    ? Boolean(app.mao_checklist[key])
+                    : Boolean(checklist[key]?.auto_compliant ?? app.fast_track_eligible ?? false),
+            ])
+        );
+    };
+
     // Decision form state
     const { data: decisionData, setData: setDecisionData, patch, processing } = useForm({
         decision: 'suitable',
         notes: '',
     });
 
-    // Reset decision form if selected application changes
+    // Form state for MAO Audit
+    const { data: auditData, setData: setAuditData, post: postAudit, processing: auditProcessing } = useForm<{
+        decision: string;
+        remarks: string;
+        checklist: Record<string, boolean>;
+    }>({
+        decision: selectedApplication?.mao_decision ?? 'approved',
+        remarks: selectedApplication?.mao_remarks ?? '',
+        checklist: buildInitialChecklistState(selectedApplication ?? null, activeChecklist),
+    });
+
+    // Reset forms if selected application changes
     useEffect(() => {
         if (selectedApplication) {
             setDecisionData({
                 decision: selectedApplication.staff_decision || 'suitable',
                 notes: selectedApplication.staff_notes || '',
+            });
+            setAuditData({
+                decision: selectedApplication.mao_decision || 'approved',
+                remarks: selectedApplication.mao_remarks || '',
+                checklist: buildInitialChecklistState(selectedApplication, activeChecklist),
             });
             setSelectedPhotoIdx(0);
         }
@@ -337,10 +397,52 @@ export default function ShelterApplicationIndex({
         });
     };
 
-    const handleDelete = (appId: number) => {
-        if (confirm('Are you sure you want to delete this application?')) {
-            router.delete(route('admin.applications.destroy', appId));
-        }
+    const toggleChecklist = (key: string) => {
+        setAuditData('checklist', {
+            ...auditData.checklist,
+            [key]: !auditData.checklist[key],
+        });
+    };
+
+    const handleAuditSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedApplication) return;
+
+        postAudit(route('admin.applications.audit', selectedApplication.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsAuditModalOpen(false);
+            },
+        });
+    };
+
+    const allChecklistItemsVerified = Object.keys(activeChecklist).length === 0 ||
+        Object.keys(activeChecklist).every(key => auditData.checklist[key]);
+
+    const [closingAppId, setClosingAppId] = useState<number | null>(null);
+    const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+    const { data: closeData, setData: setCloseData, post: postClose, processing: isClosing, reset: resetClose, errors: closeErrors } = useForm({
+        reason: 'unclaimed_forfeited',
+        notes: '',
+    });
+
+    const openCloseModal = (appId: number) => {
+        setClosingAppId(appId);
+        resetClose();
+        setIsCloseModalOpen(true);
+    };
+
+    const handleCloseSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!closingAppId) return;
+        postClose(route('admin.applications.close', closingAppId), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsCloseModalOpen(false);
+                setClosingAppId(null);
+                resetClose();
+            },
+        });
     };
 
     const activeProfile = selectedApplication?.adopter?.adopter_profile;
@@ -467,14 +569,16 @@ export default function ShelterApplicationIndex({
                                                     >
                                                         Review Dossier
                                                     </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="text-xs text-red-500 hover:text-red-700 h-7 px-2 cursor-pointer"
-                                                        onClick={() => handleDelete(app.id)}
-                                                    >
-                                                        Delete
-                                                    </Button>
+                                                    {app.status !== 'archived' && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-xs text-amber-700 hover:text-amber-800 hover:bg-amber-50 h-7 px-2 cursor-pointer"
+                                                            onClick={() => openCloseModal(app.id)}
+                                                        >
+                                                            Archive
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -527,6 +631,7 @@ export default function ShelterApplicationIndex({
                                             <SelectItem value="completed">Released</SelectItem>
                                             <SelectItem value="rejected">Rejected</SelectItem>
                                             <SelectItem value="unclaimed">Unclaimed</SelectItem>
+                                            <SelectItem value="archived">Archived / Closed</SelectItem>
                                         </SelectContent>
                                     </Select>
 
@@ -706,6 +811,16 @@ export default function ShelterApplicationIndex({
                                                             Approve
                                                         </Button>
                                                     )}
+                                                    {selectedApplication.status === 'mao_audit' && (
+                                                        <Button
+                                                            size="sm"
+                                                            onClick={() => setIsAuditModalOpen(true)}
+                                                            className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs h-9 px-4 rounded-lg shadow-xs cursor-pointer transition flex items-center gap-1.5"
+                                                        >
+                                                            <ShieldCheck className="size-4" />
+                                                            Conduct Statutory Audit
+                                                        </Button>
+                                                    )}
                                                     {selectedApplication.status === 'approved' && (
                                                         <>
                                                             <ConfirmPetReleaseModal application={selectedApplication as any} routePrefix="admin" />
@@ -719,16 +834,50 @@ export default function ShelterApplicationIndex({
                                                             <AdoptionCertificateModal application={selectedApplication as any} />
                                                         </>
                                                     )}
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => handleDelete(selectedApplication.id)}
-                                                        className="text-xs h-9 px-3.5 rounded-lg border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold transition cursor-pointer"
-                                                    >
-                                                        Delete
-                                                    </Button>
+                                                    {selectedApplication.status !== 'archived' && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => openCloseModal(selectedApplication.id)}
+                                                            className="text-xs h-9 px-3.5 rounded-lg border-amber-300 text-amber-800 bg-amber-50/50 hover:bg-amber-100 font-bold transition cursor-pointer flex items-center gap-1.5"
+                                                        >
+                                                            <Archive className="size-3.5" />
+                                                            Archive / Close
+                                                        </Button>
+                                                    )}
                                                 </div>
+
+                                                {selectedApplication.status === 'archived' && (
+                                                    <div className="mt-3 p-3 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-700 flex items-start gap-2.5">
+                                                        <Archive className="size-4 text-zinc-500 shrink-0 mt-0.5" />
+                                                        <div>
+                                                            <div className="font-bold text-zinc-900">
+                                                                Application Closed &amp; Archived
+                                                                {selectedApplication.closed_at && (
+                                                                    <span className="font-normal text-zinc-500 ml-2">
+                                                                        on {new Date(selectedApplication.closed_at).toLocaleString()}
+                                                                    </span>
+                                                                )}
+                                                                {selectedApplication.closed_by && (
+                                                                    <span className="font-normal text-zinc-500 ml-1">
+                                                                        by {selectedApplication.closed_by.name}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {selectedApplication.close_reason && (
+                                                                <div className="text-[11px] font-semibold text-zinc-600 mt-0.5">
+                                                                    Reason: <span className="capitalize">{selectedApplication.close_reason.replace(/_/g, ' ')}</span>
+                                                                </div>
+                                                            )}
+                                                            {selectedApplication.close_notes && (
+                                                                <div className="text-[11px] text-zinc-500 mt-1 italic">
+                                                                    "{selectedApplication.close_notes}"
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -1549,6 +1698,347 @@ export default function ShelterApplicationIndex({
                     </DialogContent>
                 </Dialog>
             )}
+
+            {/* Municipal Statutory Compliance Audit Modal (Admin Action) */}
+            {selectedApplication && (
+                <Dialog open={isAuditModalOpen} onOpenChange={setIsAuditModalOpen}>
+                    <DialogContent className="sm:max-w-2xl bg-white p-6 rounded-2xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader className="space-y-1 pb-3 border-b border-gray-100 text-left">
+                            <DialogTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
+                                <ShieldCheck className="h-5 w-5 text-purple-600" />
+                                Municipal Statutory Compliance Audit
+                            </DialogTitle>
+                            <DialogDescription className="text-xs text-gray-500">
+                                Mandated review under RA 8485 (Animal Welfare Act) &amp; RA 9482 (Anti-Rabies Act) for application <strong className="font-mono text-gray-800">{selectedApplication.reference_number}</strong>
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <form onSubmit={handleAuditSubmit} className="space-y-4 pt-2">
+                            {/* Applicant Quick Header */}
+                            <div className="p-3 bg-purple-50/50 rounded-xl border border-purple-100 flex items-center justify-between text-xs">
+                                <div>
+                                    <span className="font-bold text-purple-950 uppercase block">{selectedApplication.adopter.name}</span>
+                                    <span className="text-gray-500 text-[11px]">Adopting <strong>{selectedApplication.pet.name}</strong> ({selectedApplication.pet.species})</span>
+                                </div>
+                                <span className="font-mono font-bold text-purple-800 bg-white px-2.5 py-1 rounded-md border border-purple-200">
+                                    DSS: {Math.round(parseFloat(selectedApplication.dss_score))}%
+                                </span>
+                            </div>
+
+                            {/* Adopter Lifestyle & Housing Summary */}
+                            <div className="p-3 bg-gray-50/80 rounded-xl border border-gray-200 space-y-2.5 text-xs">
+                                <div className="flex items-center justify-between border-b border-gray-200/80 pb-1.5">
+                                    <span className="font-bold text-gray-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                                        <Home className="size-3.5 text-purple-600" />
+                                        Adopter Lifestyle &amp; Housing Assessment
+                                    </span>
+                                    <span className="text-[10px] text-gray-500 font-medium truncate max-w-[220px]">
+                                        {selectedApplication.adopter.adopter_profile?.home_address || 'Address on file'}
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                                    <div className="bg-white p-2 rounded-lg border border-gray-100 shadow-2xs">
+                                        <span className="text-[10px] text-gray-400 block font-medium">Housing Type</span>
+                                        <span className="font-semibold text-gray-800 capitalize truncate block">
+                                            {selectedApplication.adopter.lifestyle_profile?.housing_type?.replace(/_/g, ' ') || 'Not specified'}
+                                        </span>
+                                    </div>
+
+                                    <div className="bg-white p-2 rounded-lg border border-gray-100 shadow-2xs">
+                                        <span className="text-[10px] text-gray-400 block font-medium">Outdoor / Yard</span>
+                                        <span className="font-semibold text-gray-800 capitalize truncate block">
+                                            {selectedApplication.adopter.lifestyle_profile?.outdoor_access?.replace(/_/g, ' ') || 'None'}
+                                        </span>
+                                    </div>
+
+                                    <div className="bg-white p-2 rounded-lg border border-gray-100 shadow-2xs">
+                                        <span className="text-[10px] text-gray-400 block font-medium">Household Consent</span>
+                                        <span className={`font-semibold flex items-center gap-1 truncate ${
+                                            selectedApplication.adopter.lifestyle_profile?.household_agrees !== false
+                                                ? 'text-emerald-700'
+                                                : 'text-amber-700'
+                                        }`}>
+                                            {selectedApplication.adopter.lifestyle_profile?.household_agrees !== false ? (
+                                                <CheckCircle2 className="size-3 shrink-0 text-emerald-600" />
+                                            ) : (
+                                                <AlertTriangle className="size-3 shrink-0 text-amber-600" />
+                                            )}
+                                            {selectedApplication.adopter.lifestyle_profile?.household_agrees !== false ? 'Confirmed' : 'Unconfirmed'}
+                                        </span>
+                                    </div>
+
+                                    <div className="bg-white p-2 rounded-lg border border-gray-100 shadow-2xs">
+                                        <span className="text-[10px] text-gray-400 block font-medium">Pet Experience</span>
+                                        <span className="font-semibold text-gray-800 capitalize truncate block">
+                                            {selectedApplication.adopter.lifestyle_profile?.pet_experience?.replace(/_/g, ' ') || 'Beginner'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Shelter Staff Screening Endorsement */}
+                                {selectedApplication.staff_notes && (
+                                    <div className="p-2 rounded-lg bg-purple-50/60 border border-purple-100 text-[11px] text-purple-900">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className="font-bold text-[10px] uppercase tracking-wide text-purple-800">
+                                                Shelter Staff Screening Endorsement
+                                            </span>
+                                            {selectedApplication.staff?.name && (
+                                                <span className="text-[10px] text-purple-600">
+                                                    by {selectedApplication.staff.name}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="italic text-[11px] text-purple-950">
+                                            "{selectedApplication.staff_notes}"
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Statutory Compliance Checklist */}
+                            <div className="space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-xs font-bold text-gray-800 uppercase tracking-wider">
+                                        Statutory Compliance Checklist *
+                                    </Label>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const recomputed = Object.fromEntries(
+                                                Object.keys(activeChecklist).map(key => [
+                                                    key,
+                                                    Boolean(activeChecklist[key]?.auto_compliant ?? false),
+                                                ])
+                                            );
+                                            setAuditData('checklist', recomputed);
+                                        }}
+                                        className="text-[10px] text-purple-700 hover:text-purple-900 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                                        title="Restore automated compliance evaluation checks"
+                                    >
+                                        <Sparkles className="size-3 text-purple-600" />
+                                        <span>Re-apply Auto Checks</span>
+                                    </button>
+                                </div>
+
+                                <div className="space-y-2">
+                                    {Object.entries(activeChecklist).map(([key, item]) => (
+                                        <label
+                                            key={key}
+                                            className="flex items-start gap-2.5 p-2.5 rounded-xl border border-gray-200 bg-white hover:bg-purple-50/30 cursor-pointer transition select-none"
+                                        >
+                                            <div
+                                                className={`w-4 h-4 mt-0.5 shrink-0 rounded border-2 flex items-center justify-center transition-all ${
+                                                    auditData.checklist[key] ? 'bg-purple-600 border-purple-600' : 'border-gray-300'
+                                                }`}
+                                                onClick={() => toggleChecklist(key)}
+                                            >
+                                                {auditData.checklist[key] && <Check className="h-3 w-3 text-white" />}
+                                            </div>
+                                            <div className="text-xs flex-1" onClick={() => toggleChecklist(key)}>
+                                                <div className="font-bold text-gray-800">{item.label}</div>
+                                                <div className="text-gray-400 text-[10px]">{item.description}</div>
+                                                {item.compliance_reason && (
+                                                    <div className="mt-1 flex items-center gap-1.5">
+                                                        {item.auto_compliant ? (
+                                                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
+                                                                <CheckCircle2 className="size-3 text-emerald-600 shrink-0" />
+                                                                <span>{item.compliance_reason}</span>
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md">
+                                                                <XCircle className="size-3 text-amber-600 shrink-0" />
+                                                                <span>{item.compliance_reason}</span>
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </label>
+                                    ))}
+                                </div>
+
+                                {!allChecklistItemsVerified && (
+                                    <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2 text-amber-800 text-[11px]">
+                                        <AlertTriangle className="size-4 shrink-0 mt-0.5 text-amber-600" />
+                                        <span>Notice: All compliance items must be verified before executing approval.</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Final Determination Selection */}
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold text-gray-800 uppercase tracking-wider">
+                                    Final Municipal Determination *
+                                </Label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <label className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition ${
+                                        auditData.decision === 'approved'
+                                            ? 'bg-green-50 border-green-500 shadow-2xs'
+                                            : 'bg-white border-gray-200 hover:bg-gray-50'
+                                    }`}>
+                                        <input
+                                            type="radio"
+                                            name="audit_decision"
+                                            value="approved"
+                                            checked={auditData.decision === 'approved'}
+                                            onChange={(e) => setAuditData('decision', e.target.value)}
+                                            className="mt-0.5 text-green-600"
+                                        />
+                                        <div className="text-xs">
+                                            <span className="font-bold text-green-950 block">
+                                                Approve &amp; Issue Certificate
+                                            </span>
+                                            <span className="text-[10px] text-green-800 block mt-0.5 leading-snug">
+                                                Mandatory pickup deadline assigned. Pet marked adopted and digital certificate generated.
+                                            </span>
+                                        </div>
+                                    </label>
+
+                                    <label className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition ${
+                                        auditData.decision === 'rejected'
+                                            ? 'bg-red-50 border-red-500 shadow-2xs'
+                                            : 'bg-white border-gray-200 hover:bg-gray-50'
+                                    }`}>
+                                        <input
+                                            type="radio"
+                                            name="audit_decision"
+                                            value="rejected"
+                                            checked={auditData.decision === 'rejected'}
+                                            onChange={(e) => setAuditData('decision', e.target.value)}
+                                            className="mt-0.5 text-red-600"
+                                        />
+                                        <div className="text-xs">
+                                            <span className="font-bold text-red-950 block">
+                                                Disapprove / Reject
+                                            </span>
+                                            <span className="text-[10px] text-red-800 block mt-0.5 leading-snug">
+                                                Applicant notified with reasons. Pet returned to available shelter catalog for other candidates.
+                                            </span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Officer Remarks */}
+                            <div className="space-y-1.5">
+                                <Label htmlFor="modal-mao-remarks" className="text-xs font-bold text-gray-700">
+                                    Official Audit Remarks &amp; Feedback
+                                </Label>
+                                <Textarea
+                                    id="modal-mao-remarks"
+                                    value={auditData.remarks}
+                                    onChange={(e) => setAuditData('remarks', e.target.value)}
+                                    rows={3}
+                                    placeholder="Add notes explaining statutory compliance verification or reasons for decision..."
+                                    className="text-xs"
+                                />
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setIsAuditModalOpen(false)}
+                                    className="text-xs h-9 px-3.5 rounded-lg cursor-pointer"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={auditProcessing}
+                                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs h-9 px-4 rounded-lg transition cursor-pointer"
+                                >
+                                    {auditProcessing ? 'Recording Determination...' : 'Finalize Compliance Determination'}
+                                </Button>
+                            </div>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+            )}
+
+            {/* Archive / Close Application Modal */}
+            <Dialog open={isCloseModalOpen} onOpenChange={setIsCloseModalOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-base font-bold text-gray-900">
+                            <Archive className="size-4 text-amber-600" />
+                            Archive / Close Application
+                        </DialogTitle>
+                        <DialogDescription className="text-xs text-gray-500">
+                            Closing an application moves it into permanent archived status and preserves all timeline records for compliance and accountability.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <form onSubmit={handleCloseSubmit} className="space-y-4 pt-2">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="close-reason" className="text-xs font-bold text-gray-700">
+                                Reason for Closure <span className="text-red-500">*</span>
+                            </Label>
+                            <Select
+                                value={closeData.reason}
+                                onValueChange={(val) => setCloseData('reason', val)}
+                            >
+                                <SelectTrigger id="close-reason" className="text-xs">
+                                    <SelectValue placeholder="Select reason" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="unclaimed_forfeited">Unclaimed / Forfeited (Expired pickup window)</SelectItem>
+                                    <SelectItem value="screening_disapproved">Screening Disapproved (AHWS Initial screening)</SelectItem>
+                                    <SelectItem value="compliance_disapproved">Compliance Disapproved (MAO Audit failure)</SelectItem>
+                                    <SelectItem value="adopter_cancelled">Adopter Cancelled / Withdrawn</SelectItem>
+                                    <SelectItem value="sla_expired">SLA Review Window Expired</SelectItem>
+                                    <SelectItem value="duplicate_submission">Duplicate Submission</SelectItem>
+                                    <SelectItem value="other">Other Administrative Reason</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            {closeErrors.reason && (
+                                <p className="text-[11px] text-red-500">{closeErrors.reason}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label htmlFor="close-notes" className="text-xs font-bold text-gray-700">
+                                Administrative Notes / Explanation (Optional)
+                            </Label>
+                            <Textarea
+                                id="close-notes"
+                                value={closeData.notes}
+                                onChange={(e) => setCloseData('notes', e.target.value)}
+                                rows={3}
+                                placeholder="Add specific context, notes, or justification for closing this application..."
+                                className="text-xs"
+                            />
+                            {closeErrors.notes && (
+                                <p className="text-[11px] text-red-500">{closeErrors.notes}</p>
+                            )}
+                        </div>
+
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800">
+                            <strong>Note:</strong> Closing this application will mark it as archived and release any reserved pet status back to available in the shelter catalog.
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsCloseModalOpen(false)}
+                                className="text-xs h-9 px-3.5 rounded-lg cursor-pointer"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={isClosing}
+                                className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs h-9 px-4 rounded-lg transition cursor-pointer"
+                            >
+                                {isClosing ? 'Archiving...' : 'Confirm Archive & Close'}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

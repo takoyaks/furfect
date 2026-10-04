@@ -76,7 +76,7 @@ export default function ApplicationStatus({
     const pricingEnabled = systemSettings?.pricing_enabled ?? false;
     const clientCertificateEnabled = Boolean(systemSettings?.client_adoption_certificate_enabled);
     const userRoles: string[] = auth?.user?.roles || [];
-    const isStaffOrAdmin = userRoles.includes('admin') || userRoles.includes('shelter_staff') || userRoles.includes('mao_officer');
+    const isStaffOrAdmin = userRoles.includes('admin') || userRoles.includes('shelter_staff') || userRoles.includes('mao_staff');
     const canViewCertificate = clientCertificateEnabled || isStaffOrAdmin;
 
     if (!application) {
@@ -119,14 +119,14 @@ export default function ApplicationStatus({
         },
         {
             num: 2,
-            title: 'Shelter Screening',
-            desc: 'Virac Shelter staff interview & check',
+            title: 'AHWS Screening',
+            desc: 'Virac AHWS Shelter staff interview & suitability review (3 Days SLA)',
             date: application.reviewed_at,
         },
         {
             num: 3,
             title: 'MAO Compliance Audit',
-            desc: 'Municipal Agriculture Office review (RA 8485)',
+            desc: 'Municipal Agriculture Office statutory audit (3 Days SLA)',
             date: application.status === 'mao_audit' || application.resolved_at || application.status === 'completed' ? (application.reviewed_at || application.submitted_at) : null,
         },
         {
@@ -276,9 +276,12 @@ export default function ApplicationStatus({
                                 Multi-Agency Adoption Workflow Status
                             </CardTitle>
                             {application.target_sla_at && application.status !== 'approved' && application.status !== 'completed' && application.status !== 'rejected' && application.status !== 'unclaimed' && (
-                                <span className="text-xs text-gray-500 font-medium flex items-center gap-1">
-                                    <Clock className="h-3.5 w-3.5 text-amber-500" />
-                                    Target SLA: {new Date(application.target_sla_at).toLocaleDateString()}
+                                <span className="text-xs text-amber-900 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full font-semibold flex items-center gap-1.5 shadow-2xs">
+                                    <Clock className="h-3.5 w-3.5 text-amber-600" />
+                                    <span>
+                                        {application.status === 'mao_audit' ? 'MAO Audit SLA: ' : 'AHWS Review SLA: '}
+                                        {new Date(application.target_sla_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                    </span>
                                 </span>
                             )}
                         </div>

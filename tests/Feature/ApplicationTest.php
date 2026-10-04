@@ -26,7 +26,7 @@ beforeEach(function (): void {
     $this->staff->assignRole('shelter_staff');
 
     $this->mao = User::factory()->create();
-    $this->mao->assignRole('mao_officer');
+    $this->mao->assignRole('mao_staff');
 });
 
 it('allows adopter to apply for a pet', function (): void {

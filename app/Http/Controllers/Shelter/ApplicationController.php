@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Shelter;
 use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\DssMatchScore;
+use App\Notifications\ApplicationStatusUpdatedNotification;
 use App\Services\AdoptionNotificationService;
 use App\Services\MultiApplicationResolutionService;
 use Illuminate\Http\RedirectResponse;
@@ -235,8 +236,8 @@ class ApplicationController extends Controller
             'staff_decision' => $decision,
             'staff_notes' => $notes,
             'reviewed_at' => now(),
-            // When moving to MAO audit, set a fresh 48h SLA timer for MAO compliance review
-            'target_sla_at' => $status === 'mao_audit' ? now()->addHours(48) : null,
+            // When moving to MAO audit, set a fresh 3-day (72h) SLA timer for MAO compliance review
+            'target_sla_at' => $status === 'mao_audit' ? now()->addDays(3) : null,
             'resolved_at' => $status === 'rejected' ? now() : null,
         ]);
 
@@ -251,13 +252,14 @@ class ApplicationController extends Controller
                 stage: 'screening',
                 action: 'shelter_marked_suitable',
                 title: 'Shelter Initial Screening Passed',
-                description: 'Shelter staff verified applicant suitability. Application has been forwarded to the Municipal Agriculture Office (MAO) for statutory compliance audit.',
+                description: 'Shelter staff verified applicant suitability. Application has been forwarded to the Municipal Agriculture Office (MAO) for statutory compliance audit (3 Days Review Window).',
                 actor: $actor,
                 metadata: [
                     'decision' => 'suitable',
                     'staff_notes' => $notes,
                     'forwarded_to' => 'Municipal Agriculture Office (MAO)',
-                    'target_sla_hours' => 48,
+                    'target_sla_hours' => 72,
+                    'target_sla_days' => 3,
                 ]
             );
 
@@ -349,7 +351,7 @@ class ApplicationController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => __("Pet :name successfully marked as released and handed over to the adopter!", ['name' => $application->pet->name]),
+            'message' => __('Pet :name successfully marked as released and handed over to the adopter!', ['name' => $application->pet->name]),
         ]);
 
         return back();
@@ -398,9 +400,13 @@ class ApplicationController extends Controller
             ]
         );
 
+        if ($application->adopter) {
+            $application->adopter->notify(new ApplicationStatusUpdatedNotification($application, 'unclaimed_adopter'));
+        }
+
         Inertia::flash('toast', [
             'type' => 'warning',
-            'message' => __("Application marked as unclaimed. :name has been returned to the available catalog.", ['name' => $application->pet->name]),
+            'message' => __('Application marked as unclaimed. :name has been returned to the available catalog.', ['name' => $application->pet->name]),
         ]);
 
         return back();

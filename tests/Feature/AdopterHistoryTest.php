@@ -136,7 +136,7 @@ test('shelter staff review dossier includes adopter municipal track record and w
 });
 
 test('mao officer compliance dossier includes adopter track record for statutory audit', function () {
-    Role::firstOrCreate(['name' => 'mao_officer']);
+    Role::firstOrCreate(['name' => 'mao_staff']);
     $shelter = Shelter::factory()->create();
     $adopter = createHistoryTestAdopter('Rosa Flores');
 
@@ -151,7 +151,7 @@ test('mao officer compliance dossier includes adopter track record for statutory
     ]);
 
     $maoOfficer = User::factory()->create();
-    $maoOfficer->assignRole('mao_officer');
+    $maoOfficer->assignRole('mao_staff');
 
     $response = $this->actingAs($maoOfficer)->get(route('mao.applications.show', $application->id));
     $response->assertOk();

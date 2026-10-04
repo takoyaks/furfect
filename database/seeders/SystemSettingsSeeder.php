@@ -111,6 +111,13 @@ class SystemSettingsSeeder extends Seeder
                 'label' => 'Adoption Policies Content (Leave empty for default)',
                 'description' => 'Custom text/markdown for the Shelter Adoption Policies. If empty, the default platform placeholder content is used.',
             ],
+            [
+                'key' => 'pickup_schedule_days',
+                'value' => '3',
+                'type' => 'integer',
+                'label' => 'Adoption Pick-up Schedule (Days)',
+                'description' => 'Number of days an approved adopter has to pick up their pet before the pet is marked unclaimed and returned to available status.',
+            ],
         ];
 
         foreach ($settings as $setting) {

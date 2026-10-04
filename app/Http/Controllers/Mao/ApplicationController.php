@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Mao;
 use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\DssMatchScore;
+use App\Models\SystemSetting;
 use App\Services\AdoptionNotificationService;
 use App\Services\MultiApplicationResolutionService;
 use Illuminate\Http\RedirectResponse;
@@ -322,8 +323,9 @@ class ApplicationController extends Controller
 
         $status = $decision === 'approved' ? 'approved' : 'rejected';
 
-        // 7-day pickup deadline for approved adoptions
-        $pickupDeadline = $decision === 'approved' ? now()->addDays(7) : null;
+        // Dynamic pickup deadline for approved adoptions (default 3 days)
+        $pickupDays = (int) SystemSetting::get('pickup_schedule_days', 3);
+        $pickupDeadline = $decision === 'approved' ? now()->addDays($pickupDays) : null;
 
         $application->update([
             'status' => $status,
@@ -345,11 +347,12 @@ class ApplicationController extends Controller
                 stage: 'resolved',
                 action: 'mao_approved',
                 title: 'Municipal Compliance Approved — Adoption Certificate Issued',
-                description: "Municipal Agriculture Office (MAO) officially approved the adoption under RA 8485 Animal Welfare guidelines. Certificate #{$certNum} generated. 7-Day pickup scheduled.",
+                description: "Municipal Agriculture Office (MAO) officially approved the adoption under RA 8485 Animal Welfare guidelines. Certificate #{$certNum} generated. {$pickupDays}-Day pickup scheduled.",
                 actor: $actor,
                 metadata: [
                     'certificate_number' => $certNum,
                     'pickup_deadline' => $pickupDeadline->toIso8601String(),
+                    'pickup_days' => $pickupDays,
                     'remarks' => $remarks,
                     'checklist_summary' => $checklist,
                 ]

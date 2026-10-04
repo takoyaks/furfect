@@ -17,7 +17,7 @@ beforeEach(function (): void {
     $this->staff->assignRole('shelter_staff');
 
     $this->mao = User::factory()->create();
-    $this->mao->assignRole('mao_officer');
+    $this->mao->assignRole('mao_staff');
 
     $this->shelterA = Shelter::factory()->create(['name' => 'Virac Central Shelter']);
     $this->shelterB = Shelter::factory()->create(['name' => 'San Andres Rescue']);

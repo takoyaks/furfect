@@ -19,7 +19,7 @@ class EnsureOnboardingCompleted
         $user = $request->user();
 
         // Only enforce for authenticated adopters (users without staff/admin roles)
-        if ($user && ! $user->hasAnyRole(['admin', 'shelter_staff', 'mao_officer'])) {
+        if ($user && ! $user->hasAnyRole(['admin', 'shelter_staff', 'mao_staff'])) {
             $currentRoute = $request->route()?->getName();
 
             // Exempt onboarding, identity verification, auth verification, password confirmation, settings, and logout routes

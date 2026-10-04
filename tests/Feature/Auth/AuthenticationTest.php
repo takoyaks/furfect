@@ -71,9 +71,9 @@ test('shelter staff are redirected to shelter pets index upon login without onbo
 });
 
 test('mao officers are redirected to mao applications index upon login without onboarding', function () {
-    Role::firstOrCreate(['name' => 'mao_officer']);
+    Role::firstOrCreate(['name' => 'mao_staff']);
     $user = User::factory()->create();
-    $user->assignRole('mao_officer');
+    $user->assignRole('mao_staff');
 
     $response = $this->post(route('login.store'), [
         'email' => $user->email,

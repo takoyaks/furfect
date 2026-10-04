@@ -61,7 +61,7 @@ export default function AuthSimpleLayout({
 
                     {/* Slogan */}
                     <p className="mt-3 max-w-sm font-serif text-lg italic leading-relaxed text-neutral-700 sm:text-xl dark:text-neutral-300">
-                        Connecting Hearts, Saving Lives in Virac.
+                        Where Pets Meet Their Perfect Match
                     </p>
 
                     {/* Trust Highlights */}

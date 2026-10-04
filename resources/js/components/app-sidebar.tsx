@@ -80,11 +80,6 @@ export function AppSidebar() {
                             icon: Home,
                         },
                         {
-                            title: 'MAO Audit',
-                            href: route('mao.applications.index'),
-                            icon: ShieldCheck,
-                        },
-                        {
                             title: 'Reports',
                             href: route('admin.reports.index'),
                             icon: BookOpen,
@@ -166,7 +161,7 @@ export function AppSidebar() {
             ];
         }
 
-        if (roles.includes('mao_officer')) {
+        if (roles.includes('mao_staff')) {
             return [
                 {
                     title: 'Main',
@@ -177,9 +172,9 @@ export function AppSidebar() {
                             icon: LayoutGrid,
                         },
                         {
-                            title: 'MAO Audit',
+                            title: 'Applications',
                             href: route('mao.applications.index'),
-                            icon: ShieldCheck,
+                            icon: ClipboardList,
                         },
                         {
                             title: 'Reports',
@@ -236,7 +231,7 @@ export function AppSidebar() {
         if (roles.includes('admin')) {
             return route('admin.dashboard');
         }
-        if (roles.includes('mao_officer')) {
+        if (roles.includes('mao_staff')) {
             return route('mao.dashboard');
         }
         if (roles.includes('shelter_staff')) {

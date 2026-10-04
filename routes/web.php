@@ -14,6 +14,7 @@ use App\Http\Controllers\AdopterHistoryController;
 use App\Http\Controllers\AdopterProfileController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\Auth\EmailAvailabilityController;
+use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\DiditVerificationController;
 use App\Http\Controllers\DssMatchController;
 use App\Http\Controllers\LifestyleProfileController;
@@ -41,7 +42,7 @@ Route::get('/', function () {
         if ($user->hasRole('shelter_staff')) {
             return redirect()->route('shelter.pets.index');
         }
-        if ($user->hasRole('mao_officer')) {
+        if ($user->hasRole('mao_staff')) {
             return redirect()->route('mao.dashboard');
         }
 
@@ -59,6 +60,12 @@ Route::get('/announcements/{id}', [PageController::class, 'announcementShow'])->
 Route::get('/how-it-works', [PageController::class, 'howItWorks'])->name('how-it-works');
 Route::get('/about', [PageController::class, 'about'])->name('about');
 Route::get('/api/check-email', [EmailAvailabilityController::class, 'check'])->name('email.check');
+
+// Social Authentication (Google OAuth via Laravel Socialite)
+Route::middleware('guest')->group(function () {
+    Route::get('/auth/google/redirect', [SocialAuthController::class, 'redirectToGoogle'])->name('auth.google.redirect');
+    Route::get('/auth/google/callback', [SocialAuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
+});
 
 // Identity Verification Webhook & Callback (Public / Cross-site safe)
 Route::post('/webhooks/didit', [DiditVerificationController::class, 'webhook'])->name('identity.verification.webhook');
@@ -122,8 +129,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/cms/announcements/{id}', [ShelterAnnouncementController::class, 'destroy'])->name('cms.announcements.destroy');
     });
 
-    // MAO Officer Portal Group
-    Route::middleware(['role:mao_officer|admin'])->prefix('mao')->name('mao.')->group(function () {
+    // MAO Staff Portal Group
+    Route::middleware(['role:mao_staff|admin'])->prefix('mao')->name('mao.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/applications', [MaoApplicationController::class, 'index'])->name('applications.index');
         Route::get('/applications/{id}', [MaoApplicationController::class, 'show'])->name('applications.show');
@@ -141,9 +148,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/applications', [AdminApplicationController::class, 'index'])->name('applications.index');
         Route::get('/applications/{id}', [AdminApplicationController::class, 'show'])->name('applications.show');
         Route::patch('/applications/{id}', [AdminApplicationController::class, 'update'])->name('applications.update');
+        Route::post('/applications/{id}/audit', [AdminApplicationController::class, 'audit'])->name('applications.audit');
         Route::post('/applications/{id}/release', [AdminApplicationController::class, 'confirmRelease'])->name('applications.release');
         Route::post('/applications/{id}/unclaimed', [AdminApplicationController::class, 'markUnclaimed'])->name('applications.unclaimed');
-        Route::delete('/applications/{id}', [AdminApplicationController::class, 'destroy'])->name('applications.destroy');
+        Route::post('/applications/{id}/close', [AdminApplicationController::class, 'close'])->name('applications.close');
 
         Route::get('/pets', [AdminPetController::class, 'index'])->name('pets.index');
         Route::delete('/pets/{id}', [AdminPetController::class, 'destroy'])->name('pets.destroy');
@@ -154,6 +162,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/users/{id}/reset-password', [AdminUserController::class, 'resetPassword'])->name('users.reset-password');
         Route::post('/users/{id}/toggle-verification', [AdminUserController::class, 'toggleVerification'])->name('users.toggle-verification');
         Route::post('/users/{id}/reset-subscriber', [AdminUserController::class, 'resetSubscriberProfile'])->name('users.reset-subscriber');
+        Route::post('/users/{id}/suspend', [AdminUserController::class, 'suspend'])->name('users.suspend');
+        Route::post('/users/{id}/unsuspend', [AdminUserController::class, 'unsuspend'])->name('users.unsuspend');
         Route::delete('/users/{id}', [AdminUserController::class, 'destroy'])->name('users.destroy');
 
         Route::get('/shelters', [AdminShelterController::class, 'index'])->name('shelters.index');

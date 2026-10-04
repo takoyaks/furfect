@@ -50,7 +50,7 @@ export default function HowItWorks({ config }: Props) {
         <AppLayout breadcrumbs={[{ title: 'How It Works', href: route('how-it-works') }]}>
             <Head title="How It Works — FurFect Match" />
 
-            <div className="max-w-5xl mx-auto py-8 px-4 space-y-12">
+            <div className="max-w-6xl mx-auto py-8 px-4 space-y-12">
                 {/* Hero Header */}
                 <div className="text-center space-y-4 max-w-3xl mx-auto">
                     <span className={`${theme.heroBadge} px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider`}>
@@ -65,20 +65,29 @@ export default function HowItWorks({ config }: Props) {
                 </div>
 
                 {/* 4 Steps Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                     {steps.map((item, idx) => {
                         const Icon = icons[idx % icons.length];
                         return (
-                            <Card key={item.step || idx} className="border-gray-200 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-                                <div className="absolute -top-3 -right-3 text-6xl font-black text-gray-100 select-none pointer-events-none">
-                                    {item.step || `0${idx + 1}`}
-                                </div>
-                                <CardContent className="p-6 space-y-3 relative">
-                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${theme.iconBg} ${theme.iconText}`}>
-                                        <Icon className="h-6 w-6" />
+                            <Card key={item.step || idx} className="border-gray-200 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between h-full">
+                                <CardContent className="p-5 space-y-3.5 flex flex-col h-full">
+                                    <div className="flex items-center justify-between">
+                                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${theme.iconBg} ${theme.iconText} shadow-2xs`}>
+                                            <Icon className="h-5 w-5" />
+                                        </div>
+                                        <span className={`text-2xl lg:text-3xl font-black tracking-tight ${theme.stepNumberText} select-none`}>
+                                            {item.step || `0${idx + 1}`}
+                                        </span>
                                     </div>
-                                    <h3 className="text-lg font-bold text-gray-900">{item.title}</h3>
-                                    <p className="text-gray-600 text-sm leading-relaxed">{item.description}</p>
+                                    <div className="space-y-1.5 flex-1">
+                                        <h3 className="text-base font-bold text-gray-900 leading-snug">{item.title}</h3>
+                                        {item.description && (
+                                            <div 
+                                                className="text-gray-600 text-xs sm:text-sm leading-relaxed [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_b]:font-semibold [&_strong]:font-semibold"
+                                                dangerouslySetInnerHTML={{ __html: item.description }}
+                                            />
+                                        )}
+                                    </div>
                                 </CardContent>
                             </Card>
                         );

@@ -133,7 +133,7 @@ test('when primary application is endorsed to MAO, competing applicant is placed
 });
 
 test('when MAO approves primary candidate, competing applicant is gracefully resolved and offered alternative pet recommendations', function () {
-    Role::firstOrCreate(['name' => 'mao_officer']);
+    Role::firstOrCreate(['name' => 'mao_staff']);
     Role::firstOrCreate(['name' => 'admin']);
     $shelter = Shelter::factory()->create();
     $pet = Pet::factory()->create(['shelter_id' => $shelter->id, 'status' => 'available']);
@@ -159,7 +159,7 @@ test('when MAO approves primary candidate, competing applicant is gracefully res
     ]);
 
     $mao = User::factory()->create();
-    $mao->assignRole('mao_officer');
+    $mao->assignRole('mao_staff');
 
     $this->actingAs($mao)->patch(route('mao.applications.update', $app1->id), [
         'decision' => 'approved',
@@ -213,7 +213,7 @@ test('adopter can 1-click transfer application to a recommended alternative pet'
 });
 
 test('when MAO rejects primary candidate, top waitlisted applicant is automatically promoted to active review queue', function () {
-    Role::firstOrCreate(['name' => 'mao_officer']);
+    Role::firstOrCreate(['name' => 'mao_staff']);
     Role::firstOrCreate(['name' => 'admin']);
     Role::firstOrCreate(['name' => 'shelter_staff']);
     $shelter = Shelter::factory()->create();
@@ -239,7 +239,7 @@ test('when MAO rejects primary candidate, top waitlisted applicant is automatica
     ]);
 
     $mao = User::factory()->create();
-    $mao->assignRole('mao_officer');
+    $mao->assignRole('mao_staff');
 
     $this->actingAs($mao)->patch(route('mao.applications.update', $app1->id), [
         'decision' => 'rejected',

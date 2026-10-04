@@ -2,11 +2,12 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, ShieldAlert, Award, Calendar, Phone, Heart, Sparkles, MapPin, BadgeCheck, Zap, CheckCircle2, ArrowRight, ZoomIn, X, Eye } from 'lucide-react';
+import { Check, ShieldAlert, Award, Calendar, Phone, Heart, Sparkles, MapPin, BadgeCheck, Zap, CheckCircle2, ArrowRight, ZoomIn, X, Eye, HelpCircle } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { DssScoreCard } from '@/components/dss-score-card';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { EnergyMaintenanceGuideDialog } from '@/components/energy-maintenance-guide-dialog';
 
 interface Photo {
     id: number;
@@ -71,12 +72,13 @@ export default function PetShow({
     const page = usePage();
     const { auth, systemSettings } = page.props as any;
     const userRoles: string[] = auth?.user?.roles ?? [];
-    const isStaffOrAdmin = userRoles.some(r => ['admin', 'shelter_staff', 'mao_officer'].includes(r));
+    const isStaffOrAdmin = userRoles.some(r => ['admin', 'shelter_staff', 'mao_staff'].includes(r));
     const isViewOnlyMode = isViewOnly || isStaffOrAdmin || (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view_only') === '1');
 
     const pricingEnabled = systemSettings?.pricing_enabled ?? false;
     const [selectedPhoto, setSelectedPhoto] = useState(pet.photos[0]?.photo_path || '/placeholder-pet.png');
     const [isZoomOpen, setIsZoomOpen] = useState(false);
+    const [guideOpen, setGuideOpen] = useState(false);
 
     const handleApply = () => {
         if (isViewOnlyMode) return;
@@ -322,22 +324,57 @@ export default function PetShow({
                                         <span className="font-semibold capitalize text-gray-900">{pet.coat_color}</span>
                                     </div>
                                 )}
-                                <div className="flex justify-between border-b border-gray-50 pb-2">
-                                    <span className="text-gray-500">Energy Level</span>
+                                <div className="flex justify-between items-center border-b border-gray-50 pb-2">
+                                    <div className="flex items-center gap-1.5 text-gray-500">
+                                        <span>Energy Level</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setGuideOpen(true)}
+                                            className="text-gray-400 hover:text-[#D4A017] transition-colors"
+                                            title="What does Energy Level mean?"
+                                        >
+                                            <HelpCircle className="h-3.5 w-3.5" />
+                                        </button>
+                                    </div>
                                     <span className="font-semibold capitalize text-gray-900">{pet.energy_level?.replace(/_/g, ' ')}</span>
                                 </div>
-                                <div className="flex justify-between border-b border-gray-50 pb-2">
-                                    <span className="text-gray-500">Maintenance Level</span>
+                                <div className="flex justify-between items-center border-b border-gray-50 pb-2">
+                                    <div className="flex items-center gap-1.5 text-gray-500">
+                                        <span>Maintenance Level</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setGuideOpen(true)}
+                                            className="text-gray-400 hover:text-[#D4A017] transition-colors"
+                                            title="What does Maintenance Level mean?"
+                                        >
+                                            <HelpCircle className="h-3.5 w-3.5" />
+                                        </button>
+                                    </div>
                                     <span className="font-semibold capitalize text-gray-900">
                                         {pet.maintenance_level === 'low' ? '🟢 Low' : pet.maintenance_level === 'high' ? '🟠 High' : '🟡 Medium'}
                                     </span>
                                 </div>
+                                {/* <div className="flex justify-end pt-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setGuideOpen(true)}
+                                        className="text-[11px] font-semibold text-[#D4A017] hover:text-[#B8860B] hover:underline flex items-center gap-1"
+                                    >
+                                        <HelpCircle className="h-3 w-3" />
+                                        What do energy &amp; maintenance levels mean?
+                                    </button>
+                                </div> */}
                                 <div className="flex justify-between pt-0.5">
                                     <span className="text-gray-500">Health &amp; Vaccine</span>
                                     <span className="font-semibold text-gray-900">{pet.health_status || 'Vaccinated'}</span>
                                 </div>
                             </CardContent>
                         </Card>
+
+                        <EnergyMaintenanceGuideDialog
+                            open={guideOpen}
+                            onOpenChange={setGuideOpen}
+                        />
 
                         {/* ── 3. Shelter Information ── */}
                         <Card className="border-gray-200 bg-gray-50/50 shadow-2xs">

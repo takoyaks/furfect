@@ -108,7 +108,7 @@ export default function AdopterHistoryPage({
     const { auth, systemSettings } = usePage().props as any;
     const clientCertificateEnabled = Boolean(systemSettings?.client_adoption_certificate_enabled);
     const userRoles: string[] = auth?.user?.roles || [];
-    const isStaffOrAdmin = userRoles.includes('admin') || userRoles.includes('shelter_staff') || userRoles.includes('mao_officer');
+    const isStaffOrAdmin = userRoles.includes('admin') || userRoles.includes('shelter_staff') || userRoles.includes('mao_staff');
     const canViewCertificate = clientCertificateEnabled || isStaffOrAdmin;
     const [activeTab, setActiveTab] = useState<'adopted' | 'applications' | 'background'>('adopted');
 

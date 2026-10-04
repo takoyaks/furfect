@@ -59,7 +59,7 @@ class LandingPageBuilderController extends Controller
         $validated = $request->validate([
             'template_name' => ['required', 'string', 'in:honey_warm,emerald_nature,modern_slate'],
             'hero_title' => ['required', 'string', 'max:255'],
-            'hero_subtitle' => ['required', 'string', 'max:1000'],
+            'hero_subtitle' => ['nullable', 'string', 'max:1000'],
             'hero_cta_text' => ['required', 'string', 'max:100'],
             'hero_cta_link' => ['required', 'string', 'max:255'],
             'theme_color' => ['required', 'string', 'max:50'],

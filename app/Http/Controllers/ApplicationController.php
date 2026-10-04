@@ -124,18 +124,20 @@ class ApplicationController extends Controller
             'dss_breakdown' => $dssResult['breakdown_details'] ?? null,
             'status' => 'pending',
             'submitted_at' => now(),
-            'target_sla_at' => now()->addHours(24),
+            'target_sla_at' => now()->addDays(3),
         ]);
 
         $application->logTimeline(
             stage: 'submission',
             action: 'reapplied_alternative_match',
             title: 'Application Submitted for Selected Pet',
-            description: "Application submitted for {$pet->name} with DSS match score of {$dssResult['total_score']}%.",
+            description: "Application submitted for {$pet->name} with DSS match score of {$dssResult['total_score']}%. AHWS initial screening window scheduled for 3 days.",
             actor: $user,
             metadata: [
                 'dss_score' => $dssResult['total_score'],
                 'transferred_from_recommendation' => true,
+                'target_sla_days' => 3,
+                'target_sla_hours' => 72,
             ]
         );
 
@@ -281,7 +283,7 @@ class ApplicationController extends Controller
         $fastTrackEligible = $score ? (bool) $score->fast_track_eligible : false;
         $dssBreakdown = $score ? $score->breakdown_details : null;
 
-        // 5. Create application with 48h initial SLA target
+        // 5. Create application with 3-day (72h) AHWS initial review SLA target
         $application = Application::create([
             'user_id' => $user->id,
             'pet_id' => $pet->id,
@@ -290,7 +292,7 @@ class ApplicationController extends Controller
             'dss_breakdown' => $dssBreakdown,
             'status' => 'pending',
             'submitted_at' => now(),
-            'target_sla_at' => now()->addHours(48),
+            'target_sla_at' => now()->addDays(3),
         ]);
 
         // 6. Log initial submission in timeline audit trail
@@ -298,13 +300,15 @@ class ApplicationController extends Controller
             stage: 'submitted',
             action: 'application_submitted',
             title: 'Adoption Application Submitted',
-            description: "Application successfully submitted with an automated DSS Compatibility Score of {$dssScoreValue}%.".($fastTrackEligible ? ' Fast-track screening recommended.' : ''),
+            description: "Application successfully submitted with an automated DSS Compatibility Score of {$dssScoreValue}%. AHWS initial screening window scheduled for 3 days.".($fastTrackEligible ? ' Fast-track screening recommended.' : ''),
             actor: $user,
             metadata: [
                 'dss_score' => $dssScoreValue,
                 'fast_track_eligible' => $fastTrackEligible,
                 'pet_name' => $pet->name,
                 'reference_number' => $application->reference_number,
+                'target_sla_days' => 3,
+                'target_sla_hours' => 72,
             ]
         );
 

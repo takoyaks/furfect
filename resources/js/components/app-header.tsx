@@ -47,7 +47,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
 
     const roles = (auth.user?.roles as string[]) || [];
-    const isStaffOrAdminOrMao = roles.some((r) => ['admin', 'shelter_staff', 'mao_officer'].includes(r));
+    const isStaffOrAdminOrMao = roles.some((r) => ['admin', 'shelter_staff', 'mao_staff'].includes(r));
 
     const mainNavItems: NavItem[] = auth.user
         ? [

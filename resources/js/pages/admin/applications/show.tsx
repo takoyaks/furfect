@@ -1,8 +1,17 @@
 import { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Check, X, ExternalLink, Eye, ShieldCheck, Clock, CheckCircle2 } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from '@/components/ui/dialog';
+import { Sparkles, Check, X, ExternalLink, Eye, ShieldCheck, Clock, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { IdDocumentInspectorModal } from '@/components/id-document-inspector-modal';
 import { IdentityVerificationReport } from '@/components/identity-verification-report';
@@ -10,6 +19,13 @@ import { IdentityVerificationBadge } from '@/components/identity-verification-ba
 import { AdoptionCertificateModal } from '@/components/adoption-certificate-modal';
 import { AdoptionPassModal } from '@/components/adoption-pass-modal';
 import { ConfirmPetReleaseModal } from '@/components/confirm-pet-release-modal';
+
+interface ChecklistItem {
+    label: string;
+    description: string;
+    auto_compliant?: boolean;
+    compliance_reason?: string;
+}
 
 const CHECKLIST_LABELS: Record<string, { label: string; description: string }> = {
     identity_verified:   { label: 'Applicant identity verified',       description: 'Name, address, and contact details match submitted ID document.' },
@@ -81,7 +97,13 @@ interface Application {
     mao_officer?: { name: string };
 }
 
-export default function AdminApplicationShow({ application }: { application: Application }) {
+export default function AdminApplicationShow({
+    application,
+    defaultChecklist = {},
+}: {
+    application: Application;
+    defaultChecklist?: Record<string, ChecklistItem>;
+}) {
     const profile = application.adopter.adopter_profile;
     const lifestyle = application.adopter.lifestyle_profile;
 
@@ -89,6 +111,49 @@ export default function AdminApplicationShow({ application }: { application: App
         open: false,
         side: 'front',
     });
+
+    const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+
+    const buildInitialChecklistState = (app: Application, checklist: Record<string, ChecklistItem>) => {
+        return Object.fromEntries(
+            Object.keys(checklist).map(key => [
+                key,
+                app.mao_checklist
+                    ? Boolean(app.mao_checklist[key])
+                    : Boolean(checklist[key]?.auto_compliant ?? false),
+            ])
+        );
+    };
+
+    const { data: auditData, setData: setAuditData, post: postAudit, processing: auditProcessing } = useForm<{
+        decision: string;
+        remarks: string;
+        checklist: Record<string, boolean>;
+    }>({
+        decision: application.mao_decision ?? 'approved',
+        remarks: application.mao_remarks ?? '',
+        checklist: buildInitialChecklistState(application, defaultChecklist),
+    });
+
+    const toggleChecklist = (key: string) => {
+        setAuditData('checklist', {
+            ...auditData.checklist,
+            [key]: !auditData.checklist[key],
+        });
+    };
+
+    const handleAuditSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        postAudit(route('admin.applications.audit', application.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsAuditModalOpen(false);
+            },
+        });
+    };
+
+    const allChecklistItemsVerified = Object.keys(defaultChecklist).length === 0 ||
+        Object.keys(defaultChecklist).every(key => auditData.checklist[key]);
 
     return (
         <AppLayout breadcrumbs={[
@@ -104,6 +169,16 @@ export default function AdminApplicationShow({ application }: { application: App
                         <p className="text-xs text-gray-500">{application.reference_number} • Adopter: {application.adopter.name}</p>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
+                        {application.status === 'mao_audit' && (
+                            <Button
+                                size="sm"
+                                onClick={() => setIsAuditModalOpen(true)}
+                                className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs h-9 px-4 rounded-lg shadow-xs cursor-pointer transition flex items-center gap-1.5"
+                            >
+                                <ShieldCheck className="size-4" />
+                                Conduct Statutory Audit
+                            </Button>
+                        )}
                         {application.status === 'approved' && (
                             <>
                                 <ConfirmPetReleaseModal application={application as any} routePrefix="admin" />
@@ -287,7 +362,7 @@ export default function AdminApplicationShow({ application }: { application: App
                                     </div>
                                 )}
 
-                                {/* MAO Officer reviewed */}
+                                {/* MAO Staff reviewed */}
                                 {application.mao_decision && (
                                     <div className="border-l-2 border-blue-500 pl-3 py-1">
                                         <div className="font-bold text-gray-700">MAO Final decision: <span className="uppercase text-blue-600">{application.mao_decision}</span></div>
@@ -348,7 +423,19 @@ export default function AdminApplicationShow({ application }: { application: App
                                         );
                                     })
                                 ) : (
-                                    <p className="text-gray-400 italic text-[11px]">MAO audit has not been completed yet.</p>
+                                    <div className="space-y-3">
+                                        <p className="text-gray-400 italic text-[11px]">MAO audit has not been completed yet.</p>
+                                        {application.status === 'mao_audit' && (
+                                            <Button
+                                                size="sm"
+                                                onClick={() => setIsAuditModalOpen(true)}
+                                                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs h-9 rounded-lg shadow-xs cursor-pointer transition flex items-center justify-center gap-1.5"
+                                            >
+                                                <ShieldCheck className="size-4" />
+                                                Conduct Statutory Audit
+                                            </Button>
+                                        )}
+                                    </div>
                                 )}
                             </CardContent>
                         </Card>
@@ -444,6 +531,192 @@ export default function AdminApplicationShow({ application }: { application: App
                     }
                 />
             )}
+
+            {/* Municipal Statutory Compliance Audit Modal (Admin Action) */}
+            <Dialog open={isAuditModalOpen} onOpenChange={setIsAuditModalOpen}>
+                <DialogContent className="sm:max-w-2xl bg-white p-6 rounded-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader className="space-y-1 pb-3 border-b border-gray-100 text-left">
+                        <DialogTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
+                            <ShieldCheck className="h-5 w-5 text-purple-600" />
+                            Municipal Statutory Compliance Audit
+                        </DialogTitle>
+                        <DialogDescription className="text-xs text-gray-500">
+                            Mandated review under RA 8485 (Animal Welfare Act) &amp; RA 9482 (Anti-Rabies Act) for application <strong className="font-mono text-gray-800">{application.reference_number}</strong>
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <form onSubmit={handleAuditSubmit} className="space-y-4 pt-2">
+                        {/* Applicant Quick Header */}
+                        <div className="p-3 bg-purple-50/50 rounded-xl border border-purple-100 flex items-center justify-between text-xs">
+                            <div>
+                                <span className="font-bold text-purple-950 uppercase block">{application.adopter.name}</span>
+                                <span className="text-gray-500 text-[11px]">Adopting <strong>{application.pet.name}</strong> ({application.pet.species})</span>
+                            </div>
+                            <span className="font-mono font-bold text-purple-800 bg-white px-2.5 py-1 rounded-md border border-purple-200">
+                                DSS: {Math.round(parseFloat(application.dss_score))}%
+                            </span>
+                        </div>
+
+                        {/* Statutory Compliance Checklist */}
+                        <div className="space-y-2.5">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-xs font-bold text-gray-800 uppercase tracking-wider">
+                                    Statutory Compliance Checklist *
+                                </Label>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const recomputed = Object.fromEntries(
+                                            Object.keys(defaultChecklist).map(key => [
+                                                key,
+                                                Boolean(defaultChecklist[key]?.auto_compliant ?? false),
+                                            ])
+                                        );
+                                        setAuditData('checklist', recomputed);
+                                    }}
+                                    className="text-[10px] text-purple-700 hover:text-purple-900 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                                    title="Restore automated compliance evaluation checks"
+                                >
+                                    <Sparkles className="size-3 text-purple-600" />
+                                    <span>Re-apply Auto Checks</span>
+                                </button>
+                            </div>
+
+                            <div className="space-y-2">
+                                {Object.entries(defaultChecklist).map(([key, item]) => (
+                                    <label
+                                        key={key}
+                                        className="flex items-start gap-2.5 p-2.5 rounded-xl border border-gray-200 bg-white hover:bg-purple-50/30 cursor-pointer transition select-none"
+                                    >
+                                        <div
+                                            className={`w-4 h-4 mt-0.5 shrink-0 rounded border-2 flex items-center justify-center transition-all ${
+                                                auditData.checklist[key] ? 'bg-purple-600 border-purple-600' : 'border-gray-300'
+                                            }`}
+                                            onClick={() => toggleChecklist(key)}
+                                        >
+                                            {auditData.checklist[key] && <Check className="h-3 w-3 text-white" />}
+                                        </div>
+                                        <div className="text-xs flex-1" onClick={() => toggleChecklist(key)}>
+                                            <div className="font-bold text-gray-800">{item.label}</div>
+                                            <div className="text-gray-400 text-[10px]">{item.description}</div>
+                                            {item.compliance_reason && (
+                                                <div className="mt-1 flex items-center gap-1.5">
+                                                    {item.auto_compliant ? (
+                                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
+                                                            <CheckCircle2 className="size-3 text-emerald-600 shrink-0" />
+                                                            <span>{item.compliance_reason}</span>
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md">
+                                                            <XCircle className="size-3 text-amber-600 shrink-0" />
+                                                            <span>{item.compliance_reason}</span>
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </label>
+                                ))}
+                            </div>
+
+                            {!allChecklistItemsVerified && (
+                                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2 text-amber-800 text-[11px]">
+                                    <AlertTriangle className="size-4 shrink-0 mt-0.5 text-amber-600" />
+                                    <span>Notice: All compliance items must be verified before executing approval.</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Final Determination Selection */}
+                        <div className="space-y-2">
+                            <Label className="text-xs font-bold text-gray-800 uppercase tracking-wider">
+                                Final Municipal Determination *
+                            </Label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <label className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition ${
+                                    auditData.decision === 'approved'
+                                        ? 'bg-green-50 border-green-500 shadow-2xs'
+                                        : 'bg-white border-gray-200 hover:bg-gray-50'
+                                }`}>
+                                    <input
+                                        type="radio"
+                                        name="audit_decision"
+                                        value="approved"
+                                        checked={auditData.decision === 'approved'}
+                                        onChange={(e) => setAuditData('decision', e.target.value)}
+                                        className="mt-0.5 text-green-600"
+                                    />
+                                    <div className="text-xs">
+                                        <span className="font-bold text-green-950 block">
+                                            Approve &amp; Issue Certificate
+                                        </span>
+                                        <span className="text-[10px] text-green-800 block mt-0.5 leading-snug">
+                                            Mandatory pickup deadline assigned. Pet marked adopted and digital certificate generated.
+                                        </span>
+                                    </div>
+                                </label>
+
+                                <label className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition ${
+                                    auditData.decision === 'rejected'
+                                        ? 'bg-red-50 border-red-500 shadow-2xs'
+                                        : 'bg-white border-gray-200 hover:bg-gray-50'
+                                }`}>
+                                    <input
+                                        type="radio"
+                                        name="audit_decision"
+                                        value="rejected"
+                                        checked={auditData.decision === 'rejected'}
+                                        onChange={(e) => setAuditData('decision', e.target.value)}
+                                        className="mt-0.5 text-red-600"
+                                    />
+                                    <div className="text-xs">
+                                        <span className="font-bold text-red-950 block">
+                                            Disapprove / Reject
+                                        </span>
+                                        <span className="text-[10px] text-red-800 block mt-0.5 leading-snug">
+                                            Applicant notified with reasons. Pet returned to available shelter catalog for other candidates.
+                                        </span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Officer Remarks */}
+                        <div className="space-y-1.5">
+                            <Label htmlFor="modal-mao-remarks" className="text-xs font-bold text-gray-700">
+                                Official Audit Remarks &amp; Feedback
+                            </Label>
+                            <Textarea
+                                id="modal-mao-remarks"
+                                value={auditData.remarks}
+                                onChange={(e) => setAuditData('remarks', e.target.value)}
+                                rows={3}
+                                placeholder="Add notes explaining statutory compliance verification or reasons for decision..."
+                                className="text-xs"
+                            />
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsAuditModalOpen(false)}
+                                className="text-xs h-9 px-3.5 rounded-lg cursor-pointer"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={auditProcessing}
+                                className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs h-9 px-4 rounded-lg transition cursor-pointer"
+                            >
+                                {auditProcessing ? 'Recording Determination...' : 'Finalize Compliance Determination'}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

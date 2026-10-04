@@ -248,7 +248,7 @@ class AdopterProfileController extends Controller
 
         // Authorization check: User must own the profile OR be staff/admin
         $isOwner = $user && $user->id === $profileModel->user_id;
-        $isStaff = $user && ($user->hasRole('admin') || $user->hasRole('mao_officer') || $user->hasRole('shelter_staff'));
+        $isStaff = $user && ($user->hasRole('admin') || $user->hasRole('mao_staff') || $user->hasRole('shelter_staff'));
 
         if (! $isOwner && ! $isStaff) {
             abort(403, 'Unauthorized to view this identification document.');

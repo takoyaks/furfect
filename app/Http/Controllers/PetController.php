@@ -71,7 +71,12 @@ class PetController extends Controller
             });
         }
 
-        $pets = $query->latest('listed_at')->paginate(12)->withQueryString();
+        $perPage = (int) $request->input('per_page', 12);
+        if (! in_array($perPage, [6, 12, 24, 48])) {
+            $perPage = 12;
+        }
+
+        $pets = $query->latest('listed_at')->paginate($perPage)->withQueryString();
 
         // Anti-breed bias: hide breed and mask breed mentions in description
         $pets->getCollection()->transform(function (Pet $pet) {
@@ -93,7 +98,10 @@ class PetController extends Controller
 
         return Inertia::render('pets/index', [
             'pets' => $pets,
-            'filters' => $request->only(['species', 'gender', 'size', 'maintenance', 'color', 'age', 'fee', 'search']),
+            'filters' => array_merge(
+                $request->only(['species', 'gender', 'size', 'maintenance', 'color', 'age', 'fee', 'search']),
+                ['per_page' => $perPage]
+            ),
             'savedPetIds' => $savedPetIds,
             'dssScores' => $dssScores,
         ]);
@@ -120,7 +128,7 @@ class PetController extends Controller
         $pet->breed = __('Hidden');
         $pet->description = BreedMaskerService::mask((string) $originalDescription);
 
-        $isStaff = $user && $user->hasAnyRole(['admin', 'shelter_staff', 'mao_officer']);
+        $isStaff = $user && $user->hasAnyRole(['admin', 'shelter_staff', 'mao_staff']);
         $isViewOnly = $isStaff || $request->boolean('view_only');
 
         if ($user) {

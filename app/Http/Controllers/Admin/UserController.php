@@ -34,7 +34,7 @@ class UserController extends Controller
             $tab = 'subscribers';
         }
 
-        $staffRoles = ['admin', 'shelter_staff', 'mao_officer'];
+        $staffRoles = ['admin', 'shelter_staff', 'mao_staff'];
 
         // Compute tab badges counts
         $subscribersCount = User::whereDoesntHave('roles', function ($q) use ($staffRoles): void {
@@ -423,6 +423,53 @@ class UserController extends Controller
         Inertia::flash('toast', [
             'type' => 'info',
             'message' => __('User account and all related records deleted successfully.'),
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Suspend a user account with a specified reason.
+     */
+    public function suspend(Request $request, int $id): RedirectResponse
+    {
+        $user = User::findOrFail($id);
+
+        if ($user->hasRole('admin')) {
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' => __('Administrator accounts cannot be suspended.'),
+            ]);
+
+            return back();
+        }
+
+        $request->validate([
+            'reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        $user->suspend($request->input('reason'));
+
+        Inertia::flash('toast', [
+            'type' => 'warning',
+            'message' => __('Account for :name has been suspended.', ['name' => $user->name]),
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Unsuspend a user account and clear failed login attempts.
+     */
+    public function unsuspend(int $id): RedirectResponse
+    {
+        $user = User::findOrFail($id);
+
+        $user->unsuspend();
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Account for :name has been unsuspended and unlocked.', ['name' => $user->name]),
         ]);
 
         return back();

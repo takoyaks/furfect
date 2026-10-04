@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Application;
+use App\Models\SystemSetting;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
@@ -39,6 +40,7 @@ class ApplicationStatusUpdatedNotification extends Notification
         $refNumber = $this->application->reference_number ?? '';
         $dssScore = round((float) $this->application->dss_score);
         $certNumber = $this->application->certificate_number;
+        $pickupDays = (int) ($this->payload['pickup_days'] ?? SystemSetting::get('pickup_schedule_days', 3));
 
         $data = match ($this->event) {
             // ── Adopter-targeted events ────────────────────────────────────
@@ -65,7 +67,7 @@ class ApplicationStatusUpdatedNotification extends Notification
             ],
             'mao_approved_adopter' => [
                 'title' => "Adoption Approved! Certificate #{$certNumber}",
-                'message' => "Congratulations! Your adoption of {$petName} has been officially approved. Your 7-day pickup pass is ready.",
+                'message' => "Congratulations! Your adoption of {$petName} has been officially approved. Your {$pickupDays}-day pickup pass is ready.",
                 'icon' => 'award',
                 'color' => 'green',
                 'action_url' => route('application.show'),
@@ -98,6 +100,13 @@ class ApplicationStatusUpdatedNotification extends Notification
                 'color' => 'green',
                 'action_url' => route('application.show'),
             ],
+            'unclaimed_adopter' => [
+                'title' => "Adoption Forfeited — Pick-up Window Expired for {$petName}",
+                'message' => "The scheduled pick-up window for {$petName} has expired without pet turnover. Your application has been marked unclaimed and {$petName} has been returned to the available catalog.",
+                'icon' => 'alert-triangle',
+                'color' => 'red',
+                'action_url' => route('application.show'),
+            ],
 
             // ── Shelter Staff-targeted events ──────────────────────────────
             'submitted_staff' => [
@@ -109,9 +118,16 @@ class ApplicationStatusUpdatedNotification extends Notification
             ],
             'mao_approved_staff' => [
                 'title' => "{$petName} — Adoption Approved!",
-                'message' => "{$petName} has been officially adopted by {$adopterName}. Prepare pet turnover within 7 days.",
+                'message' => "{$petName} has been officially adopted by {$adopterName}. Prepare pet turnover within {$pickupDays} days.",
                 'icon' => 'check-circle',
                 'color' => 'green',
+                'action_url' => route('shelter.applications.show', $this->application->id),
+            ],
+            'unclaimed_staff' => [
+                'title' => "{$petName} Returned to Catalog — Unclaimed",
+                'message' => "Adopter {$adopterName} did not pick up {$petName} within the scheduled deadline. The application was marked unclaimed and {$petName} is available again.",
+                'icon' => 'clock',
+                'color' => 'orange',
                 'action_url' => route('shelter.applications.show', $this->application->id),
             ],
             'mao_rejected_staff' => [

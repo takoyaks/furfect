@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { useThemeTemplate } from '@/hooks/use-theme-template';
@@ -29,7 +30,9 @@ import {
     RotateCcw,
     FileText,
     Heart,
-    Activity
+    Activity,
+    Ban,
+    Unlock,
 } from 'lucide-react';
 
 interface AdopterProfileData {
@@ -76,6 +79,10 @@ interface User {
     applications_count?: number;
     saved_pets_count?: number;
     match_scores_count?: number;
+    failed_login_attempts?: number;
+    suspended_at?: string | null;
+    suspended_reason?: string | null;
+    lockout_until?: string | null;
 }
 
 interface Props {
@@ -124,6 +131,38 @@ export default function AdminUsers({
     const [subscriberResetType, setSubscriberResetType] = useState<string>('quiz');
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [copiedPassword, setCopiedPassword] = useState(false);
+    const [suspendingUser, setSuspendingUser] = useState<User | null>(null);
+    const [suspensionReason, setSuspensionReason] = useState<string>('');
+    const [isSubmittingSuspension, setIsSubmittingSuspension] = useState(false);
+
+    const handleSuspendSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!suspendingUser || !suspensionReason.trim()) return;
+
+        setIsSubmittingSuspension(true);
+        router.post(
+            route('admin.users.suspend', suspendingUser.id),
+            { reason: suspensionReason },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setSuspendingUser(null);
+                    setSuspensionReason('');
+                },
+                onFinish: () => setIsSubmittingSuspension(false),
+            }
+        );
+    };
+
+    const handleUnsuspend = (u: User) => {
+        if (!confirm(`Are you sure you want to unsuspend and unlock the account for ${u.name}?`)) return;
+
+        router.post(
+            route('admin.users.unsuspend', u.id),
+            {},
+            { preserveScroll: true }
+        );
+    };
 
     const applyFilters = (newTab?: string, newSearch?: string, newRole?: string, newVerification?: string) => {
         const targetTab = newTab !== undefined ? newTab : currentTab;
@@ -281,7 +320,7 @@ export default function AdminUsers({
                                 <DialogHeader>
                                     <DialogTitle>Add Staff Member</DialogTitle>
                                     <DialogDescription className="text-xs">
-                                        Create a new account for Shelter Staff, MAO Officer, or Admin.
+                                        Create a new account for Shelter Staff, MAO Staff, or Admin.
                                     </DialogDescription>
                                 </DialogHeader>
                                 <form onSubmit={handleAddUser} className="space-y-4 text-xs">
@@ -483,11 +522,25 @@ export default function AdminUsers({
                                                             #{u.id}
                                                         </span>
                                                         <div>
-                                                            <div className="font-semibold text-gray-900 flex items-center gap-1.5">
+                                                            <div className="font-semibold text-gray-900 flex items-center gap-1.5 flex-wrap">
                                                                 {u.name}
                                                                 {isCurrent && (
                                                                     <span className="text-[9px] bg-blue-100 text-blue-700 px-1 py-0.2 rounded font-bold">
                                                                         YOU
+                                                                    </span>
+                                                                )}
+                                                                {u.suspended_at && (
+                                                                    <span 
+                                                                        className="text-[9px] bg-red-100 text-red-700 border border-red-200 px-1.5 py-0.5 rounded font-bold flex items-center gap-1 cursor-help"
+                                                                        title={`Suspended: ${u.suspended_reason || 'Administrative action'}`}
+                                                                    >
+                                                                        <Ban className="size-2.5 text-red-600" />
+                                                                        SUSPENDED
+                                                                    </span>
+                                                                )}
+                                                                {!u.suspended_at && Boolean(u.failed_login_attempts) && (
+                                                                    <span className="text-[9px] bg-amber-50 text-amber-700 border border-amber-200 px-1 py-0.2 rounded font-semibold">
+                                                                        {u.failed_login_attempts}/5 fails
                                                                     </span>
                                                                 )}
                                                             </div>
@@ -567,8 +620,17 @@ export default function AdminUsers({
                                                                 {u.roles[0]?.name?.replace('_', ' ') || 'Staff'}
                                                             </span>
                                                         </td>
-                                                        <td className="p-3 text-emerald-700 text-[11px] font-medium">
-                                                            Active
+                                                        <td className="p-3 text-[11px] font-medium">
+                                                            {u.suspended_at ? (
+                                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full" title={u.suspended_reason || 'Suspended'}>
+                                                                    <Ban className="size-3 text-red-600" />
+                                                                    Suspended
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-emerald-700">
+                                                                    Active
+                                                                </span>
+                                                            )}
                                                         </td>
                                                     </>
                                                 )}
@@ -621,6 +683,33 @@ export default function AdminUsers({
                                                                 }}
                                                             >
                                                                 <UserCog className="size-3.5" />
+                                                            </Button>
+                                                        )}
+
+                                                        {u.suspended_at ? (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                disabled={isCurrent}
+                                                                className="size-7 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50"
+                                                                title="Unsuspend & Unlock Account"
+                                                                onClick={() => handleUnsuspend(u)}
+                                                            >
+                                                                <Unlock className="size-3.5" />
+                                                            </Button>
+                                                        ) : (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                disabled={isCurrent}
+                                                                className="size-7 rounded-lg text-amber-600 hover:text-amber-800 hover:bg-amber-50"
+                                                                title="Suspend User Account"
+                                                                onClick={() => {
+                                                                    setSuspendingUser(u);
+                                                                    setSuspensionReason('');
+                                                                }}
+                                                            >
+                                                                <Ban className="size-3.5" />
                                                             </Button>
                                                         )}
 
@@ -1056,6 +1145,56 @@ export default function AdminUsers({
                                 >
                                     <KeyRound className="size-4" />
                                     {passwordForm.processing ? 'Resetting...' : 'Reset Password'}
+                                </Button>
+                            </div>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Suspend User Modal */}
+                <Dialog open={Boolean(suspendingUser)} onOpenChange={(open) => !open && setSuspendingUser(null)}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 text-red-700">
+                                <Ban className="size-5 text-red-600" />
+                                Suspend User Account
+                            </DialogTitle>
+                            <DialogDescription className="text-xs text-gray-500">
+                                Suspending <strong>{suspendingUser?.name}</strong> ({suspendingUser?.email}) will immediately block them from logging into the platform.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <form onSubmit={handleSuspendSubmit} className="space-y-4 pt-2">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="suspend-reason" className="text-xs font-semibold text-gray-700">
+                                    Reason for Suspension *
+                                </Label>
+                                <Textarea
+                                    id="suspend-reason"
+                                    rows={3}
+                                    required
+                                    value={suspensionReason}
+                                    onChange={(e) => setSuspensionReason(e.target.value)}
+                                    placeholder="Provide details regarding the violation, failed verification, or administrative requirement..."
+                                    className="text-xs"
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setSuspendingUser(null)}
+                                    className="text-xs h-9 cursor-pointer"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={isSubmittingSuspension || !suspensionReason.trim()}
+                                    className="bg-red-600 hover:bg-red-700 text-white text-xs h-9 font-bold cursor-pointer"
+                                >
+                                    {isSubmittingSuspension ? 'Suspending...' : 'Confirm Suspension'}
                                 </Button>
                             </div>
                         </form>

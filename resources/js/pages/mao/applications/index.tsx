@@ -29,6 +29,7 @@ import {
     Eye,
     Zap,
     AlertTriangle,
+    Home,
 } from 'lucide-react';
 import {
     Dialog,
@@ -1615,6 +1616,77 @@ export default function MaoApplicationIndex({
                                 <span className="font-mono font-bold text-purple-800 bg-white px-2.5 py-1 rounded-md border border-purple-200">
                                     DSS: {Math.round(parseFloat(selectedApplication.dss_score))}%
                                 </span>
+                            </div>
+
+                            {/* Adopter Lifestyle & Housing Summary */}
+                            <div className="p-3 bg-gray-50/80 rounded-xl border border-gray-200 space-y-2.5 text-xs">
+                                <div className="flex items-center justify-between border-b border-gray-200/80 pb-1.5">
+                                    <span className="font-bold text-gray-800 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                                        <Home className="size-3.5 text-purple-600" />
+                                        Adopter Lifestyle &amp; Housing Assessment
+                                    </span>
+                                    <span className="text-[10px] text-gray-500 font-medium truncate max-w-[220px]">
+                                        {selectedApplication.adopter.adopter_profile?.home_address || 'Address on file'}
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                                    <div className="bg-white p-2 rounded-lg border border-gray-100 shadow-2xs">
+                                        <span className="text-[10px] text-gray-400 block font-medium">Housing Type</span>
+                                        <span className="font-semibold text-gray-800 capitalize truncate block">
+                                            {selectedApplication.adopter.lifestyle_profile?.housing_type?.replace(/_/g, ' ') || 'Not specified'}
+                                        </span>
+                                    </div>
+
+                                    <div className="bg-white p-2 rounded-lg border border-gray-100 shadow-2xs">
+                                        <span className="text-[10px] text-gray-400 block font-medium">Outdoor / Yard</span>
+                                        <span className="font-semibold text-gray-800 capitalize truncate block">
+                                            {selectedApplication.adopter.lifestyle_profile?.outdoor_access?.replace(/_/g, ' ') || 'None'}
+                                        </span>
+                                    </div>
+
+                                    <div className="bg-white p-2 rounded-lg border border-gray-100 shadow-2xs">
+                                        <span className="text-[10px] text-gray-400 block font-medium">Household Consent</span>
+                                        <span className={`font-semibold flex items-center gap-1 truncate ${
+                                            selectedApplication.adopter.lifestyle_profile?.household_agrees !== false
+                                                ? 'text-emerald-700'
+                                                : 'text-amber-700'
+                                        }`}>
+                                            {selectedApplication.adopter.lifestyle_profile?.household_agrees !== false ? (
+                                                <CheckCircle2 className="size-3 shrink-0 text-emerald-600" />
+                                            ) : (
+                                                <AlertTriangle className="size-3 shrink-0 text-amber-600" />
+                                            )}
+                                            {selectedApplication.adopter.lifestyle_profile?.household_agrees !== false ? 'Confirmed' : 'Unconfirmed'}
+                                        </span>
+                                    </div>
+
+                                    <div className="bg-white p-2 rounded-lg border border-gray-100 shadow-2xs">
+                                        <span className="text-[10px] text-gray-400 block font-medium">Pet Experience</span>
+                                        <span className="font-semibold text-gray-800 capitalize truncate block">
+                                            {selectedApplication.adopter.lifestyle_profile?.pet_experience?.replace(/_/g, ' ') || 'Beginner'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Shelter Staff Screening Endorsement */}
+                                {selectedApplication.staff_notes && (
+                                    <div className="p-2 rounded-lg bg-purple-50/60 border border-purple-100 text-[11px] text-purple-900">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className="font-bold text-[10px] uppercase tracking-wide text-purple-800">
+                                                Shelter Staff Screening Endorsement
+                                            </span>
+                                            {selectedApplication.staff?.name && (
+                                                <span className="text-[10px] text-purple-600">
+                                                    by {selectedApplication.staff.name}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="italic text-[11px] text-purple-950">
+                                            "{selectedApplication.staff_notes}"
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Statutory Compliance Checklist */}

@@ -57,7 +57,7 @@ export const DEFAULT_AGREEMENT_CONTENT: AgreementConfig = {
         },
         {
             title: '6. DSS Matching Algorithm Disclaimer',
-            body: 'The DSS compatibility score is generated algorithmically based on your lifestyle profile and pet characteristics. It is an advisory tool and does not guarantee adoption approval. Final adoption decisions are made by shelter staff and MAO officers.',
+            body: 'The DSS compatibility score is generated algorithmically based on your lifestyle profile and pet characteristics. It is an advisory tool and does not guarantee adoption approval. Final adoption decisions are made by shelter staff and MAO staff.',
         },
         {
             title: '7. Account Responsibility',

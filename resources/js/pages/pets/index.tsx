@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Heart, Search, Eye, Sparkles, AlertCircle, HelpCircle } from 'lucide-react';
+import { Heart, Search, Eye, Sparkles, AlertCircle, HelpCircle, Play } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { EnergyMaintenanceGuideDialog } from '@/components/energy-maintenance-guide-dialog';
@@ -26,7 +26,7 @@ interface Pet {
     adoption_fee: string;
     temperament: string[];
     description: string;
-    photos?: { photo_path: string; is_primary: boolean }[];
+    photos?: { photo_path: string; is_primary: boolean; media_type?: string }[];
     shelter: { name: string };
 }
 
@@ -302,6 +302,7 @@ export default function PetsIndex({
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {pets.data.map(pet => {
                                 const photo = pet.photos?.find(p => p.is_primary)?.photo_path || '/placeholder-pet.png';
+                                const hasVideo = pet.photos?.some(p => p.media_type === 'video');
                                 const isSaved = savedPetIds.includes(pet.id);
                                 const score = dssScores[pet.id];
 
@@ -320,6 +321,13 @@ export default function PetsIndex({
                                                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                                     />
                                                 </Link>
+
+                                                {hasVideo && (
+                                                    <div className="absolute top-3 left-3 bg-black/65 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-xs shadow-xs pointer-events-none z-10">
+                                                        <Play className="size-2.5 fill-current text-amber-400" /> Video
+                                                    </div>
+                                                )}
+
                                                 <button 
                                                     onClick={(e) => {
                                                         e.stopPropagation();

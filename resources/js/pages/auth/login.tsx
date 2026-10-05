@@ -48,7 +48,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     autoFocus
                                     tabIndex={1}
                                     autoComplete="username"
-                                    placeholder="kerbie or name@example.com"
+                                    placeholder="name@example.com"
                                     leftIcon={<Mail className="size-4 text-muted-foreground" />}
                                     className="rounded-xl focus-visible:ring-[#FFBF00] focus-visible:border-[#FFBF00]"
                                 />

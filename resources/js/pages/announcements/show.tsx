@@ -14,6 +14,9 @@ interface Announcement {
     category: string;
     content: string;
     image_path?: string | null;
+    video_path?: string | null;
+    video_thumbnail_path?: string | null;
+    video_duration?: number | null;
     published_at?: string | null;
     created_at?: string;
 }
@@ -103,8 +106,19 @@ export default function AnnouncementShow({ config, announcement, recentAnnouncem
                         </h1>
                     </div>
 
-                    {/* Featured Image */}
-                    {announcement.image_path && (
+                    {/* Featured Video or Image */}
+                    {announcement.video_path ? (
+                        <div className="w-full rounded-2xl overflow-hidden bg-black border border-gray-200 shadow-md">
+                            <video
+                                src={announcement.video_path.startsWith('http') || announcement.video_path.startsWith('/storage/') ? announcement.video_path : `/storage/${announcement.video_path}`}
+                                poster={announcement.video_thumbnail_path ? (announcement.video_thumbnail_path.startsWith('http') || announcement.video_thumbnail_path.startsWith('/storage/') ? announcement.video_thumbnail_path : `/storage/${announcement.video_thumbnail_path}`) : (announcement.image_path ? (announcement.image_path.startsWith('http') || announcement.image_path.startsWith('/storage/') ? announcement.image_path : `/storage/${announcement.image_path}`) : undefined)}
+                                controls
+                                playsInline
+                                preload="metadata"
+                                className="w-full max-h-[520px] object-contain mx-auto"
+                            />
+                        </div>
+                    ) : announcement.image_path ? (
                         <div className="w-full rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 shadow-xs max-h-[480px]">
                             <img
                                 src={announcement.image_path.startsWith('http') || announcement.image_path.startsWith('/storage/') ? announcement.image_path : `/storage/${announcement.image_path}`}
@@ -112,7 +126,7 @@ export default function AnnouncementShow({ config, announcement, recentAnnouncem
                                 className="w-full h-auto object-cover max-h-[480px]"
                             />
                         </div>
-                    )}
+                    ) : null}
 
                     {/* Article Content */}
                     <div 

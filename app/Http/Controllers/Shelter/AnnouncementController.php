@@ -45,6 +45,9 @@ class AnnouncementController extends Controller
             'content' => ['required', 'string', 'max:5000'],
             'is_published' => ['required', 'boolean'],
             'image' => ['nullable', 'image', 'max:4096'],
+            'video' => ['nullable', 'file', 'mimetypes:video/mp4,video/quicktime,video/webm', 'max:51200'],
+            'video_thumbnail' => ['nullable', 'image', 'max:4096'],
+            'video_duration' => ['nullable', 'integer', 'min:1', 'max:600'],
         ]);
 
         $imagePath = null;
@@ -57,12 +60,38 @@ class AnnouncementController extends Controller
             }
         }
 
+        $videoPath = null;
+        $videoThumbnailPath = null;
+        if ($request->hasFile('video')) {
+            if ($request->hasFile('video_thumbnail')) {
+                if ($cloudinary->isConfigured()) {
+                    $thumbUpload = $cloudinary->upload($request->file('video_thumbnail'), 'announcements/thumbnails');
+                    $videoThumbnailPath = $thumbUpload['secure_url'];
+                } else {
+                    $videoThumbnailPath = $request->file('video_thumbnail')->store('announcements/thumbnails', 'public');
+                }
+            }
+
+            if ($cloudinary->isConfigured()) {
+                $upload = $cloudinary->uploadVideo($request->file('video'), 'announcements/videos');
+                $videoPath = $cloudinary->getOptimizedVideoUrl($upload['secure_url']);
+                if (! $videoThumbnailPath) {
+                    $videoThumbnailPath = $cloudinary->getVideoPosterUrl($upload['secure_url']);
+                }
+            } else {
+                $videoPath = $request->file('video')->store('announcements/videos', 'public');
+            }
+        }
+
         Announcement::create([
             'title' => $validated['title'],
             'slug' => Str::slug($validated['title']).'-'.Str::random(5),
             'category' => $validated['category'],
             'content' => $validated['content'],
             'image_path' => $imagePath,
+            'video_path' => $videoPath,
+            'video_thumbnail_path' => $videoThumbnailPath,
+            'video_duration' => $request->input('video_duration'),
             'is_published' => $validated['is_published'],
             'published_at' => $validated['is_published'] ? now() : null,
         ]);
@@ -88,6 +117,10 @@ class AnnouncementController extends Controller
             'content' => ['required', 'string', 'max:5000'],
             'is_published' => ['required', 'boolean'],
             'image' => ['nullable', 'image', 'max:4096'],
+            'video' => ['nullable', 'file', 'mimetypes:video/mp4,video/quicktime,video/webm', 'max:51200'],
+            'video_thumbnail' => ['nullable', 'image', 'max:4096'],
+            'video_duration' => ['nullable', 'integer', 'min:1', 'max:600'],
+            'delete_video' => ['nullable', 'boolean'],
         ]);
 
         $imagePath = $announcement->getRawOriginal('image_path');
@@ -116,14 +149,66 @@ class AnnouncementController extends Controller
             $publishedAt = now();
         }
 
-        $announcement->update([
+        $updateData = [
             'title' => $validated['title'],
             'category' => $validated['category'],
             'content' => $validated['content'],
             'image_path' => $imagePath,
             'is_published' => $isPublished,
             'published_at' => $publishedAt,
-        ]);
+        ];
+
+        // Handle video deletion or replacement
+        if ($request->boolean('delete_video') || $request->hasFile('video')) {
+            $rawVideo = $announcement->getRawOriginal('video_path');
+            $rawThumb = $announcement->getRawOriginal('video_thumbnail_path');
+
+            if ($rawVideo) {
+                if (str_starts_with($rawVideo, 'http://') || str_starts_with($rawVideo, 'https://')) {
+                    $cloudinary->delete($rawVideo, ['resource_type' => 'video']);
+                } elseif (Storage::disk('public')->exists($rawVideo)) {
+                    Storage::disk('public')->delete($rawVideo);
+                }
+            }
+
+            if ($rawThumb) {
+                if (str_starts_with($rawThumb, 'http://') || str_starts_with($rawThumb, 'https://')) {
+                    $cloudinary->delete($rawThumb);
+                } elseif (Storage::disk('public')->exists($rawThumb)) {
+                    Storage::disk('public')->delete($rawThumb);
+                }
+            }
+
+            if ($request->boolean('delete_video') && ! $request->hasFile('video')) {
+                $updateData['video_path'] = null;
+                $updateData['video_thumbnail_path'] = null;
+                $updateData['video_duration'] = null;
+            }
+        }
+
+        if ($request->hasFile('video')) {
+            $videoThumbnailPath = null;
+            if ($request->hasFile('video_thumbnail')) {
+                if ($cloudinary->isConfigured()) {
+                    $thumbUpload = $cloudinary->upload($request->file('video_thumbnail'), 'announcements/thumbnails');
+                    $videoThumbnailPath = $thumbUpload['secure_url'];
+                } else {
+                    $videoThumbnailPath = $request->file('video_thumbnail')->store('announcements/thumbnails', 'public');
+                }
+            }
+
+            if ($cloudinary->isConfigured()) {
+                $upload = $cloudinary->uploadVideo($request->file('video'), 'announcements/videos');
+                $updateData['video_path'] = $cloudinary->getOptimizedVideoUrl($upload['secure_url']);
+                $updateData['video_thumbnail_path'] = $videoThumbnailPath ?: $cloudinary->getVideoPosterUrl($upload['secure_url']);
+            } else {
+                $updateData['video_path'] = $request->file('video')->store('announcements/videos', 'public');
+                $updateData['video_thumbnail_path'] = $videoThumbnailPath;
+            }
+            $updateData['video_duration'] = $request->input('video_duration');
+        }
+
+        $announcement->update($updateData);
 
         Inertia::flash('toast', [
             'type' => 'success',
@@ -146,6 +231,24 @@ class AnnouncementController extends Controller
                 $cloudinary->delete($rawImage);
             } elseif (Storage::disk('public')->exists($rawImage)) {
                 Storage::disk('public')->delete($rawImage);
+            }
+        }
+
+        $rawVideo = $announcement->getRawOriginal('video_path');
+        if ($rawVideo) {
+            if (str_starts_with($rawVideo, 'http://') || str_starts_with($rawVideo, 'https://')) {
+                $cloudinary->delete($rawVideo, ['resource_type' => 'video']);
+            } elseif (Storage::disk('public')->exists($rawVideo)) {
+                Storage::disk('public')->delete($rawVideo);
+            }
+        }
+
+        $rawThumb = $announcement->getRawOriginal('video_thumbnail_path');
+        if ($rawThumb) {
+            if (str_starts_with($rawThumb, 'http://') || str_starts_with($rawThumb, 'https://')) {
+                $cloudinary->delete($rawThumb);
+            } elseif (Storage::disk('public')->exists($rawThumb)) {
+                Storage::disk('public')->delete($rawThumb);
             }
         }
 

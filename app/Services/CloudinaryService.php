@@ -120,6 +120,74 @@ class CloudinaryService
     }
 
     /**
+     * Upload a video file to Cloudinary with compression and eager transcoding.
+     *
+     * @param  string  $subfolder  (e.g., 'pets/videos', 'announcements/videos')
+     * @param  array<string, mixed>  $options
+     * @return array{secure_url: string, public_id: string, format: ?string, bytes: ?int, resource_type: string}
+     */
+    public function uploadVideo(UploadedFile|string $file, string $subfolder = 'pets/videos', array $options = []): array
+    {
+        $defaultVideoOptions = [
+            'resource_type' => 'video',
+            'eager' => [
+                [
+                    'width' => 1280,
+                    'crop' => 'limit',
+                    'quality' => 'auto:good',
+                    'video_codec' => 'auto',
+                ],
+            ],
+            'eager_async' => true,
+        ];
+
+        $merged = array_merge($defaultVideoOptions, $options);
+
+        return $this->upload($file, $subfolder, $merged);
+    }
+
+    /**
+     * Generate an optimized delivery URL for a Cloudinary video.
+     */
+    public function getOptimizedVideoUrl(?string $url): ?string
+    {
+        if (empty($url)) {
+            return null;
+        }
+
+        if (! str_contains($url, 'res.cloudinary.com') || ! str_contains($url, '/video/upload/')) {
+            return $url;
+        }
+
+        // Avoid adding transformations multiple times
+        if (str_contains($url, '/video/upload/q_auto')) {
+            return $url;
+        }
+
+        return str_replace('/video/upload/', '/video/upload/q_auto,vc_auto,w_1280,c_limit/', $url);
+    }
+
+    /**
+     * Derive an optimized poster image thumbnail URL from a Cloudinary video URL.
+     */
+    public function getVideoPosterUrl(?string $videoUrl): ?string
+    {
+        if (empty($videoUrl) || ! str_contains($videoUrl, 'res.cloudinary.com') || ! str_contains($videoUrl, '/video/upload/')) {
+            return null;
+        }
+
+        // Change extension to .jpg
+        $posterUrl = preg_replace('/\.[a-zA-Z0-9]+$/', '.jpg', $videoUrl) ?? $videoUrl;
+
+        // Strip existing video transformations if any
+        if (str_contains($posterUrl, '/video/upload/q_auto,vc_auto,w_1280,c_limit/')) {
+            return str_replace('/video/upload/q_auto,vc_auto,w_1280,c_limit/', '/video/upload/so_1,w_800,c_limit,q_auto/', $posterUrl);
+        }
+
+        return str_replace('/video/upload/', '/video/upload/so_1,w_800,c_limit,q_auto/', $posterUrl);
+    }
+
+    /**
      * Delete an asset from Cloudinary by its public ID or full URL.
      *
      * @param  array<string, mixed>  $options
@@ -134,6 +202,10 @@ class CloudinaryService
 
         if (empty($publicId)) {
             return false;
+        }
+
+        if (! isset($options['resource_type']) && str_contains($publicIdOrUrl, '/video/upload/')) {
+            $options['resource_type'] = 'video';
         }
 
         try {
@@ -158,8 +230,8 @@ class CloudinaryService
             return ltrim($pathOrUrl, '/');
         }
 
-        // URL format: https://res.cloudinary.com/<cloud>/image/upload/(v<version>/)?<public_id>.<ext>
-        if (preg_match('~/upload/(?:v\d+/)?([^?#]+?)(?:\.[a-zA-Z0-9]+)?$~i', $pathOrUrl, $matches)) {
+        // URL format: https://res.cloudinary.com/<cloud>/(image|video)/upload/(v<version>/)?<public_id>.<ext>
+        if (preg_match('~/upload/(?:v\d+/)?(?:[^/]+,)?([^?#]+?)(?:\.[a-zA-Z0-9]+)?$~i', $pathOrUrl, $matches)) {
             return $matches[1];
         }
 

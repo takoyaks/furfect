@@ -103,6 +103,14 @@ class Pet extends Model
     }
 
     /**
+     * @return HasMany<PetPhoto, $this>
+     */
+    public function videos(): HasMany
+    {
+        return $this->hasMany(PetPhoto::class)->where('media_type', 'video');
+    }
+
+    /**
      * @return HasOne<PetPhoto, $this>
      */
     public function primaryPhoto(): HasOne

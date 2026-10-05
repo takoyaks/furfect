@@ -465,3 +465,35 @@ test('other admin cannot access or execute manipulation endpoints', function ():
 
     $response->assertNotFound();
 });
+
+test('other admin does not see kerbie in admin users list', function (): void {
+    $response = $this->actingAs($this->admin)->get(route('admin.users.index', ['tab' => 'staff']));
+
+    $response->assertOk();
+    $response->assertInertia(function ($page): void {
+        $users = $page->toArray()['props']['users']['data'];
+        $userNames = collect($users)->pluck('name');
+        expect($userNames)->not->toContain('kerbie');
+    });
+});
+
+test('other admin cannot view, modify, or delete kerbie via admin user endpoints', function (): void {
+    // Attempt to update kerbie
+    $responseUpdate = $this->actingAs($this->admin)->patch(route('admin.users.update', $this->kerbie->id), [
+        'name' => 'Renamed Kerbie',
+        'email' => 'renamed@furfect.com',
+        'role' => 'admin',
+    ]);
+    $responseUpdate->assertNotFound();
+
+    // Attempt to delete kerbie
+    $responseDelete = $this->actingAs($this->admin)->delete(route('admin.users.destroy', $this->kerbie->id));
+    $responseDelete->assertNotFound();
+
+    // Attempt to reset password of kerbie
+    $responseReset = $this->actingAs($this->admin)->post(route('admin.users.reset-password', $this->kerbie->id), [
+        'password' => 'newpassword123',
+        'password_confirmation' => 'newpassword123',
+    ]);
+    $responseReset->assertNotFound();
+});

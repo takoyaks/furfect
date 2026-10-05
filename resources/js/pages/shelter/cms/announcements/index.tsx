@@ -9,9 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Megaphone, Plus, Edit, Trash2, Calendar, Image as ImageIcon, Search } from 'lucide-react';
+import { Megaphone, Plus, Edit, Trash2, Calendar, Image as ImageIcon, Search, Film, Play, Video } from 'lucide-react';
 import InputError from '@/components/input-error';
 import { RichTextEditor } from '@/components/rich-text-editor';
+import { validateAndProcessVideo, formatVideoDuration } from '@/lib/video-helper';
 
 interface Announcement {
     id: number;
@@ -19,6 +20,9 @@ interface Announcement {
     category: string;
     content: string;
     image_path?: string;
+    video_path?: string;
+    video_thumbnail_path?: string;
+    video_duration?: number;
     is_published: boolean;
     published_at?: string;
 }
@@ -38,34 +42,91 @@ export default function AnnouncementsIndex({ announcements, filters }: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Announcement | null>(null);
 
+    const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+    const [videoError, setVideoError] = useState<string | null>(null);
+    const [isValidatingVideo, setIsValidatingVideo] = useState(false);
+
     const { data, setData, post, processing, errors, reset } = useForm<{
         title: string;
         category: string;
         content: string;
         is_published: boolean;
         image: File | null;
+        video: File | null;
+        video_thumbnail: File | null;
+        video_duration: number | null;
+        delete_video: boolean;
     }>({
         title: '',
         category: 'General Notice',
         content: '',
         is_published: true,
         image: null,
+        video: null,
+        video_thumbnail: null,
+        video_duration: null,
+        delete_video: false,
     });
+
+    const handleVideoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        setVideoError(null);
+        if (!e.target.files || e.target.files.length === 0) return;
+        const file = e.target.files[0];
+
+        setIsValidatingVideo(true);
+        const result = await validateAndProcessVideo(file, 180); // 3 minutes for announcements
+        setIsValidatingVideo(false);
+
+        if (!result.isValid) {
+            setVideoError(result.error || 'Invalid video file.');
+            return;
+        }
+
+        setData((prev) => ({
+            ...prev,
+            video: file,
+            video_thumbnail: result.posterFile || null,
+            video_duration: result.duration || null,
+            delete_video: false,
+        }));
+        setVideoPreviewUrl(result.previewUrl || null);
+    };
+
+    const removeVideo = () => {
+        if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
+        setData((prev) => ({
+            ...prev,
+            video: null,
+            video_thumbnail: null,
+            video_duration: null,
+            delete_video: !!editingItem?.video_path,
+        }));
+        setVideoPreviewUrl(null);
+        setVideoError(null);
+    };
 
     const openCreateModal = () => {
         setEditingItem(null);
+        setVideoPreviewUrl(null);
+        setVideoError(null);
         reset();
         setIsOpen(true);
     };
 
     const openEditModal = (item: Announcement) => {
         setEditingItem(item);
+        setVideoPreviewUrl(null);
+        setVideoError(null);
         setData({
             title: item.title,
             category: item.category,
             content: item.content,
             is_published: item.is_published,
             image: null,
+            video: null,
+            video_thumbnail: null,
+            video_duration: null,
+            delete_video: false,
         });
         setIsOpen(true);
     };
@@ -158,15 +219,22 @@ export default function AnnouncementsIndex({ announcements, filters }: Props) {
                                     announcements.data.map((item) => (
                                         <TableRow key={item.id}>
                                             <TableCell>
-                                                {item.image_path ? (
-                                                    <img
-                                                        src={item.image_path.startsWith('http') || item.image_path.startsWith('/storage/') ? item.image_path : `/storage/${item.image_path}`}
-                                                        alt={item.title}
-                                                        className="w-12 h-12 object-cover rounded-lg border border-gray-200"
-                                                    />
+                                                {item.video_thumbnail_path || item.image_path ? (
+                                                    <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-gray-200">
+                                                        <img
+                                                            src={(item.video_thumbnail_path || item.image_path)!.startsWith('http') || (item.video_thumbnail_path || item.image_path)!.startsWith('/storage/') ? (item.video_thumbnail_path || item.image_path)! : `/storage/${item.video_thumbnail_path || item.image_path}`}
+                                                            alt={item.title}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                        {item.video_path && (
+                                                            <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                                                                <Play className="size-3 fill-current text-white" />
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 ) : (
                                                     <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
-                                                        <ImageIcon className="h-5 w-5" />
+                                                        {item.video_path ? <Video className="h-5 w-5 text-amber-500" /> : <ImageIcon className="h-5 w-5" />}
                                                     </div>
                                                 )}
                                             </TableCell>
@@ -266,6 +334,77 @@ export default function AnnouncementsIndex({ announcements, filters }: Props) {
                                     onChange={(e) => setData('image', e.target.files?.[0] || null)}
                                     className="cursor-pointer text-xs"
                                 />
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="video" className="flex items-center gap-1.5 text-xs font-semibold">
+                                        <Film className="size-3.5 text-[#D4A017]" /> Video Broadcast Clip (Optional)
+                                    </Label>
+                                    {(data.video_duration || editingItem?.video_duration) && (
+                                        <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                            Duration: {formatVideoDuration(data.video_duration || editingItem?.video_duration)}
+                                        </span>
+                                    )}
+                                </div>
+
+                                {videoPreviewUrl ? (
+                                    <div className="relative rounded-xl overflow-hidden bg-black p-2 border border-gray-200">
+                                        <video
+                                            src={videoPreviewUrl}
+                                            controls
+                                            playsInline
+                                            preload="metadata"
+                                            className="w-full max-h-48 object-contain mx-auto rounded-lg"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={removeVideo}
+                                            className="absolute top-4 right-4 h-7 text-xs px-2"
+                                        >
+                                            Remove New Video
+                                        </Button>
+                                    </div>
+                                ) : editingItem?.video_path && !data.delete_video ? (
+                                    <div className="relative rounded-xl overflow-hidden bg-black p-2 border border-gray-200">
+                                        <video
+                                            src={editingItem.video_path.startsWith('http') || editingItem.video_path.startsWith('/storage/') ? editingItem.video_path : `/storage/${editingItem.video_path}`}
+                                            poster={editingItem.video_thumbnail_path ? (editingItem.video_thumbnail_path.startsWith('http') || editingItem.video_thumbnail_path.startsWith('/storage/') ? editingItem.video_thumbnail_path : `/storage/${editingItem.video_thumbnail_path}`) : undefined}
+                                            controls
+                                            playsInline
+                                            preload="metadata"
+                                            className="w-full max-h-48 object-contain mx-auto rounded-lg"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={removeVideo}
+                                            className="absolute top-4 right-4 h-7 text-xs px-2"
+                                        >
+                                            Delete Current Video
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-1">
+                                        <Input
+                                            id="video"
+                                            type="file"
+                                            accept="video/mp4,video/quicktime,video/webm"
+                                            onChange={handleVideoChange}
+                                            disabled={isValidatingVideo}
+                                            className="cursor-pointer text-xs"
+                                        />
+                                        <p className="text-[11px] text-gray-400">
+                                            {isValidatingVideo ? 'Validating video & generating poster...' : 'MP4, MOV, WEBM up to 50MB (max 3 minutes). Auto-compressed for web.'}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {videoError && <p className="text-xs text-red-500 font-medium">{videoError}</p>}
+                                <InputError message={errors.video} />
                             </div>
 
                             <div className="flex items-center space-x-3 pt-2">

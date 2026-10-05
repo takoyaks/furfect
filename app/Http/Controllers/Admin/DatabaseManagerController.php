@@ -472,20 +472,22 @@ class DatabaseManagerController extends Controller
 
             $isRollback = in_array($newStatus, ['pending', 'under_review', 'mao_audit']) && in_array($oldStatus, ['approved', 'released', 'rejected', 'closed']);
 
-            $application->logTimeline(
-                stage: 'super_admin_override',
-                action: $isRollback ? 'status_rollback' : 'status_override',
-                title: sprintf('Status %s by Super Admin Kerbie', $isRollback ? 'Rolled Back' : 'Overridden'),
-                description: sprintf('Status changed from [%s] to [%s]. Notes: %s', $oldStatus, $newStatus, $validated['reason']),
-                actor: auth()->user(),
-                metadata: [
+            $application->timelines()->create([
+                'actor_id' => auth()->id(),
+                'actor_name' => 'System Administrator',
+                'actor_role' => 'admin',
+                'stage' => 'super_admin_override',
+                'action' => $isRollback ? 'status_rollback' : 'status_override',
+                'title' => sprintf('Status %s (System Administrator)', $isRollback ? 'Rolled Back' : 'Overridden'),
+                'description' => sprintf('Status changed from [%s] to [%s]. Notes: %s', $oldStatus, $newStatus, $validated['reason']),
+                'metadata' => [
                     'previous_status' => $oldStatus,
                     'new_status' => $newStatus,
                     'reason' => $validated['reason'],
                     'is_rollback' => $isRollback,
                     'synced_pet_status' => $syncPet,
-                ]
-            );
+                ],
+            ]);
         });
 
         Inertia::flash('toast', [

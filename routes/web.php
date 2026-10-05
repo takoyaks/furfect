@@ -125,7 +125,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Content & Pages - Announcements
         Route::get('/cms/announcements', [ShelterAnnouncementController::class, 'index'])->name('cms.announcements.index');
         Route::post('/cms/announcements', [ShelterAnnouncementController::class, 'store'])->name('cms.announcements.store');
-        Route::post('/cms/announcements/{id}', [ShelterAnnouncementController::class, 'update'])->name('cms.announcements.update');
+        Route::match(['post', 'put'], '/cms/announcements/{id}', [ShelterAnnouncementController::class, 'update'])->name('cms.announcements.update');
         Route::delete('/cms/announcements/{id}', [ShelterAnnouncementController::class, 'destroy'])->name('cms.announcements.destroy');
     });
 
@@ -196,7 +196,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/cms/announcements', [AnnouncementController::class, 'index'])->name('cms.announcements.index');
         Route::post('/cms/announcements', [AnnouncementController::class, 'store'])->name('cms.announcements.store');
-        Route::post('/cms/announcements/{id}', [AnnouncementController::class, 'update'])->name('cms.announcements.update');
+        Route::match(['post', 'put'], '/cms/announcements/{id}', [AnnouncementController::class, 'update'])->name('cms.announcements.update');
         Route::delete('/cms/announcements/{id}', [AnnouncementController::class, 'destroy'])->name('cms.announcements.destroy');
     });
 });

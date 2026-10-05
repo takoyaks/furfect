@@ -9,8 +9,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { RichTextEditor } from '@/components/rich-text-editor';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Upload, X, Check, Dog, Cat, Sparkles, ShieldAlert, HeartHandshake, Tag, MapPin, Cpu, Calendar, PawPrint, ImagePlus, Camera } from 'lucide-react';
+import { ArrowLeft, Upload, X, Check, Dog, Cat, Sparkles, ShieldAlert, HeartHandshake, Tag, MapPin, Cpu, Calendar, PawPrint, ImagePlus, Camera, Video, Film, Play, Loader2 } from 'lucide-react';
 import { CameraCaptureModal } from '@/components/camera-capture-modal';
+import { validateAndProcessVideo, formatVideoDuration } from '@/lib/video-helper';
 
 interface Shelter {
     id: number;
@@ -82,10 +83,17 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
         adoption_fee: '0',
         description: '',
         photos: [] as File[],
+        video: null as File | null,
+        video_thumbnail: null as File | null,
+        video_duration: null as number | null,
     });
 
     const [previewUrls, setPreviewUrls] = useState<string[]>([]);
     const [cameraOpen, setCameraOpen] = useState(false);
+    const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+    const [videoPosterUrl, setVideoPosterUrl] = useState<string | null>(null);
+    const [videoError, setVideoError] = useState<string | null>(null);
+    const [isValidatingVideo, setIsValidatingVideo] = useState(false);
 
     const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files) return;
@@ -109,6 +117,46 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
         const updatedPreviews = previewUrls.filter((_, i) => i !== index);
         setData('photos', updatedPhotos);
         setPreviewUrls(updatedPreviews);
+    };
+
+    const handleVideoChange = async (e: ChangeEvent<HTMLInputElement>) => {
+        setVideoError(null);
+        if (!e.target.files || e.target.files.length === 0) return;
+        const file = e.target.files[0];
+
+        setIsValidatingVideo(true);
+        const result = await validateAndProcessVideo(file, 60); // 60s max for pet reels
+        setIsValidatingVideo(false);
+
+        if (!result.isValid) {
+            setVideoError(result.error || 'Invalid video file.');
+            return;
+        }
+
+        setData(prev => ({
+            ...prev,
+            video: file,
+            video_thumbnail: result.posterFile || null,
+            video_duration: result.duration || null,
+        }));
+        setVideoPreviewUrl(result.previewUrl || null);
+        if (result.posterFile) {
+            setVideoPosterUrl(URL.createObjectURL(result.posterFile));
+        }
+    };
+
+    const removeVideo = () => {
+        if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
+        if (videoPosterUrl) URL.revokeObjectURL(videoPosterUrl);
+        setData(prev => ({
+            ...prev,
+            video: null,
+            video_thumbnail: null,
+            video_duration: null,
+        }));
+        setVideoPreviewUrl(null);
+        setVideoPosterUrl(null);
+        setVideoError(null);
     };
 
     const toggleTemperament = (tag: string) => {
@@ -729,6 +777,73 @@ export default function CreatePet({ shelters = [] }: { shelters: Shelter[] }) {
                                         ))}
                                     </div>
                                 )}
+                            </div>
+
+                            {/* Video Upload Zone */}
+                            <div className="space-y-2 pt-3 border-t border-gray-100 dark:border-neutral-800">
+                                <div className="flex items-center justify-between gap-2">
+                                    <Label className="font-semibold text-xs text-gray-700 dark:text-neutral-300 flex items-center gap-1.5">
+                                        <Film className="size-3.5 text-[#D4A017]" /> Pet Spotlight Video (Optional Clip)
+                                    </Label>
+                                    {data.video_duration && (
+                                        <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
+                                            Duration: {formatVideoDuration(data.video_duration)}
+                                        </span>
+                                    )}
+                                </div>
+
+                                {videoPreviewUrl ? (
+                                    <div className="relative rounded-2xl overflow-hidden border border-gray-200 dark:border-neutral-700 bg-black/90 p-2 shadow-xs group">
+                                        <video
+                                            src={videoPreviewUrl}
+                                            controls
+                                            playsInline
+                                            poster={videoPosterUrl || undefined}
+                                            preload="metadata"
+                                            className="w-full max-h-64 rounded-xl object-contain mx-auto"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={removeVideo}
+                                            className="absolute top-4 right-4 bg-red-600/90 hover:bg-red-600 text-white p-1.5 rounded-full shadow-md opacity-90 hover:opacity-100 hover:scale-110 transition-all z-10"
+                                            title="Remove video"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <div className="px-2 py-1.5 text-xs text-neutral-300 flex items-center justify-between">
+                                            <span className="truncate">{data.video?.name}</span>
+                                            <span className="text-[11px] text-neutral-400">
+                                                {data.video ? `${(data.video.size / (1024 * 1024)).toFixed(1)} MB` : ''}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="border-2 border-dashed border-gray-300 dark:border-neutral-700 rounded-2xl p-6 text-center hover:border-[#D4A017] hover:bg-[#D4A017]/5 group transition-all duration-200 relative bg-gray-50/40 dark:bg-neutral-800/20 cursor-pointer">
+                                        <input
+                                            type="file"
+                                            accept="video/mp4,video/quicktime,video/webm"
+                                            onChange={handleVideoChange}
+                                            disabled={isValidatingVideo}
+                                            className="absolute inset-0 size-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                                        />
+                                        <div className="size-10 rounded-full bg-[#D4A017]/10 text-[#D4A017] flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-200">
+                                            {isValidatingVideo ? (
+                                                <Loader2 className="size-5 animate-spin" />
+                                            ) : (
+                                                <Video className="size-5" />
+                                            )}
+                                        </div>
+                                        <p className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-neutral-200">
+                                            {isValidatingVideo ? 'Validating & generating poster thumbnail...' : 'Upload a short pet video clip'}
+                                        </p>
+                                        <p className="text-[11px] text-gray-400 dark:text-neutral-400 mt-1">
+                                            MP4, MOV, WEBM up to 50MB (max 60 seconds). Video is automatically compressed for fast mobile playback.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {videoError && <p className="text-xs text-red-500 font-medium">{videoError}</p>}
+                                {errors.video && <p className="text-xs text-red-500">{errors.video}</p>}
                             </div>
                         </CardContent>
                     </Card>

@@ -91,6 +91,9 @@ class PetController extends Controller
             'description' => ['nullable', 'string'],
             'photos' => ['nullable', 'array'],
             'photos.*' => ['image', 'max:4096'], // max 4MB
+            'video' => ['nullable', 'file', 'mimetypes:video/mp4,video/quicktime,video/webm', 'max:51200'], // max 50MB
+            'video_thumbnail' => ['nullable', 'image', 'max:4096'],
+            'video_duration' => ['nullable', 'integer', 'min:1', 'max:300'],
         ]);
 
         $validated['adoption_fee'] = $validated['adoption_fee'] ?? 0;
@@ -100,10 +103,11 @@ class PetController extends Controller
             'listed_at' => now(),
         ]));
 
+        $sortOrder = 0;
+
         // Process photos
         if ($request->hasFile('photos')) {
             $isPrimary = true;
-            $sortOrder = 0;
 
             foreach ($request->file('photos') as $file) {
                 if ($cloudinary->isConfigured()) {
@@ -117,12 +121,54 @@ class PetController extends Controller
                 PetPhoto::create([
                     'pet_id' => $pet->id,
                     'photo_path' => $photoPath,
+                    'media_type' => 'image',
                     'is_primary' => $isPrimary,
                     'sort_order' => $sortOrder++,
                 ]);
 
                 $isPrimary = false; // only the first photo is primary
             }
+        }
+
+        // Process video
+        if ($request->hasFile('video')) {
+            $videoFile = $request->file('video');
+            $thumbnailPath = null;
+
+            if ($request->hasFile('video_thumbnail')) {
+                if ($cloudinary->isConfigured()) {
+                    $thumbUpload = $cloudinary->upload($request->file('video_thumbnail'), 'pets/thumbnails');
+                    $thumbnailPath = $thumbUpload['secure_url'];
+                } else {
+                    $tPath = $request->file('video_thumbnail')->store('pets/thumbnails', 'public');
+                    $thumbnailPath = Storage::url($tPath);
+                }
+            }
+
+            if ($cloudinary->isConfigured()) {
+                $upload = $cloudinary->uploadVideo($videoFile, 'pets/videos');
+                $videoPath = $cloudinary->getOptimizedVideoUrl($upload['secure_url']);
+                if (! $thumbnailPath) {
+                    $thumbnailPath = $cloudinary->getVideoPosterUrl($upload['secure_url']);
+                }
+            } else {
+                $path = $videoFile->store('pets/videos', 'public');
+                $videoPath = Storage::url($path);
+                if (! $thumbnailPath) {
+                    $thumbnailPath = '/placeholder-pet.png';
+                }
+            }
+
+            PetPhoto::create([
+                'pet_id' => $pet->id,
+                'photo_path' => $thumbnailPath,
+                'media_type' => 'video',
+                'video_path' => $videoPath,
+                'thumbnail_path' => $thumbnailPath,
+                'duration_seconds' => $request->input('video_duration'),
+                'is_primary' => false,
+                'sort_order' => $sortOrder++,
+            ]);
         }
 
         Inertia::flash('toast', [
@@ -186,31 +232,72 @@ class PetController extends Controller
             'photos.*' => ['image', 'max:4096'],
             'deleted_photo_ids' => ['nullable', 'array'],
             'deleted_photo_ids.*' => ['integer'],
+            'video' => ['nullable', 'file', 'mimetypes:video/mp4,video/quicktime,video/webm', 'max:51200'],
+            'video_thumbnail' => ['nullable', 'image', 'max:4096'],
+            'video_duration' => ['nullable', 'integer', 'min:1', 'max:300'],
+            'delete_video' => ['nullable', 'boolean'],
         ]);
 
         $validated['adoption_fee'] = $validated['adoption_fee'] ?? 0;
 
         $pet->update($validated);
 
-        // Process deleted existing photos
+        // Process deleted existing photos / media
         if (! empty($validated['deleted_photo_ids'])) {
-            PetPhoto::where('pet_id', $pet->id)
+            $toDelete = PetPhoto::where('pet_id', $pet->id)
                 ->whereIn('id', $validated['deleted_photo_ids'])
-                ->delete();
+                ->get();
+
+            foreach ($toDelete as $photoItem) {
+                $rawPath = $photoItem->getRawOriginal('photo_path');
+                $rawVideo = $photoItem->getRawOriginal('video_path');
+
+                if ($rawVideo) {
+                    if (str_starts_with($rawVideo, 'http://') || str_starts_with($rawVideo, 'https://')) {
+                        $cloudinary->delete($rawVideo, ['resource_type' => 'video']);
+                    } elseif (Storage::disk('public')->exists($rawVideo)) {
+                        Storage::disk('public')->delete($rawVideo);
+                    }
+                }
+
+                if ($rawPath && (str_starts_with($rawPath, 'http://') || str_starts_with($rawPath, 'https://'))) {
+                    $cloudinary->delete($rawPath);
+                } elseif ($rawPath && Storage::disk('public')->exists($rawPath)) {
+                    Storage::disk('public')->delete($rawPath);
+                }
+
+                $photoItem->delete();
+            }
 
             // Reassign primary photo if previous primary was removed
             $hasPrimary = $pet->photos()->where('is_primary', true)->exists();
             if (! $hasPrimary) {
-                $firstPhoto = $pet->photos()->first();
+                $firstPhoto = $pet->photos()->where('media_type', '!=', 'video')->first() ?? $pet->photos()->first();
                 if ($firstPhoto) {
                     $firstPhoto->update(['is_primary' => true]);
                 }
             }
         }
 
+        // Process explicit video deletion
+        if ($request->boolean('delete_video')) {
+            $existingVideos = PetPhoto::where('pet_id', $pet->id)->where('media_type', 'video')->get();
+            foreach ($existingVideos as $vid) {
+                $rawVideo = $vid->getRawOriginal('video_path');
+                if ($rawVideo) {
+                    if (str_starts_with($rawVideo, 'http://') || str_starts_with($rawVideo, 'https://')) {
+                        $cloudinary->delete($rawVideo, ['resource_type' => 'video']);
+                    } elseif (Storage::disk('public')->exists($rawVideo)) {
+                        Storage::disk('public')->delete($rawVideo);
+                    }
+                }
+                $vid->delete();
+            }
+        }
+
         // Process new photos
         if ($request->hasFile('photos')) {
-            $sortOrder = $pet->photos()->max('sort_order') + 1;
+            $sortOrder = ($pet->photos()->max('sort_order') ?? 0) + 1;
             $hasPrimary = $pet->photos()->where('is_primary', true)->exists();
 
             foreach ($request->file('photos') as $file) {
@@ -225,12 +312,70 @@ class PetController extends Controller
                 PetPhoto::create([
                     'pet_id' => $pet->id,
                     'photo_path' => $photoPath,
+                    'media_type' => 'image',
                     'is_primary' => ! $hasPrimary,
                     'sort_order' => $sortOrder++,
                 ]);
 
                 $hasPrimary = true;
             }
+        }
+
+        // Process new video (replaces existing video)
+        if ($request->hasFile('video')) {
+            // Delete existing video first
+            $existingVideos = PetPhoto::where('pet_id', $pet->id)->where('media_type', 'video')->get();
+            foreach ($existingVideos as $vid) {
+                $rawVideo = $vid->getRawOriginal('video_path');
+                if ($rawVideo) {
+                    if (str_starts_with($rawVideo, 'http://') || str_starts_with($rawVideo, 'https://')) {
+                        $cloudinary->delete($rawVideo, ['resource_type' => 'video']);
+                    } elseif (Storage::disk('public')->exists($rawVideo)) {
+                        Storage::disk('public')->delete($rawVideo);
+                    }
+                }
+                $vid->delete();
+            }
+
+            $videoFile = $request->file('video');
+            $thumbnailPath = null;
+
+            if ($request->hasFile('video_thumbnail')) {
+                if ($cloudinary->isConfigured()) {
+                    $thumbUpload = $cloudinary->upload($request->file('video_thumbnail'), 'pets/thumbnails');
+                    $thumbnailPath = $thumbUpload['secure_url'];
+                } else {
+                    $tPath = $request->file('video_thumbnail')->store('pets/thumbnails', 'public');
+                    $thumbnailPath = Storage::url($tPath);
+                }
+            }
+
+            if ($cloudinary->isConfigured()) {
+                $upload = $cloudinary->uploadVideo($videoFile, 'pets/videos');
+                $videoPath = $cloudinary->getOptimizedVideoUrl($upload['secure_url']);
+                if (! $thumbnailPath) {
+                    $thumbnailPath = $cloudinary->getVideoPosterUrl($upload['secure_url']);
+                }
+            } else {
+                $path = $videoFile->store('pets/videos', 'public');
+                $videoPath = Storage::url($path);
+                if (! $thumbnailPath) {
+                    $thumbnailPath = '/placeholder-pet.png';
+                }
+            }
+
+            $sortOrder = ($pet->photos()->max('sort_order') ?? 0) + 1;
+
+            PetPhoto::create([
+                'pet_id' => $pet->id,
+                'photo_path' => $thumbnailPath,
+                'media_type' => 'video',
+                'video_path' => $videoPath,
+                'thumbnail_path' => $thumbnailPath,
+                'duration_seconds' => $request->input('video_duration'),
+                'is_primary' => false,
+                'sort_order' => $sortOrder,
+            ]);
         }
 
         Inertia::flash('toast', [

@@ -2,16 +2,21 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, ShieldAlert, Award, Calendar, Phone, Heart, Sparkles, MapPin, BadgeCheck, Zap, CheckCircle2, ArrowRight, ZoomIn, X, Eye, HelpCircle } from 'lucide-react';
+import { Check, ShieldAlert, Award, Calendar, Phone, Heart, Sparkles, MapPin, BadgeCheck, Zap, CheckCircle2, ArrowRight, ZoomIn, X, Eye, HelpCircle, Play, Video } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { DssScoreCard } from '@/components/dss-score-card';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { EnergyMaintenanceGuideDialog } from '@/components/energy-maintenance-guide-dialog';
+import { formatVideoDuration } from '@/lib/video-helper';
 
 interface Photo {
     id: number;
     photo_path: string;
+    media_type?: string;
+    video_path?: string | null;
+    thumbnail_path?: string | null;
+    duration_seconds?: number | null;
 }
 
 interface Pet {
@@ -76,9 +81,11 @@ export default function PetShow({
     const isViewOnlyMode = isViewOnly || isStaffOrAdmin || (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view_only') === '1');
 
     const pricingEnabled = systemSettings?.pricing_enabled ?? false;
-    const [selectedPhoto, setSelectedPhoto] = useState(pet.photos[0]?.photo_path || '/placeholder-pet.png');
+    const [selectedMedia, setSelectedMedia] = useState<Photo | null>(pet.photos[0] || null);
     const [isZoomOpen, setIsZoomOpen] = useState(false);
     const [guideOpen, setGuideOpen] = useState(false);
+
+    const isVideo = selectedMedia?.media_type === 'video' || !!selectedMedia?.video_path;
 
     const handleApply = () => {
         if (isViewOnlyMode) return;
@@ -107,36 +114,74 @@ export default function PetShow({
                     {/* ── Left Column: Media, Description & 8-Factor DSS Score Card ── */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="space-y-4">
-                            {/* Primary photo preview with Zoom */}
-                            <div 
-                                onClick={() => setIsZoomOpen(true)}
-                                className="group relative h-[420px] bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 shadow-xs cursor-zoom-in"
-                                title="Click to zoom image"
-                            >
-                                <img 
-                                    src={selectedPhoto} 
-                                    alt={pet.name} 
-                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                />
-                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                    <div className="bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 backdrop-blur-xs shadow-lg">
-                                        <ZoomIn className="size-4" /> Click to Zoom
+                            {/* Primary media preview (Video or Image) */}
+                            {isVideo ? (
+                                <div className="relative h-[420px] bg-black rounded-2xl overflow-hidden border border-gray-200 shadow-xs flex items-center justify-center group">
+                                    <video 
+                                        key={selectedMedia?.video_path || selectedMedia?.photo_path}
+                                        src={selectedMedia?.video_path || selectedMedia?.photo_path} 
+                                        poster={selectedMedia?.thumbnail_path || selectedMedia?.photo_path}
+                                        controls
+                                        playsInline
+                                        preload="metadata"
+                                        className="w-full h-full object-contain"
+                                    />
+                                    <button 
+                                        type="button"
+                                        onClick={() => setIsZoomOpen(true)}
+                                        className="absolute top-3 right-3 bg-black/60 hover:bg-black/80 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 backdrop-blur-xs cursor-pointer shadow-lg transition-opacity opacity-0 group-hover:opacity-100 z-10"
+                                        title="Theater zoom"
+                                    >
+                                        <ZoomIn className="size-3.5" /> Fullscreen
+                                    </button>
+                                </div>
+                            ) : (
+                                <div 
+                                    onClick={() => setIsZoomOpen(true)}
+                                    className="group relative h-[420px] bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 shadow-xs cursor-zoom-in"
+                                    title="Click to zoom image"
+                                >
+                                    <img 
+                                        src={selectedMedia?.photo_path || '/placeholder-pet.png'} 
+                                        alt={pet.name} 
+                                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                    />
+                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                        <div className="bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 backdrop-blur-xs shadow-lg">
+                                            <ZoomIn className="size-4" /> Click to Zoom
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
                             
                             {/* Thumbnails list */}
                             {pet.photos.length > 1 && (
                                 <div className="flex gap-2.5 overflow-x-auto pb-2">
-                                    {pet.photos.map(p => (
-                                        <button 
-                                            key={p.id} 
-                                            onClick={() => setSelectedPhoto(p.photo_path)}
-                                            className={`h-20 w-20 rounded-xl border-2 overflow-hidden shrink-0 transition-all ${selectedPhoto === p.photo_path ? 'border-[#D4A017] ring-2 ring-[#D4A017]/20 shadow-xs' : 'border-gray-200 opacity-70 hover:opacity-100'}`}
-                                        >
-                                            <img src={p.photo_path} alt="" className="w-full h-full object-cover" />
-                                        </button>
-                                    ))}
+                                    {pet.photos.map(p => {
+                                        const isSelected = (selectedMedia?.id === p.id) || (!selectedMedia && pet.photos[0]?.id === p.id);
+                                        const isVid = p.media_type === 'video' || !!p.video_path;
+                                        return (
+                                            <button 
+                                                key={p.id} 
+                                                onClick={() => setSelectedMedia(p)}
+                                                className={`relative h-20 w-20 rounded-xl border-2 overflow-hidden shrink-0 transition-all ${isSelected ? 'border-[#D4A017] ring-2 ring-[#D4A017]/20 shadow-xs' : 'border-gray-200 opacity-70 hover:opacity-100'}`}
+                                            >
+                                                <img src={p.thumbnail_path || p.photo_path} alt="" className="w-full h-full object-cover" />
+                                                {isVid && (
+                                                    <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
+                                                        <div className="bg-black/60 text-white p-1 rounded-full shadow-sm">
+                                                            <Play className="size-3 fill-current text-white" />
+                                                        </div>
+                                                        {p.duration_seconds && (
+                                                            <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] font-bold px-1 rounded">
+                                                                {formatVideoDuration(p.duration_seconds)}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -400,36 +445,57 @@ export default function PetShow({
                 </div>
             </div>
 
-            {/* ── High-Resolution Photo Zoom Modal ── */}
+            {/* ── High-Resolution Photo / Video Zoom Modal ── */}
             <Dialog open={isZoomOpen} onOpenChange={setIsZoomOpen}>
                 <DialogContent 
                     className="sm:max-w-4xl max-h-[92vh] p-3 bg-black/95 border-neutral-800 text-white flex flex-col items-center justify-center overflow-hidden" 
                     showCloseButton={true}
                 >
                     <div className="sr-only">
-                        <DialogTitle>{pet.name} - Photo Zoom View</DialogTitle>
+                        <DialogTitle>{pet.name} - Media View</DialogTitle>
                     </div>
 
                     <div className="relative w-full max-h-[82vh] flex items-center justify-center overflow-auto rounded-lg">
-                        <img 
-                            src={selectedPhoto} 
-                            alt={pet.name} 
-                            className="max-h-[80vh] w-auto max-w-full object-contain rounded-md shadow-2xl transition-all"
-                        />
+                        {selectedMedia?.media_type === 'video' || selectedMedia?.video_path ? (
+                            <video
+                                key={selectedMedia.video_path || selectedMedia.photo_path}
+                                src={selectedMedia.video_path || selectedMedia.photo_path}
+                                poster={selectedMedia.thumbnail_path || selectedMedia.photo_path}
+                                controls
+                                autoPlay
+                                playsInline
+                                className="max-h-[80vh] w-auto max-w-full rounded-md shadow-2xl"
+                            />
+                        ) : (
+                            <img 
+                                src={selectedMedia?.photo_path || '/placeholder-pet.png'} 
+                                alt={pet.name} 
+                                className="max-h-[80vh] w-auto max-w-full object-contain rounded-md shadow-2xl transition-all"
+                            />
+                        )}
                     </div>
 
                     {/* Modal bottom thumbnails */}
                     {pet.photos.length > 1 && (
                         <div className="flex gap-2 overflow-x-auto pt-2 pb-1 max-w-full">
-                            {pet.photos.map(p => (
-                                <button 
-                                    key={p.id} 
-                                    onClick={() => setSelectedPhoto(p.photo_path)}
-                                    className={`h-14 w-14 rounded-lg border-2 overflow-hidden shrink-0 transition-all ${selectedPhoto === p.photo_path ? 'border-[#D4A017] ring-2 ring-[#D4A017]/40' : 'border-neutral-700 opacity-60 hover:opacity-100'}`}
-                                >
-                                    <img src={p.photo_path} alt="" className="w-full h-full object-cover" />
-                                </button>
-                            ))}
+                            {pet.photos.map(p => {
+                                const isSelected = (selectedMedia?.id === p.id) || (!selectedMedia && pet.photos[0]?.id === p.id);
+                                const isVid = p.media_type === 'video' || !!p.video_path;
+                                return (
+                                    <button 
+                                        key={p.id} 
+                                        onClick={() => setSelectedMedia(p)}
+                                        className={`relative h-14 w-14 rounded-lg border-2 overflow-hidden shrink-0 transition-all ${isSelected ? 'border-[#D4A017] ring-2 ring-[#D4A017]/40' : 'border-neutral-700 opacity-60 hover:opacity-100'}`}
+                                    >
+                                        <img src={p.thumbnail_path || p.photo_path} alt="" className="w-full h-full object-cover" />
+                                        {isVid && (
+                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                                <Play className="size-2.5 fill-current text-white" />
+                                            </div>
+                                        )}
+                                    </button>
+                                );
+                            })}
                         </div>
                     )}
                 </DialogContent>

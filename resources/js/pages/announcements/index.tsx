@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Megaphone, Search, X, Calendar, ArrowRight, Tag } from 'lucide-react';
+import { Megaphone, Search, X, Calendar, ArrowRight, Tag, Play, Video } from 'lucide-react';
 import { useState } from 'react';
 import { AppFooter } from '@/components/app-footer';
 import { getTheme } from '@/lib/theme-templates';
@@ -15,6 +15,9 @@ interface Announcement {
     category: string;
     content: string;
     image_path?: string | null;
+    video_path?: string | null;
+    video_thumbnail_path?: string | null;
+    video_duration?: number | null;
     published_at?: string | null;
 }
 
@@ -157,14 +160,21 @@ export default function AnnouncementsIndex({ config, announcements, categories =
                             >
                                 <Card className={`h-full border-gray-200 shadow-xs hover:shadow-md ${theme.hoverBorder} transition-all rounded-2xl overflow-hidden flex flex-col justify-between group-hover:-translate-y-0.5 duration-200`}>
                                     <div>
-                                        {item.image_path ? (
+                                        {(item.image_path || item.video_thumbnail_path) ? (
                                             <div className="w-full h-48 bg-gray-100 relative overflow-hidden">
                                                 <img
-                                                    src={item.image_path.startsWith('http') || item.image_path.startsWith('/storage/') ? item.image_path : `/storage/${item.image_path}`}
+                                                    src={(item.video_thumbnail_path || item.image_path)!.startsWith('http') || (item.video_thumbnail_path || item.image_path)!.startsWith('/storage/') ? (item.video_thumbnail_path || item.image_path)! : `/storage/${item.video_thumbnail_path || item.image_path}`}
                                                     alt={item.title}
                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                 />
-                                                <span className={`absolute top-3 left-3 text-[10px] font-bold ${theme.announcementBadge} px-2.5 py-0.5 rounded-full uppercase shadow-xs`}>
+                                                {item.video_path && (
+                                                    <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
+                                                        <div className="bg-black/60 text-white p-2.5 rounded-full backdrop-blur-xs shadow-md group-hover:scale-110 transition-transform">
+                                                            <Play className="size-4 fill-current text-white" />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <span className={`absolute top-3 left-3 text-[10px] font-bold ${theme.announcementBadge} px-2.5 py-0.5 rounded-full uppercase shadow-xs z-10`}>
                                                     {item.category}
                                                 </span>
                                             </div>

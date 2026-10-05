@@ -187,13 +187,13 @@ export default function PersonalInfo({ profile, userName, ekycEnabled = true }: 
             <Head title={ekycEnabled ? "Step 2: Personal Information - FurFect" : "Step 1: Personal Information - FurFect"} />
             
             {/* Page Header Banner */}
-            <div className="bg-gradient-to-r from-[#FFFDF0] via-[#FFF78D]/30 to-[#467235]/10 border border-[#467235]/20 rounded-2xl p-5 shadow-xs mb-1">
+            <div className="bg-gradient-to-r from-[#FFFDF0] via-[#FFF78D]/30 to-[#467235]/10 border border-[#467235]/20 rounded-2xl p-5 shadow-xs mb-5">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
                         <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#283F24] bg-[#FFF78D] px-2.5 py-1 rounded-full border border-[#FFBF00]/50 mb-1.5">
                             <ShieldCheck className="size-3.5 text-[#467235]" /> {ekycEnabled ? 'Step 2 of 3 — Personal Information' : 'Step 1 of 2 — Personal Information'}
                         </div>
-                        <h1 className="text-2xl font-bold text-[#283F24]">Adopter Profile & Particulars</h1>
+                        <h1 className="text-2xl font-bold text-[#283F24]">Adopter Profile &amp; Particulars</h1>
                         <p className="text-sm text-gray-600 mt-0.5">
                             {profile?.is_identity_verified 
                                 ? 'Your identity has been verified. Please review and complete your contact and adoption details.'
@@ -205,30 +205,34 @@ export default function PersonalInfo({ profile, userName, ekycEnabled = true }: 
 
             {/* Verified Identity Status Notice */}
             {profile?.is_identity_verified ? (
-                <div className="rounded-xl border border-emerald-300 bg-emerald-50/80 p-4 flex items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white">
-                            <ShieldCheck className="h-5 w-5" />
+                <div className="mb-6 rounded-2xl border border-emerald-300/80 bg-gradient-to-r from-emerald-50 via-emerald-50/70 to-teal-50/50 p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-start sm:items-center gap-3.5">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm shadow-emerald-600/30">
+                            <ShieldCheck className="h-6 w-6" />
                         </div>
                         <div>
-                            <span className="font-bold text-emerald-950 block">Identity Authenticated via eKYC</span>
-                            <span className="text-emerald-800">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-bold text-emerald-950 text-sm sm:text-base">
+                                    {profile?.liveness_verified ? 'Identity Authenticated via eKYC' : 'Identity Verified & Authenticated'}
+                                </span>
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                                    <Lock className="size-2.5 text-emerald-700" /> Locked &amp; Protected
+                                </span>
+                            </div>
+                            <p className="text-xs sm:text-sm text-emerald-800/90 mt-1 leading-relaxed">
                                 Your name, date of birth, and valid ID have been verified and locked for adoption security.
-                            </span>
+                            </p>
                         </div>
                     </div>
-                    {/* <Link href={route('onboarding.ekyc.show')}>
-                        <Button variant="outline" size="sm" className="text-xs border-emerald-300 text-emerald-800 hover:bg-emerald-100/60">
-                            View eKYC Details
-                        </Button>
-                    </Link> */}
                 </div>
             ) : (
-                <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3.5 flex items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-2.5">
-                        <ShieldCheck className="h-4 w-4 text-amber-700 shrink-0" />
-                        <span className="text-amber-900">
-                            Want to fast-track your adoption? You can complete 60-second automated ID & biometric verification in Step 1.
+                <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/60 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-800">
+                            <ShieldCheck className="h-5 w-5 text-amber-700" />
+                        </div>
+                        <span className="text-amber-900 font-medium">
+                            Want to fast-track your adoption? You can complete 60-second automated ID &amp; biometric verification in Step 1.
                         </span>
                     </div>
                     <Link href={route('onboarding.ekyc.show')}>
@@ -240,20 +244,26 @@ export default function PersonalInfo({ profile, userName, ekycEnabled = true }: 
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* 2-Column Responsive Layout for Desktop */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                {/* 2x2 Grid Layout for Desktop, 1-Column for Mobile */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
                     
-                    {/* LEFT COLUMN: Basic Info & Pet Ownership History */}
-                    <div className="space-y-6">
-                        {/* Basic Personal Particulars Card */}
-                        <Card className="border-[#467235]/20 shadow-xs">
-                            <CardHeader className="bg-[#FFFDF0] border-b border-[#467235]/15 py-3.5 px-5">
+                    {/* Card 1 (Col 1, Row 1): Basic Personal Particulars Card */}
+                    <Card className="border-[#467235]/20 shadow-xs flex flex-col justify-between">
+                        <CardHeader className="bg-[#FFFDF0] border-b border-[#467235]/15 py-3.5 px-5 min-h-[72px] flex flex-col justify-center">
+                            <div className="flex items-center justify-between gap-2">
                                 <CardTitle className="text-base font-bold text-[#283F24] flex items-center gap-2">
                                     <User className="size-4 text-[#467235]" /> Basic Particulars
                                 </CardTitle>
-                                <CardDescription className="text-xs">Your primary contact details for verification.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="p-5 space-y-4">
+                                {profile?.is_identity_verified && (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded-full border border-emerald-300 shrink-0">
+                                        <ShieldCheck className="size-3 text-emerald-600" /> Verified
+                                    </span>
+                                )}
+                            </div>
+                            <CardDescription className="text-xs">Your primary contact details for verification.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-5 space-y-4 flex flex-col justify-between flex-1">
+                            <div className="space-y-4">
                                 <div className="space-y-1.5">
                                     <Label htmlFor="full_name" className="text-xs font-semibold text-gray-700">Full Name *</Label>
                                     <Input 
@@ -332,85 +342,107 @@ export default function PersonalInfo({ profile, userName, ekycEnabled = true }: 
                                     </Select>
                                     {errors.pet_stay && <p className="text-red-500 text-xs">{errors.pet_stay}</p>}
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                        {/* Pet Ownership History Card */}
-                        <Card className="border-[#467235]/20 shadow-xs">
-                            <CardHeader className="bg-[#FFFDF0] border-b border-[#467235]/15 py-3.5 px-5">
+                    {/* Card 2 (Col 2, Row 1): Valid ID Verification Card (Locked if verified, editable if not) */}
+                    <Card className="border-[#467235]/20 shadow-xs flex flex-col justify-between">
+                        <CardHeader className="bg-[#FFFDF0] border-b border-[#467235]/15 py-3.5 px-5 min-h-[72px] flex flex-col justify-center">
+                            <div className="flex items-center justify-between gap-2">
                                 <CardTitle className="text-base font-bold text-[#283F24] flex items-center gap-2">
-                                    <User className="size-4 text-[#467235]" /> Pet Ownership History
+                                    <CreditCard className="size-4 text-[#467235]" /> Valid ID Verification
                                 </CardTitle>
-                                <CardDescription className="text-xs">Past pet parenting experience.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="p-5 space-y-4">
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-semibold text-gray-700">Have you owned a pet before? *</Label>
-                                    <div className="flex flex-wrap gap-4 pt-1">
-                                        {[
-                                            { id: 'currently_have', label: 'Currently Have' },
-                                            { id: 'had_before', label: 'Had Before' },
-                                            { id: 'never', label: 'Never (First Time)' },
-                                        ].map(opt => (
-                                            <label key={opt.id} className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-medium text-gray-700">
-                                                <input 
-                                                    type="radio" 
-                                                    name="had_pets_before" 
-                                                    value={opt.id} 
-                                                    checked={data.had_pets_before === opt.id}
-                                                    onChange={e => setData('had_pets_before', e.target.value)}
-                                                    className="accent-[#467235] focus:ring-[#467235]"
-                                                />
-                                                <span>{opt.label}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {data.had_pets_before !== 'never' && (
-                                    <div className="space-y-1.5 pt-1">
-                                        <Label htmlFor="previous_pet_notes" className="text-xs font-semibold text-gray-700">If yes, what happened to your previous pet(s)?</Label>
-                                        <Input 
-                                            id="previous_pet_notes" 
-                                            value={data.previous_pet_notes} 
-                                            onChange={e => setData('previous_pet_notes', e.target.value)} 
-                                            placeholder="e.g., Still with me, passed away naturally, etc."
-                                            className="focus-visible:ring-[#467235] text-xs"
-                                        />
-                                    </div>
+                                {profile?.is_identity_verified ? (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-100/90 px-2.5 py-0.5 rounded-full border border-emerald-300 shrink-0">
+                                        <ShieldCheck className="size-3 text-emerald-600" /> Verified
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-800 bg-amber-100/90 px-2 py-0.5 rounded-full border border-amber-300 shrink-0">
+                                        Required
+                                    </span>
                                 )}
+                            </div>
+                            <CardDescription className="text-xs">
+                                {profile?.is_identity_verified 
+                                    ? 'Government or institutional ID verified for adoption security.'
+                                    : 'Government or institutional ID for adopter legitimacy.'}
+                            </CardDescription>
+                        </CardHeader>
+                        
+                        {profile?.is_identity_verified ? (
+                            <CardContent className="p-5 space-y-4 flex flex-col justify-between flex-1">
+                                <input type="hidden" name="valid_id_type" value={data.valid_id_type} />
+                                <input type="hidden" name="valid_id_number" value={data.valid_id_number} />
+                                
+                                <div className="space-y-3.5">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div className="p-3 rounded-xl border border-emerald-200/80 bg-emerald-50/50 space-y-1">
+                                            <span className="text-[11px] font-semibold text-emerald-900/80 flex items-center gap-1">
+                                                <CreditCard className="size-3 text-emerald-700" /> Verified ID Type
+                                            </span>
+                                            <p className="text-xs font-bold text-[#283F24] truncate" title={data.valid_id_type || profile.valid_id_type || 'Government ID'}>
+                                                {data.valid_id_type || profile.valid_id_type || 'Government ID'}
+                                            </p>
+                                        </div>
+                                        <div className="p-3 rounded-xl border border-emerald-200/80 bg-emerald-50/50 space-y-1">
+                                            <span className="text-[11px] font-semibold text-emerald-900/80 flex items-center gap-1">
+                                                <Hash className="size-3 text-emerald-700" /> Verified ID Number
+                                            </span>
+                                            <p className="text-xs font-bold text-[#283F24] font-mono truncate" title={data.valid_id_number || profile.valid_id_number || '••••••••'}>
+                                                {data.valid_id_number || profile.valid_id_number || '••••••••'}
+                                            </p>
+                                        </div>
+                                    </div>
 
-                                <div className="flex items-center space-x-2 pt-2 border-t border-gray-100">
-                                    <Checkbox 
-                                        id="surrendered_pet" 
-                                        checked={data.surrendered_pet} 
-                                        onCheckedChange={checked => setData('surrendered_pet', !!checked)}
-                                        className="data-[state=checked]:bg-[#467235] data-[state=checked]:border-[#467235]"
-                                    />
-                                    <Label htmlFor="surrendered_pet" className="cursor-pointer text-xs sm:text-sm text-gray-700">
-                                        Have you ever surrendered a pet to a shelter before? *
-                                    </Label>
+                                    {/* Document Inspection & Details */}
+                                    <div className="p-3.5 rounded-xl border border-[#467235]/20 bg-[#FFFDF0]/60 space-y-2.5">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-xs font-semibold text-[#283F24] flex items-center gap-1.5">
+                                                <FileText className="size-3.5 text-[#467235]" /> Verified Identity Credentials
+                                            </span>
+                                            <span className="text-[10px] font-medium text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full border border-emerald-300/50">
+                                                {profile.has_id_document || profile.front_preview_url ? 'Document Stored' : 'Shelter Verified'}
+                                            </span>
+                                        </div>
+
+                                        {(profile.front_preview_url || profile.has_id_document || profile.back_preview_url || profile.has_id_document_back) ? (
+                                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                                                {(profile.front_preview_url || profile.has_id_document) && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setActiveIdModal({ open: true, side: 'front' })}
+                                                        className="text-xs h-8 border-[#467235]/30 text-[#283F24] hover:bg-[#FFF78D]/30 flex items-center gap-1.5 px-3 cursor-pointer"
+                                                    >
+                                                        <Eye className="size-3.5 text-[#467235]" />
+                                                        <span>View Front ID</span>
+                                                    </Button>
+                                                )}
+                                                {(profile.back_preview_url || profile.has_id_document_back) && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setActiveIdModal({ open: true, side: 'back' })}
+                                                        className="text-xs h-8 border-[#467235]/30 text-[#283F24] hover:bg-[#FFF78D]/30 flex items-center gap-1.5 px-3 cursor-pointer"
+                                                    >
+                                                        <Eye className="size-3.5 text-[#467235]" />
+                                                        <span>View Back ID</span>
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs text-gray-600">
+                                                Identity record verified and cleared under official shelter supervision.
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* RIGHT COLUMN: Valid ID & Document Verification + Adoption Reason */}
-                    <div className="space-y-6">
-                        {/* ID Verification Card */}
-                        <Card className="border-[#467235]/20 shadow-xs">
-                            <CardHeader className="bg-[#FFFDF0] border-b border-[#467235]/15 py-3.5 px-5">
-                                <div className="flex items-center justify-between">
-                                    <CardTitle className="text-base font-bold text-[#283F24] flex items-center gap-2">
-                                        <CreditCard className="size-4 text-[#467235]" /> Valid ID Verification
-                                    </CardTitle>
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-[#FFF78D] px-2 py-0.5 rounded-full border border-[#FFBF00]/40">
-                                        <ShieldCheck className="size-3 text-[#467235]" /> Verified Identity
-                                    </span>
-                                </div>
-                                <CardDescription className="text-xs">Government or institutional ID for adopter legitimacy.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="p-5 space-y-4">
+                        ) : (
+                            <CardContent className="p-5 space-y-4 flex flex-col justify-between flex-1">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <Label htmlFor="valid_id_type" className="text-xs font-semibold text-gray-700">Valid ID Type *</Label>
@@ -631,17 +663,80 @@ export default function PersonalInfo({ profile, userName, ekycEnabled = true }: 
                                     </div>
                                 </div>
                             </CardContent>
-                        </Card>
+                        )}
+                    </Card>
 
-                        {/* Reason for Adoption Card */}
-                        <Card className="border-[#467235]/20 shadow-xs">
-                            <CardHeader className="bg-[#FFFDF0] border-b border-[#467235]/15 py-3.5 px-5">
-                                <CardTitle className="text-base font-bold text-[#283F24] flex items-center gap-2">
-                                    <Heart className="size-4 text-[#467235]" /> Adoption Intentions
-                                </CardTitle>
-                                <CardDescription className="text-xs">Why you wish to welcome a pet into your life.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="p-5 space-y-4">
+                    {/* Card 3 (Col 1, Row 2): Pet Ownership History Card */}
+                    <Card className="border-[#467235]/20 shadow-xs flex flex-col justify-between">
+                        <CardHeader className="bg-[#FFFDF0] border-b border-[#467235]/15 py-3.5 px-5 min-h-[72px] flex flex-col justify-center">
+                            <CardTitle className="text-base font-bold text-[#283F24] flex items-center gap-2">
+                                <User className="size-4 text-[#467235]" /> Pet Ownership History
+                            </CardTitle>
+                            <CardDescription className="text-xs">Past pet parenting experience.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-5 space-y-4 flex flex-col justify-between flex-1">
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-semibold text-gray-700">Have you owned a pet before? *</Label>
+                                    <div className="flex flex-wrap gap-4 pt-1">
+                                        {[
+                                            { id: 'currently_have', label: 'Currently Have' },
+                                            { id: 'had_before', label: 'Had Before' },
+                                            { id: 'never', label: 'Never (First Time)' },
+                                        ].map(opt => (
+                                            <label key={opt.id} className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-medium text-gray-700">
+                                                <input 
+                                                    type="radio" 
+                                                    name="had_pets_before" 
+                                                    value={opt.id} 
+                                                    checked={data.had_pets_before === opt.id}
+                                                    onChange={e => setData('had_pets_before', e.target.value)}
+                                                    className="accent-[#467235] focus:ring-[#467235]"
+                                                />
+                                                <span>{opt.label}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {data.had_pets_before !== 'never' && (
+                                    <div className="space-y-1.5 pt-1">
+                                        <Label htmlFor="previous_pet_notes" className="text-xs font-semibold text-gray-700">If yes, what happened to your previous pet(s)?</Label>
+                                        <Input 
+                                            id="previous_pet_notes" 
+                                            value={data.previous_pet_notes} 
+                                            onChange={e => setData('previous_pet_notes', e.target.value)} 
+                                            placeholder="e.g., Still with me, passed away naturally, etc."
+                                            className="focus-visible:ring-[#467235] text-xs"
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="flex items-center space-x-2 pt-2 border-t border-gray-100">
+                                    <Checkbox 
+                                        id="surrendered_pet" 
+                                        checked={data.surrendered_pet} 
+                                        onCheckedChange={checked => setData('surrendered_pet', !!checked)}
+                                        className="data-[state=checked]:bg-[#467235] data-[state=checked]:border-[#467235]"
+                                    />
+                                    <Label htmlFor="surrendered_pet" className="cursor-pointer text-xs sm:text-sm text-gray-700">
+                                        Have you ever surrendered a pet to a shelter before? *
+                                    </Label>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Card 4 (Col 2, Row 2): Reason for Adoption Card */}
+                    <Card className="border-[#467235]/20 shadow-xs flex flex-col justify-between">
+                        <CardHeader className="bg-[#FFFDF0] border-b border-[#467235]/15 py-3.5 px-5 min-h-[72px] flex flex-col justify-center">
+                            <CardTitle className="text-base font-bold text-[#283F24] flex items-center gap-2">
+                                <Heart className="size-4 text-[#467235]" /> Adoption Intentions
+                            </CardTitle>
+                            <CardDescription className="text-xs">Why you wish to welcome a pet into your life.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-5 space-y-4 flex flex-col justify-between flex-1">
+                            <div className="space-y-4">
                                 <div className="space-y-1.5">
                                     <Label htmlFor="adoption_reason" className="text-xs font-semibold text-gray-700">Primary Reason for Adoption *</Label>
                                     <Select 
@@ -674,9 +769,9 @@ export default function PersonalInfo({ profile, userName, ekycEnabled = true }: 
                                     />
                                     {errors.adoption_reason_text && <p className="text-red-500 text-xs">{errors.adoption_reason_text}</p>}
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 {/* BOTTOM FULL-WIDTH: Declaration & Agreement Card */}

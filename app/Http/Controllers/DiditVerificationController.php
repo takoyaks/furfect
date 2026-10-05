@@ -127,7 +127,7 @@ class DiditVerificationController extends Controller
      */
     public function status(Request $request, DiditVerificationService $service): JsonResponse
     {
-        $user = $request->user();
+        $user = $request->user()?->fresh();
 
         if (! $user) {
             return response()->json(['error' => 'Unauthenticated.'], 401);

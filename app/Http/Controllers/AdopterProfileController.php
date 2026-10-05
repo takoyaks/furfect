@@ -87,7 +87,7 @@ class AdopterProfileController extends Controller
      */
     public function edit(Request $request): Response|RedirectResponse
     {
-        $user = $request->user();
+        $user = $request->user()->fresh();
         $ekycEnabled = (bool) SystemSetting::get('ekyc_enabled', true);
 
         // Require eKYC verification before accessing Step 2 if eKYC is enabled
@@ -126,7 +126,7 @@ class AdopterProfileController extends Controller
      */
     public function store(Request $request, EncryptedFileStorageService $fileStorage, CloudinaryService $cloudinary): RedirectResponse
     {
-        $user = $request->user();
+        $user = $request->user()->fresh();
         $ekycEnabled = (bool) SystemSetting::get('ekyc_enabled', true);
 
         // Require eKYC verification before submitting Step 2 if eKYC is enabled

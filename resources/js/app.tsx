@@ -17,10 +17,17 @@ const routesMap: Record<string, string> = {
     'how-it-works': '/how-it-works',
     'about': '/about',
     
+    'onboarding.ekyc.show': '/onboarding/ekyc',
     'onboarding.personal.edit': '/onboarding/personal',
     'onboarding.personal.store': '/onboarding/personal',
     'onboarding.lifestyle.edit': '/onboarding/lifestyle',
     'onboarding.lifestyle.store': '/onboarding/lifestyle',
+    
+    'identity.verification.session': '/identity/verification/session',
+    'identity.verification.status': '/identity/verification/status',
+    'identity.verification.callback': '/identity/verification/callback',
+    'identity.verification.webhook': '/webhooks/didit',
+    'adopter.id-document.show': '/adopter/{profile}/id-document',
     
     'matches.index': '/matches',
     'history.index': '/history',
@@ -68,6 +75,11 @@ const routesMap: Record<string, string> = {
     'admin.dashboard': '/admin/dashboard',
     'admin.applications.index': '/admin/applications',
     'admin.applications.show': '/admin/applications/{id}',
+    'admin.applications.update': '/admin/applications/{id}',
+    'admin.applications.audit': '/admin/applications/{id}/audit',
+    'admin.applications.release': '/admin/applications/{id}/release',
+    'admin.applications.unclaimed': '/admin/applications/{id}/unclaimed',
+    'admin.applications.close': '/admin/applications/{id}/close',
     'admin.applications.destroy': '/admin/applications/{id}',
     'admin.pets.index': '/admin/pets',
     'admin.pets.destroy': '/admin/pets/{id}',
@@ -75,6 +87,10 @@ const routesMap: Record<string, string> = {
     'admin.users.store': '/admin/users',
     'admin.users.update': '/admin/users/{id}',
     'admin.users.reset-password': '/admin/users/{id}/reset-password',
+    'admin.users.toggle-verification': '/admin/users/{id}/toggle-verification',
+    'admin.users.reset-subscriber': '/admin/users/{id}/reset-subscriber',
+    'admin.users.suspend': '/admin/users/{id}/suspend',
+    'admin.users.unsuspend': '/admin/users/{id}/unsuspend',
     'admin.users.destroy': '/admin/users/{id}',
     'admin.shelters.index': '/admin/shelters',
     'admin.shelters.store': '/admin/shelters',
@@ -97,6 +113,7 @@ const routesMap: Record<string, string> = {
 const globalRouteHelper = (name: string, params?: any): string => {
     let url = routesMap[name];
     if (!url) {
+        console.warn(`[route] Route "${name}" not found in routesMap.`);
         return '';
     }
 

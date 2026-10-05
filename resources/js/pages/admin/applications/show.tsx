@@ -121,7 +121,10 @@ export default function AdminApplicationShow({
         const actionText = isVerified ? 'revoke identity verification for' : 'manually approve and verify identity for';
         if (confirm(`Are you sure you want to ${actionText} ${application.adopter.name}? This will bypass Didit verification.`)) {
             setIsVerifyingAdopter(true);
-            router.post(route('admin.users.toggle-verification', application.adopter.id), {}, {
+            const targetUrl = (typeof route === 'function' && route('admin.users.toggle-verification', application.adopter.id))
+                || `/admin/users/${application.adopter.id}/toggle-verification`;
+
+            router.post(targetUrl, { action: isVerified ? 'revoke' : 'verify' }, {
                 preserveScroll: true,
                 onFinish: () => setIsVerifyingAdopter(false),
             });

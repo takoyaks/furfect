@@ -183,11 +183,19 @@ class User extends Authenticatable
      */
     public function isIdentityVerified(): bool
     {
-        if ((bool) ($this->adopterProfile?->is_identity_verified)) {
+        $profile = $this->relationLoaded('adopterProfile') && $this->adopterProfile !== null
+            ? $this->adopterProfile
+            : $this->adopterProfile()->first();
+
+        if ($profile && (bool) $profile->is_identity_verified) {
             return true;
         }
 
-        if ($this->latestDiditVerification?->isApproved()) {
+        $latestDidit = $this->relationLoaded('latestDiditVerification') && $this->latestDiditVerification !== null
+            ? $this->latestDiditVerification
+            : $this->latestDiditVerification()->first();
+
+        if ($latestDidit?->isApproved()) {
             return true;
         }
 

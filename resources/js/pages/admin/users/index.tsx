@@ -33,6 +33,7 @@ import {
     Activity,
     Ban,
     Unlock,
+    Upload,
 } from 'lucide-react';
 
 interface AdopterProfileData {
@@ -134,6 +135,15 @@ export default function AdminUsers({
     const [suspendingUser, setSuspendingUser] = useState<User | null>(null);
     const [suspensionReason, setSuspensionReason] = useState<string>('');
     const [isSubmittingSuspension, setIsSubmittingSuspension] = useState(false);
+
+    // Manual Identity Verification Modal state
+    const [verifyingSubscriber, setVerifyingSubscriber] = useState<User | null>(null);
+    const [manualIdType, setManualIdType] = useState<string>('Philippine Identification (PhilID / ePhilID)');
+    const [manualIdNumber, setManualIdNumber] = useState<string>('');
+    const [manualIdFile, setManualIdFile] = useState<File | null>(null);
+    const [manualNotes, setManualNotes] = useState<string>('');
+    const [manualVerifyErrors, setManualVerifyErrors] = useState<Record<string, string>>({});
+    const [isSubmittingManualVerify, setIsSubmittingManualVerify] = useState<boolean>(false);
 
     const handleSuspendSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -270,15 +280,69 @@ export default function AdminUsers({
     const [togglingVerificationId, setTogglingVerificationId] = useState<number | null>(null);
 
     const handleToggleVerification = (u: User) => {
-        const isVerified = Boolean(u.adopter_profile?.is_identity_verified);
-        const actionText = isVerified ? 'revoke identity verification for' : 'manually approve identity verification for';
-        if (confirm(`Are you sure you want to ${actionText} ${u.name}?`)) {
-            setTogglingVerificationId(u.id);
-            router.post(route('admin.users.toggle-verification', u.id), {}, {
-                preserveScroll: true,
-                onFinish: () => setTogglingVerificationId(null),
-            });
+        const profile = u.adopter_profile || (u as any).adopterProfile;
+        const isVerified = Boolean(profile?.is_identity_verified);
+        const targetUrl = (typeof route === 'function' && route('admin.users.toggle-verification', u.id))
+            || `/admin/users/${u.id}/toggle-verification`;
+
+        if (isVerified) {
+            if (confirm(`Are you sure you want to revoke identity verification for ${u.name}?`)) {
+                setTogglingVerificationId(u.id);
+                router.post(targetUrl, { action: 'revoke' }, {
+                    preserveScroll: true,
+                    onFinish: () => setTogglingVerificationId(null),
+                });
+            }
+        } else {
+            setVerifyingSubscriber(u);
+            setManualIdType(profile?.valid_id_type || 'Philippine Identification (PhilID / ePhilID)');
+            setManualIdNumber(
+                profile?.valid_id_number && profile.valid_id_number !== 'VERIFIED-MANUAL-ADMIN'
+                    ? profile.valid_id_number
+                    : 'VERIFIED-MANUAL-ADMIN'
+            );
+            setManualIdFile(null);
+            setManualNotes('');
+            setManualVerifyErrors({});
         }
+    };
+
+    const handleManualVerifySubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!verifyingSubscriber) return;
+
+        setIsSubmittingManualVerify(true);
+        setManualVerifyErrors({});
+
+        const idNum = manualIdNumber.trim() || 'VERIFIED-MANUAL-ADMIN';
+        const payload: Record<string, any> = {
+            action: 'verify',
+            valid_id_type: manualIdType,
+            valid_id_number: idNum,
+            notes: manualNotes,
+        };
+        if (manualIdFile) {
+            payload.id_document = manualIdFile;
+        }
+
+        const targetUrl = (typeof route === 'function' && route('admin.users.toggle-verification', verifyingSubscriber.id))
+            || `/admin/users/${verifyingSubscriber.id}/toggle-verification`;
+
+        router.post(targetUrl, payload, {
+            preserveScroll: true,
+            forceFormData: true,
+            onError: (errs) => {
+                setManualVerifyErrors(errs);
+            },
+            onSuccess: () => {
+                setVerifyingSubscriber(null);
+                setManualIdFile(null);
+                setManualIdNumber('');
+                setManualNotes('');
+                setManualVerifyErrors({});
+            },
+            onFinish: () => setIsSubmittingManualVerify(false),
+        });
     };
 
     const handleResetSubscriber = () => {
@@ -884,6 +948,139 @@ export default function AdminUsers({
                                 Close
                             </Button>
                         </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Manual Identity Verification Modal */}
+                <Dialog open={verifyingSubscriber !== null} onOpenChange={open => !open && !isSubmittingManualVerify && setVerifyingSubscriber(null)}>
+                    <DialogContent className="max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle className="text-base font-bold flex items-center gap-2 text-emerald-800">
+                                <ShieldCheck className="size-5 text-emerald-600" />
+                                <span>Manual eKYC & Identity Verification</span>
+                            </DialogTitle>
+                            <DialogDescription className="text-xs">
+                                Manually override identity verification for <strong>{verifyingSubscriber?.name}</strong> ({verifyingSubscriber?.email}).
+                                This will mark the adopter's identity as verified and allow them to proceed directly to the next onboarding steps.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <form onSubmit={handleManualVerifySubmit} className="space-y-4 py-1 text-xs">
+                            {Object.keys(manualVerifyErrors).length > 0 && (
+                                <div className="rounded-lg bg-red-50 border border-red-200 p-2.5 text-xs text-red-700 space-y-1">
+                                    <div className="font-semibold flex items-center gap-1.5">
+                                        <AlertTriangle className="size-4 shrink-0 text-red-600" />
+                                        <span>Unable to verify identity:</span>
+                                    </div>
+                                    <ul className="list-disc list-inside text-[11px] text-red-600 pl-1">
+                                        {Object.entries(manualVerifyErrors).map(([key, msg]) => (
+                                            <li key={key}>{msg}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="manual-id-type" className="font-semibold text-gray-700">
+                                    Valid ID Type <span className="text-red-500">*</span>
+                                </Label>
+                                <Select value={manualIdType} onValueChange={setManualIdType}>
+                                    <SelectTrigger id="manual-id-type" className="h-9 text-xs">
+                                        <SelectValue placeholder="Select ID Type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Philippine Identification (PhilID / ePhilID)">Philippine Identification (PhilID / ePhilID)</SelectItem>
+                                        <SelectItem value="Driver's License">Driver's License</SelectItem>
+                                        <SelectItem value="Passport">Passport</SelectItem>
+                                        <SelectItem value="Social Security System (SSS) / UMID">Social Security System (SSS) / UMID</SelectItem>
+                                        <SelectItem value="Professional Regulation Commission (PRC) ID">Professional Regulation Commission (PRC) ID</SelectItem>
+                                        <SelectItem value="Postal ID">Postal ID</SelectItem>
+                                        <SelectItem value="Voter's ID">Voter's ID</SelectItem>
+                                        <SelectItem value="Barangay ID / Certificate">Barangay ID / Certificate</SelectItem>
+                                        <SelectItem value="Government Employee ID">Government Employee ID</SelectItem>
+                                        <SelectItem value="Other Government-Issued ID">Other Government-Issued ID</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="manual-id-number" className="font-semibold text-gray-700">
+                                    Valid ID Number
+                                </Label>
+                                <Input
+                                    id="manual-id-number"
+                                    type="text"
+                                    placeholder="e.g. 1234-5678-9012 (or leave empty for default reference)"
+                                    value={manualIdNumber}
+                                    onChange={e => setManualIdNumber(e.target.value)}
+                                    className="h-9 text-xs"
+                                />
+                                <p className="text-[11px] text-gray-500">Leave blank to use default system ID reference: VERIFIED-MANUAL-ADMIN.</p>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="manual-id-file" className="font-semibold text-gray-700">
+                                    ID Photo or Document (Image/PDF)
+                                </Label>
+                                <div className="border-2 border-dashed border-gray-200 rounded-lg p-3 bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                                    <Input
+                                        id="manual-id-file"
+                                        type="file"
+                                        accept="image/png,image/jpeg,image/webp,application/pdf"
+                                        onChange={e => {
+                                            const file = e.target.files?.[0] || null;
+                                            setManualIdFile(file);
+                                        }}
+                                        className="h-9 text-xs cursor-pointer bg-white"
+                                    />
+                                    {manualIdFile && (
+                                        <p className="mt-2 text-[11px] text-emerald-700 font-medium flex items-center gap-1">
+                                            <Check className="size-3.5" /> Selected: {manualIdFile.name} ({(manualIdFile.size / 1024).toFixed(1)} KB)
+                                        </p>
+                                    )}
+                                    {verifyingSubscriber?.adopter_profile?.id_document_path && !manualIdFile && (
+                                        <p className="mt-2 text-[11px] text-gray-500">
+                                            A previous ID document is already stored on file. Uploading a new one will replace it.
+                                        </p>
+                                    )}
+                                </div>
+                                <p className="text-[11px] text-gray-500">Supported: JPG, PNG, WEBP, PDF up to 5MB.</p>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label htmlFor="manual-notes" className="font-semibold text-gray-700">
+                                    Verification Notes (Optional)
+                                </Label>
+                                <Textarea
+                                    id="manual-notes"
+                                    rows={2}
+                                    placeholder="e.g. Manually inspected physical ID at shelter counter on Oct 5..."
+                                    value={manualNotes}
+                                    onChange={e => setManualNotes(e.target.value)}
+                                    className="text-xs resize-none"
+                                />
+                            </div>
+
+                            <DialogFooter className="gap-2 sm:gap-0 pt-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={isSubmittingManualVerify}
+                                    onClick={() => setVerifyingSubscriber(null)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    size="sm"
+                                    disabled={isSubmittingManualVerify}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
+                                >
+                                    {isSubmittingManualVerify ? 'Verifying...' : 'Approve & Verify Identity'}
+                                </Button>
+                            </DialogFooter>
+                        </form>
                     </DialogContent>
                 </Dialog>
 

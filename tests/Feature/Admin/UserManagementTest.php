@@ -4,7 +4,9 @@ use App\Models\AdopterProfile;
 use App\Models\DiditVerification;
 use App\Models\LifestyleProfile;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
     $this->artisan('db:seed', ['--class' => 'RolesAndPermissionsSeeder']);
@@ -234,4 +236,25 @@ test('manual verification overrides previous failed didit attempts and allows ad
     $step2Allowed = $this->actingAs($this->adopter->fresh())->get(route('onboarding.personal.edit'));
     $step2Allowed->assertOk()
         ->assertInertia(fn ($page) => $page->component('onboarding/personal-info'));
+});
+
+test('admin can manually verify adopter with id upload and basic id details', function (): void {
+    Storage::fake('local');
+    $file = UploadedFile::fake()->image('philid_front.jpg');
+
+    $response = $this->actingAs($this->admin)->post(route('admin.users.toggle-verification', $this->adopter->id), [
+        'action' => 'verify',
+        'valid_id_type' => "Driver's License",
+        'valid_id_number' => 'DL-99887766',
+        'notes' => 'Verified face to face at shelter counter',
+        'id_document' => $file,
+    ]);
+
+    $response->assertRedirect();
+    $profile = $this->adopter->fresh()->adopterProfile;
+    expect($profile->is_identity_verified)->toBeTrue();
+    expect($profile->valid_id_type)->toBe("Driver's License");
+    expect($profile->valid_id_number)->toBe('DL-99887766');
+    expect($profile->id_document_path)->not->toBeNull();
+    expect($profile->adoption_reason_text)->toBe('Verified face to face at shelter counter');
 });

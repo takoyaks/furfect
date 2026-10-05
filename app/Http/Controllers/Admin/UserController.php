@@ -12,6 +12,7 @@ use App\Models\LifestyleProfile;
 use App\Models\SavedPet;
 use App\Models\User;
 use App\Services\CloudinaryService;
+use App\Services\EncryptedFileStorageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -128,7 +129,9 @@ class UserController extends Controller
         $user = User::with('adopterProfile')->findOrFail($id);
 
         $profile = $user->adopterProfile;
-        $newStatus = $profile ? ! (bool) $profile->is_identity_verified : true;
+        $newStatus = $request->has('action')
+            ? ($request->input('action') === 'verify')
+            : ($profile ? ! (bool) $profile->is_identity_verified : true);
 
         $profileData = [
             'is_identity_verified' => $newStatus,
@@ -139,24 +142,74 @@ class UserController extends Controller
         ];
 
         if ($newStatus) {
+            $validated = $request->validate([
+                'valid_id_type' => ['nullable', 'string', 'max:150'],
+                'valid_id_number' => ['nullable', 'string', 'max:100'],
+                'id_document' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
+                'notes' => ['nullable', 'string', 'max:1000'],
+            ]);
+
+            $validIdType = ! empty($validated['valid_id_type'])
+                ? $validated['valid_id_type']
+                : ($profile?->valid_id_type ?: 'Philippine Identification (PhilID / ePhilID)');
+
+            $validIdNumber = ! empty($validated['valid_id_number'])
+                ? $validated['valid_id_number']
+                : ($profile?->valid_id_number ?: 'VERIFIED-MANUAL-ADMIN');
+
+            $adminNotes = ! empty($validated['notes'])
+                ? $validated['notes']
+                : ($profile?->adoption_reason_text ?: 'Admin Verified Adopter');
+
             $profileData = array_merge([
                 'full_name' => $profile?->full_name ?: $user->name,
                 'contact_number' => $profile?->contact_number ?: ($user->phone ?: '09123456789'),
                 'date_of_birth' => $profile?->date_of_birth ? $profile->date_of_birth->format('Y-m-d') : '2000-01-01',
                 'home_address' => $profile?->home_address ?: 'General Santos City',
-                'valid_id_type' => $profile?->valid_id_type ?: 'Philippine Identification (PhilID / ePhilID)',
-                'valid_id_number' => $profile?->valid_id_number ?: 'VERIFIED-MANUAL-ADMIN',
+                'valid_id_type' => $validIdType,
+                'valid_id_number' => $validIdNumber,
                 'had_pets_before' => $profile?->had_pets_before ?: 'never',
                 'surrendered_pet' => $profile?->surrendered_pet ?? false,
                 'adoption_reason' => $profile?->adoption_reason ?: 'Companionship',
-                'adoption_reason_text' => $profile?->adoption_reason_text ?: 'Admin Verified Adopter',
+                'adoption_reason_text' => $adminNotes,
                 'pet_stay' => $profile?->pet_stay ?: 'inside',
             ], $profileData);
+
+            if ($request->hasFile('id_document')) {
+                $cloudinary = app(CloudinaryService::class);
+                $fileStorage = app(EncryptedFileStorageService::class);
+
+                if ($profile?->id_document_path) {
+                    if (str_starts_with($profile->id_document_path, 'http')) {
+                        $cloudinary->delete($profile->id_document_path);
+                    } else {
+                        $fileStorage->deleteFile($profile->id_document_path);
+                    }
+                }
+
+                if ($cloudinary->isConfigured()) {
+                    $upload = $cloudinary->upload($request->file('id_document'), 'id_documents');
+                    $profileData['id_document_path'] = $upload['secure_url'];
+                    $profileData['id_document_mime'] = $request->file('id_document')->getMimeType() ?: 'image/jpeg';
+                    $profileData['id_document_name'] = $request->file('id_document')->getClientOriginalName();
+                } else {
+                    $stored = $fileStorage->storeEncrypted($request->file('id_document'), 'id_documents');
+                    $profileData['id_document_path'] = $stored['path'];
+                    $profileData['id_document_mime'] = $stored['mime'];
+                    $profileData['id_document_name'] = $stored['original_name'];
+                }
+            }
 
             $profile = AdopterProfile::updateOrCreate(
                 ['user_id' => $user->id],
                 $profileData
             );
+
+            $extractedData = [
+                'document_type' => $profile->valid_id_type,
+                'document_number' => $profile->valid_id_number,
+                'full_name' => $profile->full_name,
+            ];
 
             DiditVerification::where('user_id', $user->id)->update([
                 'adopter_profile_id' => $profile->id,
@@ -166,6 +219,7 @@ class UserController extends Controller
                 'face_match_status' => 'matched',
                 'face_match_score' => 100.0,
                 'liveness_score' => 100.0,
+                'extracted_data' => $extractedData,
                 'verified_at' => now(),
             ]);
 
@@ -180,6 +234,7 @@ class UserController extends Controller
                     'face_match_status' => 'matched',
                     'face_match_score' => 100.0,
                     'liveness_score' => 100.0,
+                    'extracted_data' => $extractedData,
                     'verified_at' => now(),
                 ]);
             }

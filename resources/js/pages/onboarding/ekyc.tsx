@@ -55,8 +55,9 @@ export default function OnboardingEkyc({
     useEffect(() => {
         if (isVerified) {
             setAutoRedirecting(true);
+            const targetUrl = (typeof route === 'function' && route('onboarding.personal.edit')) || '/onboarding/personal';
             const timer = setTimeout(() => {
-                window.location.href = route('onboarding.personal.edit');
+                router.visit(targetUrl);
             }, 400);
             return () => clearTimeout(timer);
         }
@@ -68,7 +69,8 @@ export default function OnboardingEkyc({
 
         const interval = setInterval(async () => {
             try {
-                const res = await fetch(route('identity.verification.status'), {
+                const statusUrl = (typeof route === 'function' && route('identity.verification.status')) || '/identity/verification/status';
+                const res = await fetch(statusUrl, {
                     headers: { 'Accept': 'application/json' },
                 });
                 if (res.ok) {
@@ -76,15 +78,16 @@ export default function OnboardingEkyc({
                     if (data.is_verified || data.verification_status === 'approved' || data.can_proceed) {
                         setAutoRedirecting(true);
                         clearInterval(interval);
+                        const targetUrl = (typeof route === 'function' && route('onboarding.personal.edit')) || '/onboarding/personal';
                         setTimeout(() => {
-                            window.location.href = route('onboarding.personal.edit');
-                        }, 600);
+                            router.visit(targetUrl);
+                        }, 400);
                     }
                 }
             } catch {
                 // Ignore background polling errors
             }
-        }, 2500);
+        }, 2000);
 
         return () => clearInterval(interval);
     }, [isVerified]);
@@ -265,17 +268,6 @@ export default function OnboardingEkyc({
                             verifiedAt={profile?.identity_verified_at}
                             returnTo="onboarding"
                         />
-
-                        {/* Manual Verification Info Banner */}
-                        {/* <div className="rounded-xl border border-amber-200/90 bg-amber-50/70 p-4 text-xs space-y-1.5 shadow-2xs">
-                            <div className="flex items-center gap-2 font-bold text-amber-900">
-                                <AlertCircle className="size-4 text-amber-600 shrink-0" />
-                                <span>Having Trouble with Didit Automated Verification?</span>
-                            </div>
-                            <p className="text-amber-800 text-[11px] leading-relaxed">
-                                If you experience camera connectivity issues, lack a supported digital ID, or automated verification fails, our shelter administrator can manually verify your identity profile. Once verified by an administrator, this page will automatically unlock and advance you directly to Step 2.
-                            </p>
-                        </div> */}
 
                         {/* Why Verification Matters Card */}
                         <Card className="border-gray-200 shadow-2xs">

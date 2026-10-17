@@ -107,6 +107,17 @@ const routesMap: Record<string, string> = {
     'admin.cms.announcements.store': '/admin/cms/announcements',
     'admin.cms.announcements.update': '/admin/cms/announcements/{id}',
     'admin.cms.announcements.destroy': '/admin/cms/announcements/{id}',
+    
+    // Level 2 Database & Data Management
+    'admin.database.index': '/admin/database',
+    'admin.database.reset-all': '/admin/database/reset-all',
+    'admin.database.logs.clear': '/admin/database/logs/clear',
+    'admin.database.users.show': '/admin/database/users/{id}',
+    'admin.database.users.update': '/admin/database/users/{id}',
+    'admin.database.users.reset-password': '/admin/database/users/{id}/reset-password',
+    'admin.database.users.destroy': '/admin/database/users/{id}',
+    'admin.database.pets.update': '/admin/database/pets/{id}',
+    'admin.database.applications.override-status': '/admin/database/applications/{id}/override-status',
 };
 
 // Define global route helper mapping route name to URL string
@@ -159,6 +170,8 @@ createInertiaApp({
 
         switch (true) {
             case name === 'welcome':
+                return null;
+            case name === 'error' || name.startsWith('errors/'):
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;

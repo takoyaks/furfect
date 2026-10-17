@@ -155,7 +155,11 @@ export default function AdminPets({
                             </thead>
                             <tbody className="divide-y divide-gray-100 text-gray-700">
                                 {pets.data.map(p => (
-                                    <tr key={p.id} className="hover:bg-gray-50/20">
+                                    <tr
+                                        key={p.id}
+                                        onClick={() => router.visit(route('pets.show', p.id) + '?view_only=1')}
+                                        className="hover:bg-amber-50/40 cursor-pointer transition-colors"
+                                    >
                                         <td className="p-3 font-semibold text-gray-900">{p.name}</td>
                                         <td className="p-3">
                                             <div className="space-y-1">
@@ -188,7 +192,7 @@ export default function AdminPets({
                                                 {p.status}
                                             </span>
                                         </td>
-                                        <td className="p-3 text-right">
+                                        <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
                                                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-100 rounded-lg cursor-pointer">
@@ -204,7 +208,7 @@ export default function AdminPets({
                                                         </Link>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem asChild>
-                                                        <Link href={route('pets.show', p.id) + '?view_only=1'} target="_blank" className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-gray-700 hover:bg-theme-light hover:text-theme cursor-pointer">
+                                                        <Link href={route('pets.show', p.id) + '?view_only=1'} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-gray-700 hover:bg-theme-light hover:text-theme cursor-pointer">
                                                             <Eye className="size-3.5 text-theme" />
                                                             <span>View Pet</span>
                                                         </Link>

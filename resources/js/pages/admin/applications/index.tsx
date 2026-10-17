@@ -37,6 +37,9 @@ import { IdentityVerificationReport } from '@/components/identity-verification-r
 import { IdentityVerificationBadge } from '@/components/identity-verification-badge';
 import { DssScoreCard } from '@/components/dss-score-card';
 import { ApplicationTimelineCard, TimelineEvent } from '@/components/application-timeline-card';
+import { AuditRemarksSelector } from '@/components/audit-remarks-selector';
+import { stripHtmlTags } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface ChecklistItem {
     label: string;
@@ -300,13 +303,13 @@ export default function ShelterApplicationIndex({
     };
 
     // Decision form state
-    const { data: decisionData, setData: setDecisionData, patch, processing } = useForm({
+    const { data: decisionData, setData: setDecisionData, patch, processing, errors: decisionErrors } = useForm({
         decision: 'suitable',
         notes: '',
     });
 
     // Form state for MAO Audit
-    const { data: auditData, setData: setAuditData, post: postAudit, processing: auditProcessing } = useForm<{
+    const { data: auditData, setData: setAuditData, post: postAudit, processing: auditProcessing, errors: auditErrors } = useForm<{
         decision: string;
         remarks: string;
         checklist: Record<string, boolean>;
@@ -389,6 +392,10 @@ export default function ShelterApplicationIndex({
     const handleDecisionSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedApplication) return;
+        if (decisionData.decision === 'suitable' && (!decisionData.notes || !decisionData.notes.trim())) {
+            toast.error('Screening remarks & feedback are required when endorsing an application as suitable.');
+            return;
+        }
         patch(route('admin.applications.update', selectedApplication.id), {
             preserveScroll: true,
             onSuccess: () => {
@@ -407,6 +414,10 @@ export default function ShelterApplicationIndex({
     const handleAuditSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedApplication) return;
+        if (auditData.decision === 'approved' && (!auditData.remarks || !auditData.remarks.trim())) {
+            toast.error('Audit remarks are required when approving an application.');
+            return;
+        }
 
         postAudit(route('admin.applications.audit', selectedApplication.id), {
             preserveScroll: true,
@@ -526,7 +537,14 @@ export default function ShelterApplicationIndex({
                                             </td>
                                         </tr>
                                     ) : applications.data.map(app => (
-                                        <tr key={app.id} className="hover:bg-gray-50/20">
+                                        <tr
+                                            key={app.id}
+                                            onClick={() => {
+                                                handleSelectApplication(app.id);
+                                                setViewMode('split');
+                                            }}
+                                            className="hover:bg-amber-50/40 cursor-pointer transition-colors"
+                                        >
                                             <td className="p-3 font-semibold text-gray-800">{app.reference_number}</td>
                                             <td className="p-3 font-medium">{app.adopter.name}</td>
                                             <td className="p-3 font-semibold text-gray-900">{app.pet.name}</td>
@@ -542,7 +560,7 @@ export default function ShelterApplicationIndex({
                                             <td className="p-3 text-gray-400">
                                                 {new Date(app.submitted_at).toLocaleDateString()}
                                             </td>
-                                            <td className="p-3">
+                                            <td className="p-3" onClick={(e) => e.stopPropagation()}>
                                                 <div className="flex items-center gap-1.5 flex-wrap">
                                                     {app.status === 'approved' && (
                                                         <ConfirmPetReleaseModal
@@ -1257,7 +1275,7 @@ export default function ShelterApplicationIndex({
                                                                 <div className="flex items-start sm:col-span-2">
                                                                     <span className="w-32 text-gray-500 font-medium">Kennel / Staff Notes</span>
                                                                     <span className="text-gray-400 mr-2">:</span>
-                                                                    <span className="text-gray-700 italic">"{selectedApplication.pet.housing_notes}"</span>
+                                                                    <span className="text-gray-700 italic">"{stripHtmlTags(selectedApplication.pet.housing_notes)}"</span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -1279,7 +1297,7 @@ export default function ShelterApplicationIndex({
                                                             <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-100 text-xs mt-2">
                                                                 <span className="font-bold text-gray-700 block mb-1">About {selectedApplication.pet.name}:</span>
                                                                 <p className="text-gray-600 leading-relaxed italic">
-                                                                    "{selectedApplication.pet.description}"
+                                                                    "{stripHtmlTags(selectedApplication.pet.description)}"
                                                                 </p>
                                                             </div>
                                                         )}
@@ -1601,8 +1619,8 @@ export default function ShelterApplicationIndex({
             {/* Shelter Screening & Workflow Handoff Modal */}
             {selectedApplication && (
                 <Dialog open={isScreeningModalOpen} onOpenChange={setIsScreeningModalOpen}>
-                    <DialogContent className="sm:max-w-lg bg-white p-6 rounded-2xl">
-                        <DialogHeader className="space-y-1 pb-3 border-b border-gray-100 text-left">
+                    <DialogContent className="sm:max-w-2xl bg-white p-6 rounded-2xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader className="space-y-1 pb-3 border-b border-gray-100 text-left pr-8">
                             <DialogTitle className="text-base font-bold text-gray-900 uppercase tracking-tight">
                                 Shelter Screening Action &amp; Workflow Handoff
                             </DialogTitle>
@@ -1663,21 +1681,16 @@ export default function ShelterApplicationIndex({
                                 </div>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <Label htmlFor="modal-staff-notes" className="text-xs font-bold text-gray-700">
-                                    Staff Screening Remarks &amp; Feedback
-                                </Label>
-                                <Textarea
-                                    id="modal-staff-notes"
-                                    value={decisionData.notes}
-                                    onChange={(e) => setDecisionData('notes', e.target.value)}
-                                    rows={3}
-                                    placeholder="Add notes for Municipal Agriculture Office or reason for rejection..."
-                                    className="text-xs"
-                                />
-                            </div>
+                            <AuditRemarksSelector
+                                id="modal-staff-notes"
+                                mode="shelter"
+                                decision={decisionData.decision}
+                                value={decisionData.notes}
+                                onChange={(val) => setDecisionData('notes', val)}
+                                error={decisionErrors.notes}
+                            />
 
-                            <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                            <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 flex-wrap">
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -1921,19 +1934,13 @@ export default function ShelterApplicationIndex({
                             </div>
 
                             {/* Officer Remarks */}
-                            <div className="space-y-1.5">
-                                <Label htmlFor="modal-mao-remarks" className="text-xs font-bold text-gray-700">
-                                    Official Audit Remarks &amp; Feedback
-                                </Label>
-                                <Textarea
-                                    id="modal-mao-remarks"
-                                    value={auditData.remarks}
-                                    onChange={(e) => setAuditData('remarks', e.target.value)}
-                                    rows={3}
-                                    placeholder="Add notes explaining statutory compliance verification or reasons for decision..."
-                                    className="text-xs"
-                                />
-                            </div>
+                            <AuditRemarksSelector
+                                id="modal-mao-remarks"
+                                decision={auditData.decision}
+                                value={auditData.remarks}
+                                onChange={(val) => setAuditData('remarks', val)}
+                                error={auditErrors.remarks}
+                            />
 
                             {/* Action Buttons */}
                             <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">

@@ -22,6 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -255,54 +256,59 @@ class DatabaseManagerController extends Controller
         $scope = $validated['scope'];
 
         DB::transaction(function () use ($scope): void {
-            // 1. Reset Adopted & Application Data
-            if (in_array($scope, ['all', 'adopted_data'], true)) {
-                ApplicationTimeline::truncate();
-                Application::truncate();
-                // Set all pets back to 'available'
-                Pet::query()->update(['status' => 'available']);
-                SavedPet::truncate();
-            }
-
-            // 2. Reset Didit & Identity Verification Data
-            if (in_array($scope, ['all', 'verification_data'], true)) {
-                DiditVerification::truncate();
-
-                // Clean up uploaded ID files from storage
-                $profiles = AdopterProfile::whereNotNull('id_document_path')
-                    ->orWhereNotNull('id_document_back_path')
-                    ->get();
-
-                foreach ($profiles as $profile) {
-                    if ($profile->id_document_path && Storage::disk('public')->exists($profile->id_document_path)) {
-                        Storage::disk('public')->delete($profile->id_document_path);
-                    }
-                    if ($profile->id_document_back_path && Storage::disk('public')->exists($profile->id_document_back_path)) {
-                        Storage::disk('public')->delete($profile->id_document_back_path);
-                    }
+            Schema::disableForeignKeyConstraints();
+            try {
+                // 1. Reset Adopted & Application Data
+                if (in_array($scope, ['all', 'adopted_data'], true)) {
+                    ApplicationTimeline::query()->delete();
+                    Application::query()->delete();
+                    // Set all pets back to 'available'
+                    Pet::query()->update(['status' => 'available']);
+                    SavedPet::query()->delete();
                 }
 
-                // Reset verification fields on adopter profiles
-                AdopterProfile::query()->update([
-                    'is_identity_verified' => false,
-                    'identity_verified_at' => null,
-                    'identity_verification_provider' => null,
-                    'didit_session_id' => null,
-                    'face_match_score' => null,
-                    'liveness_verified' => false,
-                    'id_document_path' => null,
-                    'id_document_mime' => null,
-                    'id_document_name' => null,
-                    'id_document_back_path' => null,
-                    'id_document_back_mime' => null,
-                    'id_document_back_name' => null,
-                ]);
-            }
+                // 2. Reset Didit & Identity Verification Data
+                if (in_array($scope, ['all', 'verification_data'], true)) {
+                    DiditVerification::query()->delete();
 
-            // 3. Reset Quiz & Matching Scores
-            if (in_array($scope, ['all', 'quiz_data'], true)) {
-                DssMatchScore::truncate();
-                LifestyleProfile::truncate();
+                    // Clean up uploaded ID files from storage
+                    $profiles = AdopterProfile::whereNotNull('id_document_path')
+                        ->orWhereNotNull('id_document_back_path')
+                        ->get();
+
+                    foreach ($profiles as $profile) {
+                        if ($profile->id_document_path && Storage::disk('public')->exists($profile->id_document_path)) {
+                            Storage::disk('public')->delete($profile->id_document_path);
+                        }
+                        if ($profile->id_document_back_path && Storage::disk('public')->exists($profile->id_document_back_path)) {
+                            Storage::disk('public')->delete($profile->id_document_back_path);
+                        }
+                    }
+
+                    // Reset verification fields on adopter profiles
+                    AdopterProfile::query()->update([
+                        'is_identity_verified' => false,
+                        'identity_verified_at' => null,
+                        'identity_verification_provider' => null,
+                        'didit_session_id' => null,
+                        'face_match_score' => null,
+                        'liveness_verified' => false,
+                        'id_document_path' => null,
+                        'id_document_mime' => null,
+                        'id_document_name' => null,
+                        'id_document_back_path' => null,
+                        'id_document_back_mime' => null,
+                        'id_document_back_name' => null,
+                    ]);
+                }
+
+                // 3. Reset Quiz & Matching Scores
+                if (in_array($scope, ['all', 'quiz_data'], true)) {
+                    DssMatchScore::query()->delete();
+                    LifestyleProfile::query()->delete();
+                }
+            } finally {
+                Schema::enableForeignKeyConstraints();
             }
         });
 
@@ -435,8 +441,9 @@ class DatabaseManagerController extends Controller
 
         $validated = $request->validate([
             'status' => ['required', 'string', 'in:pending,under_review,mao_audit,approved,released,rejected,unclaimed,closed'],
-            'reason' => ['required', 'string', 'max:500'],
+            'reason' => ['nullable', 'string', 'max:500'],
             'sync_pet_status' => ['nullable', 'boolean'],
+            'is_rollback' => ['nullable', 'boolean'],
         ]);
 
         $application = Application::with('pet')->findOrFail($id);
@@ -444,12 +451,25 @@ class DatabaseManagerController extends Controller
         $newStatus = $validated['status'];
         $syncPet = $validated['sync_pet_status'] ?? true;
 
-        DB::transaction(function () use ($application, $oldStatus, $newStatus, $syncPet, $validated): void {
+        $isRollback = $request->boolean('is_rollback')
+            || (in_array($newStatus, ['pending', 'under_review', 'mao_audit'], true) && in_array($oldStatus, ['approved', 'released', 'rejected', 'unclaimed', 'closed'], true))
+            || ($oldStatus === 'approved' && in_array($newStatus, ['pending', 'under_review', 'mao_audit'], true))
+            || ($oldStatus === 'mao_audit' && in_array($newStatus, ['pending', 'under_review'], true))
+            || ($oldStatus === 'under_review' && $newStatus === 'pending');
+
+        $reason = ! empty($validated['reason'])
+            ? trim($validated['reason'])
+            : ($isRollback
+                ? sprintf('Super Admin rollback from [%s] to [%s].', $oldStatus, $newStatus)
+                : sprintf('Super Admin status override from [%s] to [%s].', $oldStatus, $newStatus)
+            );
+
+        DB::transaction(function () use ($application, $oldStatus, $newStatus, $syncPet, $reason, $isRollback): void {
             $updateData = [
                 'status' => $newStatus,
             ];
 
-            if (in_array($newStatus, ['approved', 'rejected', 'released', 'closed', 'unclaimed'])) {
+            if (in_array($newStatus, ['approved', 'rejected', 'released', 'closed', 'unclaimed'], true)) {
                 $updateData['resolved_at'] = now();
             } else {
                 $updateData['resolved_at'] = null;
@@ -458,19 +478,20 @@ class DatabaseManagerController extends Controller
             if ($newStatus === 'released') {
                 $updateData['released_at'] = now();
                 $updateData['releasing_officer_id'] = auth()->id();
+            } else {
+                $updateData['released_at'] = null;
+                $updateData['releasing_officer_id'] = null;
             }
 
             $application->update($updateData);
 
             if ($syncPet && $application->pet) {
-                if (in_array($newStatus, ['released', 'completed'])) {
+                if (in_array($newStatus, ['released', 'completed'], true)) {
                     $application->pet->update(['status' => 'adopted']);
-                } elseif (in_array($newStatus, ['pending', 'under_review', 'mao_audit', 'rejected', 'closed', 'unclaimed'])) {
+                } else {
                     $application->pet->update(['status' => 'available']);
                 }
             }
-
-            $isRollback = in_array($newStatus, ['pending', 'under_review', 'mao_audit']) && in_array($oldStatus, ['approved', 'released', 'rejected', 'closed']);
 
             $application->timelines()->create([
                 'actor_id' => auth()->id(),
@@ -479,11 +500,11 @@ class DatabaseManagerController extends Controller
                 'stage' => 'super_admin_override',
                 'action' => $isRollback ? 'status_rollback' : 'status_override',
                 'title' => sprintf('Status %s (System Administrator)', $isRollback ? 'Rolled Back' : 'Overridden'),
-                'description' => sprintf('Status changed from [%s] to [%s]. Notes: %s', $oldStatus, $newStatus, $validated['reason']),
+                'description' => sprintf('Status changed from [%s] to [%s]. Notes: %s', $oldStatus, $newStatus, $reason),
                 'metadata' => [
                     'previous_status' => $oldStatus,
                     'new_status' => $newStatus,
-                    'reason' => $validated['reason'],
+                    'reason' => $reason,
                     'is_rollback' => $isRollback,
                     'synced_pet_status' => $syncPet,
                 ],
@@ -492,7 +513,8 @@ class DatabaseManagerController extends Controller
 
         Inertia::flash('toast', [
             'type' => 'success',
-            'message' => __('Application :ref status changed from :old to :new.', [
+            'message' => __(':action successful: Application :ref changed from :old to :new.', [
+                'action' => $isRollback ? __('Rollback') : __('Override'),
                 'ref' => $application->reference_number,
                 'old' => $oldStatus,
                 'new' => $newStatus,

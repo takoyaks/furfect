@@ -113,8 +113,8 @@ export default function AdopterHistoryPage({
     const [activeTab, setActiveTab] = useState<'adopted' | 'applications' | 'background'>('adopted');
 
     return (
-        <AppLayout breadcrumbs={[{ title: 'Dashboard', href: route('dashboard') }, { title: 'My Pet History', href: '#' }]}>
-            <Head title="My Pet History & Certificates" />
+        <AppLayout breadcrumbs={[{ title: 'Dashboard', href: route('dashboard') }, { title: 'History', href: '#' }]}>
+            <Head title="History & Certificates" />
 
             <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 space-y-8">
                 
@@ -126,7 +126,7 @@ export default function AdopterHistoryPage({
                                 <div className={cn("h-10 w-10 rounded-2xl text-white flex items-center justify-center shadow-xs", theme.tabActive)}>
                                     <History className="h-5 w-5" />
                                 </div>
-                                <h1 className="text-2xl font-black text-gray-900">My Pet History &amp; Records</h1>
+                                <h1 className="text-2xl font-black text-gray-900">History &amp; Records</h1>
                             </div>
                             <p className="text-xs text-gray-600 max-w-xl">
                                 Track all your adopted companion animals, official Municipal Agriculture Office (MAO) certificates, and historical adoption applications.

@@ -3,7 +3,8 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="app-version" content="{{ config('app.version', 'v3.4.0') }}">
+        <meta name="app-version" content="{{ config('app.version', 'v3.5.0') }}">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
 
         {{-- Inline script to detect and apply theme without flash --}}
         <script>

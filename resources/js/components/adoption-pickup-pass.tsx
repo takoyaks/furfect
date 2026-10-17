@@ -1,5 +1,7 @@
 import React from 'react';
 import { ShieldCheck } from 'lucide-react';
+import { usePage } from '@inertiajs/react';
+import { type CertificateSignatory } from '@/components/adoption-certificate';
 
 interface AdopterProfile {
     full_name?: string;
@@ -51,18 +53,22 @@ export interface AdoptionPassApplication {
     pickup_deadline_at?: string | null;
     pet: Pet;
     user?: User;
+    adopter?: User;
     staff?: { id: number; name: string } | null;
     mao_officer?: { id: number; name: string } | null;
     mao_remarks?: string | null;
     staff_notes?: string | null;
+    pass_print_count?: number | null;
+    certificate_print_count?: number | null;
 }
 
 interface AdoptionPickupPassProps {
     application: AdoptionPassApplication;
     className?: string;
+    signatories?: CertificateSignatory[];
 }
 
-export function AdoptionPickupPass({ application, className = '' }: AdoptionPickupPassProps) {
+export function AdoptionPickupPass({ application, className = '', signatories }: AdoptionPickupPassProps) {
     const adopterName =
         application.user?.adopter_profile?.full_name ||
         application.user?.name ||
@@ -107,14 +113,132 @@ export function AdoptionPickupPass({ application, className = '' }: AdoptionPick
     const certNumber = application.certificate_number || `CERT-${application.reference_number}`;
     const feeNumber = parseFloat(String(application.pet.adoption_fee || 0));
 
+    const printCount = Number(application.pass_print_count ?? 1);
+    const copyLabel = printCount <= 1
+        ? 'Original Copy'
+        : printCount === 2
+        ? 'Duplicate Copy'
+        : printCount === 3
+        ? 'Triplicate Copy'
+        : `Copy ${printCount}`;
+
+    const pageProps = usePage().props as {
+        systemSettings?: {
+            certificate_signatories?: CertificateSignatory[] | string;
+        };
+    };
+
+    let configuredSignatories: CertificateSignatory[] = [];
+    if (signatories && Array.isArray(signatories)) {
+        configuredSignatories = signatories;
+    } else if (pageProps.systemSettings?.certificate_signatories) {
+        const raw = pageProps.systemSettings.certificate_signatories;
+        if (typeof raw === 'string') {
+            try {
+                configuredSignatories = JSON.parse(raw);
+            } catch {
+                configuredSignatories = [];
+            }
+        } else if (Array.isArray(raw)) {
+            configuredSignatories = raw;
+        }
+    }
+
+    const defaultSignatories: CertificateSignatory[] = [
+        {
+            id: 'mao_officer',
+            title: 'Municipal Agriculture Office (MAO)',
+            name: application.mao_officer?.name || 'Authorized MAO Staff',
+            position: 'Municipal Agriculture Office (MAO)',
+            signature_url: '',
+            enabled: true,
+        },
+        {
+            id: 'shelter_head',
+            title: 'Shelter Officer-in-Charge',
+            name: application.staff?.name || 'Releasing Officer',
+            position: 'Shelter Officer-in-Charge',
+            signature_url: '',
+            enabled: true,
+        },
+        {
+            id: 'adopter',
+            title: 'Adopter / Custodian Signature',
+            name: adopterName,
+            position: 'Adopter / Custodian Signature',
+            signature_url: '',
+            enabled: true,
+        },
+    ];
+
+    const effectiveSignatories = (
+        configuredSignatories.length > 0 ? configuredSignatories : defaultSignatories
+    ).filter((s) => s.enabled);
+
+    const displaySignatories = effectiveSignatories.length > 0 ? effectiveSignatories : defaultSignatories;
+
+    const resolveSignatoryName = (s: CertificateSignatory) => {
+        if (!s.name || s.name.trim() === '') {
+            if (s.id === 'mao_officer') return application.mao_officer?.name || 'Authorized MAO Staff';
+            if (s.id === 'shelter_head') return application.staff?.name || 'Releasing Officer';
+            if (s.id === 'adopter') return adopterName;
+            return 'Authorized Signatory';
+        }
+
+        let name = s.name;
+        if (name.includes('{adopterName}')) {
+            name = name.replace('{adopterName}', adopterName);
+        }
+        if (name.includes('{shelterStaff}')) {
+            name = name.replace('{shelterStaff}', application.staff?.name || 'Releasing Officer');
+        }
+        if (name.includes('{maoOfficer}')) {
+            name = name.replace('{maoOfficer}', application.mao_officer?.name || 'Authorized MAO Staff');
+        }
+        return name;
+    };
+
+    const resolveSignatoryDate = (s: CertificateSignatory) => {
+        const idLower = (s.id || '').toLowerCase();
+        const titleLower = (s.title || '').toLowerCase();
+        const posLower = (s.position || '').toLowerCase();
+
+        if (idLower.includes('mao') || titleLower.includes('mao') || posLower.includes('mao') || posLower.includes('approv')) {
+            return `Approved: ${issueDate}`;
+        }
+        if (idLower.includes('shelter') || titleLower.includes('shelter') || posLower.includes('shelter') || posLower.includes('releas')) {
+            return 'Date of Release: _____________';
+        }
+        if (idLower.includes('adopter') || titleLower.includes('adopter') || posLower.includes('adopter') || posLower.includes('custodian')) {
+            return 'Date Received: _____________';
+        }
+        return `Virac, Catanduanes • ${issueDate}`;
+    };
+
+    const gridColsClass =
+        displaySignatories.length === 1
+            ? 'grid-cols-1 max-w-xs mx-auto'
+            : displaySignatories.length === 2
+            ? 'grid-cols-2 max-w-lg mx-auto'
+            : displaySignatories.length === 4
+            ? 'grid-cols-2 sm:grid-cols-4'
+            : 'grid-cols-3';
+
     return (
         <div
-            className={`print-pass-document bg-white text-gray-950 font-sans p-6 print:p-0 max-w-3xl mx-auto border-2 border-gray-900 rounded-none shadow-none text-xs leading-normal ${className}`}
+            className={`print-pass-document relative bg-white text-gray-950 font-sans p-6 print:p-0 max-w-3xl mx-auto border-2 border-gray-900 rounded-none shadow-none text-xs leading-normal ${className}`}
             style={{
                 WebkitPrintColorAdjust: 'exact',
                 printColorAdjust: 'exact',
             }}
         >
+            {/* Copy Indicator in Upper Right Corner (Italicized) */}
+            <div className="absolute top-2.5 right-3 text-right print:top-1.5 print:right-2 z-10">
+                <span className="italic font-serif font-bold text-xs print:text-[9.5px] text-gray-700 tracking-wide">
+                    {copyLabel}
+                </span>
+            </div>
+
             {/* Official LGU Header */}
             <div className="text-center border-b-2 border-gray-900 pb-2 mb-2.5 print:pb-1 print:mb-1 space-y-0.5 print:space-y-0">
                 <div className="text-[10px] print:text-[8px] tracking-widest uppercase font-semibold text-gray-700">
@@ -273,60 +397,38 @@ export function AdoptionPickupPass({ application, className = '' }: AdoptionPick
                 </p>
             </div>
 
-            {/* Signatures & Verification Strip (3-Column) */}
-            <div className="border border-gray-900 p-3 print:p-1.5 mb-2 print:mb-1">
-                <div className="text-[10px] print:text-[8.5px] font-bold uppercase tracking-wider text-gray-700 border-b border-gray-200 pb-0.5 mb-3 print:mb-1">
+            {/* Signatures & Verification Strip */}
+            <div className="border border-gray-900 p-2.5 print:p-1.5 mb-2 print:mb-1 bg-white">
+                <div className="text-[10px] print:text-[8.5px] font-bold uppercase tracking-wider text-gray-700 border-b border-gray-200 pb-0.5 mb-2 print:mb-1 text-center">
                     V. Official Endorsements &amp; Turnover Signatures
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 print:gap-2 text-center text-[10px] print:text-[8px]">
-                    {/* Approving Officer */}
-                    <div className="space-y-1 flex flex-col justify-end">
-                        <div className="h-9 print:h-5 border-b border-gray-900 flex items-end justify-center pb-0.5">
-                            {/* Line for physical or stamp endorsement */}
+                <div className={`grid ${gridColsClass} gap-3 print:gap-2 text-center text-[10px] print:text-[8px]`}>
+                    {displaySignatories.map((sig, idx) => (
+                        <div key={sig.id || idx} className="space-y-0.5 flex flex-col justify-end">
+                            <div className="h-9 print:h-7 flex items-end justify-center relative">
+                                {sig.signature_url ? (
+                                    <img
+                                        src={sig.signature_url}
+                                        alt={`${sig.name} Signature`}
+                                        className="h-9 print:h-7 object-contain max-w-[120px] pointer-events-none select-none"
+                                    />
+                                ) : (
+                                    <div className="h-4" />
+                                )}
+                            </div>
+                            <div className="border-b border-gray-900 w-full mb-0.5" />
+                            <span className="font-bold uppercase text-gray-900 block text-[10px] print:text-[8px] pt-0.5">
+                                {resolveSignatoryName(sig)}
+                            </span>
+                            <span className="text-gray-500 text-[9px] print:text-[7px] block">
+                                {sig.position || sig.title}
+                            </span>
+                            <span className="text-gray-400 text-[8px] print:text-[6.5px] block">
+                                {resolveSignatoryDate(sig)}
+                            </span>
                         </div>
-                        <span className="font-bold uppercase text-gray-900 block text-[10px] print:text-[8px] pt-1 print:pt-0.5">
-                            {application.mao_officer?.name || 'Authorized MAO Staff'}
-                        </span>
-                        <span className="text-gray-500 text-[9px] print:text-[7px] block">
-                            Municipal Agriculture Office (MAO)
-                        </span>
-                        <span className="text-gray-400 text-[8px] print:text-[6.5px] block">
-                            Approved: {issueDate}
-                        </span>
-                    </div>
-
-                    {/* Releasing Officer */}
-                    <div className="space-y-1 flex flex-col justify-end">
-                        <div className="h-9 print:h-5 border-b border-gray-900 flex items-end justify-center pb-0.5">
-                            {/* Line for physical signature */}
-                        </div>
-                        <span className="font-bold uppercase text-gray-900 block text-[10px] print:text-[8px] pt-1 print:pt-0.5">
-                            {application.staff?.name || 'Releasing Officer'}
-                        </span>
-                        <span className="text-gray-500 text-[9px] print:text-[7px] block">
-                            Shelter Officer-in-Charge
-                        </span>
-                        <span className="text-gray-400 text-[8px] print:text-[6.5px] block">
-                            Date of Release: _____________
-                        </span>
-                    </div>
-
-                    {/* Adopter */}
-                    <div className="space-y-1 flex flex-col justify-end">
-                        <div className="h-9 print:h-5 border-b border-gray-900 flex items-end justify-center pb-0.5">
-                            {/* Line for physical signature */}
-                        </div>
-                        <span className="font-bold uppercase text-gray-900 block text-[10px] print:text-[8px] pt-1 print:pt-0.5">
-                            {adopterName}
-                        </span>
-                        <span className="text-gray-500 text-[9px] print:text-[7px] block">
-                            Adopter / Custodian Signature
-                        </span>
-                        <span className="text-gray-400 text-[8px] print:text-[6.5px] block">
-                            Date Received: _____________
-                        </span>
-                    </div>
+                    ))}
                 </div>
             </div>
 

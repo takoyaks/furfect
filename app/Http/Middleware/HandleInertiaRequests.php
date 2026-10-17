@@ -92,7 +92,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
-            'version' => config('app.version', 'v3.4.0'),
+            'version' => config('app.version', 'v3.5.0'),
             'theme' => $themeConfig,
             'auth' => [
                 'user' => $user ? array_merge($user->toArray(), [
@@ -106,6 +106,8 @@ class HandleInertiaRequests extends Middleware
                 'terms_and_conditions_content' => SystemSetting::get('terms_and_conditions_content'),
                 'shelter_policies_content' => SystemSetting::get('shelter_policies_content'),
                 'consent_agreement_label' => SystemSetting::get('consent_agreement_label'),
+                'adopter_adoption_cooldown_months' => (int) SystemSetting::get('adopter_adoption_cooldown_months', 3),
+                'certificate_signatories' => SystemSetting::get('certificate_signatories'),
             ],
             'notifications' => $notificationData,
         ];

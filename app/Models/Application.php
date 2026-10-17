@@ -49,6 +49,8 @@ class Application extends Model
         'fast_track_eligible',
         'dss_breakdown',
         'status',
+        'pass_print_count',
+        'certificate_print_count',
         'staff_id',
         'staff_decision',
         'staff_notes',
@@ -80,6 +82,8 @@ class Application extends Model
         return [
             'dss_score' => 'decimal:2',
             'fast_track_eligible' => 'boolean',
+            'pass_print_count' => 'integer',
+            'certificate_print_count' => 'integer',
             'dss_breakdown' => 'array',
             'mao_checklist' => 'array',
             'release_checklist' => 'array',

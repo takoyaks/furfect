@@ -34,7 +34,7 @@ function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
-      className={cn("flex flex-1 text-left truncate", className)}
+      className={cn("block flex-1 min-w-0 text-left truncate", className)}
       {...props}
     />
   )
@@ -53,7 +53,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex w-full items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-3 py-2 text-sm transition-all duration-200 outline-none select-none text-left",
+        "flex w-full min-w-0 max-w-full items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-3 py-2 text-sm transition-all duration-200 outline-none select-none text-left",
         "hover:border-ring/50",
         "focus-visible:border-primary focus-visible:ring-[3px] focus-visible:ring-primary/20",
         "disabled:cursor-not-allowed disabled:opacity-50",
@@ -61,7 +61,7 @@ function SelectTrigger({
         "data-placeholder:text-muted-foreground/60",
         "data-[size=default]:min-h-10 data-[size=sm]:min-h-8",
         "data-[size=sm]:rounded-[min(var(--radius-md),10px)]",
-        "*:data-[slot=select-value]:truncate *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2",
+        "*:data-[slot=select-value]:truncate *:data-[slot=select-value]:block *:data-[slot=select-value]:min-w-0",
         "dark:bg-input/30 dark:hover:bg-input/40",
         "dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
         "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -101,13 +101,13 @@ function SelectContent({
         align={align}
         alignOffset={alignOffset}
         alignItemWithTrigger={alignItemWithTrigger}
-        className="isolate z-50"
+        className="isolate z-[70]"
       >
         <SelectPrimitive.Popup
           data-slot="select-content"
           data-align-trigger={alignItemWithTrigger}
           className={cn(
-            "relative isolate z-50 max-h-(--available-height) min-w-(--anchor-width) w-auto max-w-[min(94vw,38rem)] origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-xl border border-border/60 bg-popover/98 text-popover-foreground shadow-xl backdrop-blur-md",
+            "relative isolate z-[70] max-h-(--available-height) min-w-(--anchor-width) w-auto max-w-[min(94vw,38rem)] origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-xl border border-border/60 bg-popover/98 text-popover-foreground shadow-xl backdrop-blur-md",
             "ring-1 ring-foreground/5",
             "duration-150",
             "data-[align-trigger=true]:animate-none",
@@ -163,7 +163,7 @@ function SelectItem({
       )}
       {...props}
     >
-      <SelectPrimitive.ItemText className="flex flex-1 gap-2 whitespace-normal break-words text-left leading-relaxed text-sm">
+      <SelectPrimitive.ItemText className="block flex-1 min-w-0 whitespace-normal break-words text-left leading-relaxed">
         {children}
       </SelectPrimitive.ItemText>
       <SelectPrimitive.ItemIndicator

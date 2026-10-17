@@ -118,6 +118,53 @@ class SystemSettingsSeeder extends Seeder
                 'label' => 'Adoption Pick-up Schedule (Days)',
                 'description' => 'Number of days an approved adopter has to pick up their pet before the pet is marked unclaimed and returned to available status.',
             ],
+            [
+                'key' => 'adopter_adoption_cooldown_months',
+                'value' => '3',
+                'type' => 'integer',
+                'label' => 'Adopter Post-Adoption Cooldown (Months)',
+                'description' => 'The adopter can only adopt another pet after this many months so they can focus on their newly adopted pet. Set to 0 to disable.',
+            ],
+            [
+                'key' => 'certificate_signatories',
+                'value' => json_encode([
+                    [
+                        'id' => 'mao_officer',
+                        'title' => 'Municipal Agriculture Office (MAO)',
+                        'name' => 'Municipal Agriculture Office Staff',
+                        'position' => 'Municipal Agriculture Office (MAO)',
+                        'signature_url' => '',
+                        'enabled' => true,
+                    ],
+                    [
+                        'id' => 'shelter_head',
+                        'title' => 'Releasing Facility Head / Veterinarian',
+                        'name' => 'Shelter Officer-in-Charge',
+                        'position' => 'Releasing Facility Head / Veterinarian',
+                        'signature_url' => '',
+                        'enabled' => true,
+                    ],
+                    [
+                        'id' => 'adopter',
+                        'title' => 'Registered Legal Custodian',
+                        'name' => '{adopterName}',
+                        'position' => 'Registered Legal Custodian',
+                        'signature_url' => '',
+                        'enabled' => true,
+                    ],
+                    [
+                        'id' => 'witness',
+                        'title' => 'Barangay / Community Witness',
+                        'name' => 'Barangay Animal Welfare Officer',
+                        'position' => 'Community Witness',
+                        'signature_url' => '',
+                        'enabled' => false,
+                    ],
+                ], JSON_PRETTY_PRINT),
+                'type' => 'text',
+                'label' => 'Adoption Certificate Signatories Configuration',
+                'description' => 'Configurable signatories for the official adoption certificate. Supports up to 4 signatories with name, position, signature image URL (via Cloudinary), and enable/disable toggle.',
+            ],
         ];
 
         foreach ($settings as $setting) {

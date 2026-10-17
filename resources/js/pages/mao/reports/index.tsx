@@ -8,6 +8,7 @@ import {
 import AppLayout from '@/layouts/app-layout';
 import ReportFilterBar, { ReportFilterState } from '@/components/report-filter-bar';
 import { useThemeTemplate } from '@/hooks/use-theme-template';
+import { cn } from '@/lib/utils';
 
 interface Stats {
     total_applications: number;
@@ -124,7 +125,20 @@ export default function MaoReports({
                             Municipal animal adoption audits, compliance oversight, and official reports.
                         </p>
                     </div>
-                    {/* Download PDF and Download Excel (CSV) hidden for now */}
+                    <div className="flex gap-2">
+                        <a href={pdfUrl} target="_blank" rel="noreferrer">
+                            <Button variant="outline" className="border-gray-200 text-xs flex items-center gap-1.5 shadow-2xs hover:bg-gray-50 cursor-pointer">
+                                <Download className="h-4 w-4 text-red-600" />
+                                Download PDF
+                            </Button>
+                        </a>
+                        <a href={excelUrl}>
+                            <Button className={cn("text-white text-xs flex items-center gap-1.5 shadow-xs cursor-pointer", theme.primaryButton)}>
+                                <Download className="h-4 w-4" />
+                                Download Excel (CSV)
+                            </Button>
+                        </a>
+                    </div>
                 </div>
 
                 {/* Filter Bar */}

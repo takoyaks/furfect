@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Head, useForm, Link } from '@inertiajs/react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -14,6 +15,7 @@ import { IdentityVerificationReport } from '@/components/identity-verification-r
 import { IdentityVerificationBadge } from '@/components/identity-verification-badge';
 import { AdoptionCertificateModal } from '@/components/adoption-certificate-modal';
 import { AdoptionPassModal } from '@/components/adoption-pass-modal';
+import { AuditRemarksSelector } from '@/components/audit-remarks-selector';
 
 interface ChecklistItem {
     label: string;
@@ -148,7 +150,7 @@ export default function MaoApplicationShow({ application, dssMatch, defaultCheck
         ])
     );
 
-    const { data, setData, patch, processing } = useForm<{
+    const { data, setData, patch, processing, errors } = useForm<{
         decision: string;
         remarks: string;
         checklist: Record<string, boolean>;
@@ -164,6 +166,10 @@ export default function MaoApplicationShow({ application, dssMatch, defaultCheck
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (data.decision === 'approved' && (!data.remarks || !data.remarks.trim())) {
+            toast.error('Official audit remarks are required when approving the application.');
+            return;
+        }
         patch(route('mao.applications.update', application.id));
     };
 
@@ -606,18 +612,13 @@ export default function MaoApplicationShow({ application, dssMatch, defaultCheck
                                         </div>
 
                                         {/* Remarks */}
-                                        <div className="space-y-1.5">
-                                            <Label htmlFor="remarks" className="text-xs font-bold text-gray-800 uppercase tracking-wider">
-                                                Official Audit Remarks / Certificate Notes
-                                            </Label>
-                                            <Textarea
-                                                id="remarks"
-                                                value={data.remarks}
-                                                onChange={e => setData('remarks', e.target.value)}
-                                                className="min-h-[90px]"
-                                                placeholder="Enter audit findings, statutory notes, or reason for disapproval..."
-                                            />
-                                        </div>
+                                        <AuditRemarksSelector
+                                            id="remarks"
+                                            decision={data.decision}
+                                            value={data.remarks}
+                                            onChange={(val) => setData('remarks', val)}
+                                            error={errors.remarks}
+                                        />
 
                                         <Button
                                             type="submit"

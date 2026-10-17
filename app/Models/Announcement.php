@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\CloudinaryService;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -95,6 +96,37 @@ class Announcement extends Model
             }
             if (empty($announcement->published_at) && $announcement->is_published) {
                 $announcement->published_at = now();
+            }
+        });
+
+        static::deleting(function ($announcement): void {
+            $cloudinary = app(CloudinaryService::class);
+
+            $rawImage = $announcement->getRawOriginal('image_path');
+            if ($rawImage) {
+                if (str_starts_with($rawImage, 'http://') || str_starts_with($rawImage, 'https://')) {
+                    $cloudinary->delete($rawImage);
+                } elseif (Storage::disk('public')->exists($rawImage)) {
+                    Storage::disk('public')->delete($rawImage);
+                }
+            }
+
+            $rawVideo = $announcement->getRawOriginal('video_path');
+            if ($rawVideo) {
+                if (str_starts_with($rawVideo, 'http://') || str_starts_with($rawVideo, 'https://')) {
+                    $cloudinary->delete($rawVideo, ['resource_type' => 'video']);
+                } elseif (Storage::disk('public')->exists($rawVideo)) {
+                    Storage::disk('public')->delete($rawVideo);
+                }
+            }
+
+            $rawThumb = $announcement->getRawOriginal('video_thumbnail_path');
+            if ($rawThumb) {
+                if (str_starts_with($rawThumb, 'http://') || str_starts_with($rawThumb, 'https://')) {
+                    $cloudinary->delete($rawThumb);
+                } elseif (Storage::disk('public')->exists($rawThumb)) {
+                    Storage::disk('public')->delete($rawThumb);
+                }
             }
         });
     }

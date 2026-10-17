@@ -219,7 +219,13 @@ class ApplicationController extends Controller
 
         $request->validate([
             'decision' => ['required', 'string', 'in:suitable,not_suitable'],
-            'notes' => ['nullable', 'string', 'max:2000'],
+            'notes' => [
+                $request->input('decision') === 'suitable' ? 'required' : 'nullable',
+                'string',
+                'max:2000',
+            ],
+        ], [
+            'notes.required' => __('Staff screening remarks and feedback are required when endorsing an application as suitable.'),
         ]);
 
         $decision = $request->input('decision');
@@ -407,9 +413,15 @@ class ApplicationController extends Controller
 
         $request->validate([
             'decision' => ['required', 'string', 'in:approved,rejected'],
-            'remarks' => ['nullable', 'string', 'max:2000'],
+            'remarks' => [
+                $request->input('decision') === 'approved' ? 'required' : 'nullable',
+                'string',
+                'max:2000',
+            ],
             'checklist' => ['required', 'array'],
             'checklist.*' => ['boolean'],
+        ], [
+            'remarks.required' => __('Official audit remarks and determination notes are required when approving an application.'),
         ]);
 
         $decision = $request->input('decision');

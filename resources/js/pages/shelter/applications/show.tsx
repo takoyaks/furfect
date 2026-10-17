@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Head, useForm, Link } from '@inertiajs/react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -15,6 +16,7 @@ import { IdentityVerificationBadge } from '@/components/identity-verification-ba
 import { AdoptionCertificateModal } from '@/components/adoption-certificate-modal';
 import { AdoptionPassModal } from '@/components/adoption-pass-modal';
 import { ConfirmPetReleaseModal } from '@/components/confirm-pet-release-modal';
+import { AuditRemarksSelector } from '@/components/audit-remarks-selector';
 
 interface CompetingApp {
     id: number;
@@ -147,6 +149,10 @@ export default function ShelterApplicationShow({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (data.decision === 'suitable' && (!data.notes || !data.notes.trim())) {
+            toast.error('Staff screening remarks and feedback are required when endorsing an application as suitable.');
+            return;
+        }
         patch(route('shelter.applications.update', application.id));
     };
 
@@ -589,18 +595,14 @@ export default function ShelterApplicationShow({
                                             </div>
                                         </div>
 
-                                        <div className="space-y-2">
-                                            <Label htmlFor="notes" className="text-xs font-bold text-gray-700">
-                                                Staff Screening Remarks / Notes
-                                            </Label>
-                                            <Textarea 
-                                                id="notes" 
-                                                value={data.notes} 
-                                                onChange={e => setData('notes', e.target.value)}
-                                                className="w-full min-h-[110px] text-xs"
-                                                placeholder="Add assessment notes for the Municipal Agriculture Office or constructive rejection feedback..."
-                                            />
-                                        </div>
+                                        <AuditRemarksSelector
+                                            id="notes"
+                                            mode="shelter"
+                                            decision={data.decision}
+                                            value={data.notes}
+                                            onChange={(val) => setData('notes', val)}
+                                            error={errors.notes}
+                                        />
 
                                         <Button 
                                             type="submit" 

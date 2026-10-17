@@ -42,14 +42,14 @@ const activeItemStyles =
 export function AppHeader({ breadcrumbs = [] }: Props) {
     const theme = useThemeTemplate();
     const page = usePage();
-    const { auth } = page.props;
+    const auth = (page.props as any)?.auth;
     const getInitials = useInitials();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
 
-    const roles = (auth.user?.roles as string[]) || [];
+    const roles = (auth?.user?.roles as string[]) || [];
     const isStaffOrAdminOrMao = roles.some((r) => ['admin', 'shelter_staff', 'mao_staff'].includes(r));
 
-    const mainNavItems: NavItem[] = auth.user
+    const mainNavItems: NavItem[] = auth?.user
         ? [
               {
                   title: 'Home',
@@ -83,7 +83,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
               },
               ...(!isStaffOrAdminOrMao ? [
                   {
-                      title: 'Pet History',
+                      title: 'History',
                       href: route('history.index'),
                       icon: Award,
                   },

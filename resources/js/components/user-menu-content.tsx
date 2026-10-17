@@ -48,7 +48,7 @@ export function UserMenuContent({ user }: Props) {
                             onClick={cleanup}
                         >
                             <Award className="mr-2 h-4 w-4" />
-                            <span>My Pet History</span>
+                            <span>History</span>
                         </Link>
                     </DropdownMenuItem>
                 )}

@@ -418,7 +418,7 @@ export default function ApplicationStatus({
                                         </div>
                                         <h5 className="font-bold text-sm text-gray-900">Certificate &amp; Pass Always Available</h5>
                                         <p className="text-[11px] text-gray-500">
-                                            You can view, save, and print your official adoption documents anytime from your Pet History.
+                                            You can view, save, and print your official adoption documents anytime from your History.
                                         </p>
                                     </div>
                                     <div className="space-y-2">
@@ -426,7 +426,7 @@ export default function ApplicationStatus({
                                             href={route('history.index')}
                                             className={cn(buttonVariants({ variant: 'default' }), "w-full text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white")}
                                         >
-                                            View My Pet History
+                                            View History
                                         </Link>
                                         <Link
                                             href={route('pets.show', application.pet.id)}

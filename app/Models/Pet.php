@@ -133,4 +133,13 @@ class Pet extends Model
     {
         return $this->hasMany(DssMatchScore::class);
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Pet $pet): void {
+            foreach ($pet->photos as $photo) {
+                $photo->delete();
+            }
+        });
+    }
 }

@@ -163,7 +163,21 @@ export default function AdminShelters({
                             </thead>
                             <tbody className="divide-y divide-gray-100 text-gray-700">
                                 {shelters.data.map(s => (
-                                    <tr key={s.id} className="hover:bg-gray-50/20">
+                                    <tr
+                                        key={s.id}
+                                        onClick={() => {
+                                            setEditingShelter(s);
+                                            setData({
+                                                name: s.name,
+                                                type: s.type,
+                                                location: s.location,
+                                                contact: s.contact,
+                                                email: s.email || '',
+                                                status: s.status,
+                                            });
+                                        }}
+                                        className="hover:bg-amber-50/40 cursor-pointer transition-colors"
+                                    >
                                         <td className="p-3 font-semibold">{s.name}</td>
                                         <td className="p-3 text-gray-500">{s.type}</td>
                                         <td className="p-3 text-gray-500">{s.location}</td>
@@ -176,7 +190,7 @@ export default function AdminShelters({
                                                 {s.status}
                                             </span>
                                         </td>
-                                        <td className="p-3 space-x-2">
+                                        <td className="p-3 space-x-2" onClick={(e) => e.stopPropagation()}>
                                             <Button 
                                                 variant="ghost" 
                                                 size="sm" 

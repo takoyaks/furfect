@@ -19,6 +19,8 @@ import { IdentityVerificationBadge } from '@/components/identity-verification-ba
 import { AdoptionCertificateModal } from '@/components/adoption-certificate-modal';
 import { AdoptionPassModal } from '@/components/adoption-pass-modal';
 import { ConfirmPetReleaseModal } from '@/components/confirm-pet-release-modal';
+import { AuditRemarksSelector } from '@/components/audit-remarks-selector';
+import { toast } from 'sonner';
 
 interface ChecklistItem {
     label: string;
@@ -142,7 +144,7 @@ export default function AdminApplicationShow({
         );
     };
 
-    const { data: auditData, setData: setAuditData, post: postAudit, processing: auditProcessing } = useForm<{
+    const { data: auditData, setData: setAuditData, post: postAudit, processing: auditProcessing, errors: auditErrors } = useForm<{
         decision: string;
         remarks: string;
         checklist: Record<string, boolean>;
@@ -161,6 +163,10 @@ export default function AdminApplicationShow({
 
     const handleAuditSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (auditData.decision === 'approved' && (!auditData.remarks || !auditData.remarks.trim())) {
+            toast.error('Audit remarks are required when approving an application.');
+            return;
+        }
         postAudit(route('admin.applications.audit', application.id), {
             preserveScroll: true,
             onSuccess: () => {
@@ -715,19 +721,13 @@ export default function AdminApplicationShow({
                         </div>
 
                         {/* Officer Remarks */}
-                        <div className="space-y-1.5">
-                            <Label htmlFor="modal-mao-remarks" className="text-xs font-bold text-gray-700">
-                                Official Audit Remarks &amp; Feedback
-                            </Label>
-                            <Textarea
-                                id="modal-mao-remarks"
-                                value={auditData.remarks}
-                                onChange={(e) => setAuditData('remarks', e.target.value)}
-                                rows={3}
-                                placeholder="Add notes explaining statutory compliance verification or reasons for decision..."
-                                className="text-xs"
-                            />
-                        </div>
+                        <AuditRemarksSelector
+                            id="modal-mao-remarks"
+                            decision={auditData.decision}
+                            value={auditData.remarks}
+                            onChange={(val) => setAuditData('remarks', val)}
+                            error={auditErrors.remarks}
+                        />
 
                         {/* Action Buttons */}
                         <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">

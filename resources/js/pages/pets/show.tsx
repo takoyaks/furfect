@@ -223,16 +223,20 @@ export default function PetShow({
 
                                 <div className="pt-2 border-t border-gray-100 dark:border-neutral-800">
                                     <h4 className="text-xs font-bold uppercase text-gray-400 tracking-wider mb-2">About {pet.name}</h4>
-                                    {pet.description ? (
-                                        pet.description.includes('<') && pet.description.includes('>') ? (
+                                    {pet.description ? (() => {
+                                        const decoded = pet.description.includes('&lt;') && pet.description.includes('&gt;')
+                                            ? pet.description.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&amp;/g, '&')
+                                            : pet.description;
+                                        const isHtml = decoded.includes('<') && decoded.includes('>');
+                                        return isHtml ? (
                                             <div 
                                                 className="text-gray-700 dark:text-neutral-300 text-sm leading-relaxed space-y-2.5 prose max-w-none [&_h2]:text-base [&_h2]:font-bold [&_h3]:text-sm [&_h3]:font-semibold [&_h4]:text-xs [&_h4]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_blockquote]:border-l-4 [&_blockquote]:border-[#D4A017] [&_blockquote]:pl-3.5 [&_blockquote]:italic [&_blockquote]:bg-amber-50/50 dark:[&_blockquote]:bg-amber-950/20 [&_blockquote]:py-1 [&_p]:leading-relaxed"
-                                                dangerouslySetInnerHTML={{ __html: pet.description }}
+                                                dangerouslySetInnerHTML={{ __html: decoded }}
                                             />
                                         ) : (
-                                            <p className="text-gray-700 dark:text-neutral-300 text-sm whitespace-pre-line leading-relaxed">{pet.description}</p>
-                                        )
-                                    ) : (
+                                            <p className="text-gray-700 dark:text-neutral-300 text-sm whitespace-pre-line leading-relaxed">{decoded}</p>
+                                        );
+                                    })() : (
                                         <p className="text-gray-400 dark:text-neutral-500 text-sm italic">No description provided.</p>
                                     )}
                                 </div>

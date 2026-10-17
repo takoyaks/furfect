@@ -220,7 +220,13 @@ class ApplicationController extends Controller
 
         $request->validate([
             'decision' => ['required', 'string', 'in:suitable,not_suitable'],
-            'notes' => ['nullable', 'string', 'max:2000'],
+            'notes' => [
+                $request->input('decision') === 'suitable' ? 'required' : 'nullable',
+                'string',
+                'max:2000',
+            ],
+        ], [
+            'notes.required' => __('Staff screening remarks and feedback are required when endorsing an application as suitable.'),
         ]);
 
         $decision = $request->input('decision');

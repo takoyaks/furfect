@@ -83,8 +83,8 @@ function AppLayoutOuter({
     initialBreadcrumbs: BreadcrumbItem[];
     children: React.ReactNode;
 }) {
-    const { auth } = usePage().props;
-    const user = auth.user;
+    const pageProps = usePage().props as { auth?: { user?: any } };
+    const user = pageProps.auth?.user;
     const roles = (user?.roles as string[]) || [];
 
     const isStaff = roles.some((r) => ['admin', 'shelter_staff', 'mao_staff'].includes(r));

@@ -178,7 +178,7 @@ export default function Home({ config, featuredPets = [], announcements = [], st
                                     className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), "w-full md:w-auto text-xs font-bold border-gray-300 hover:bg-white/80 gap-1.5 shadow-2xs")}
                                 >
                                     <Award className={`h-4 w-4 ${theme.accentText}`} />
-                                    Pet History
+                                    History
                                 </Link>
                                 <Link
                                     href={route('application.show')}
@@ -226,9 +226,9 @@ export default function Home({ config, featuredPets = [], announcements = [], st
                                     </Link>
                                     <Link
                                         href={auth?.user ? route('matches.index') : route('how-it-works')}
-                                        className={cn(buttonVariants({ variant: 'outline' }), "border-gray-300 text-gray-700 hover:bg-white text-sm px-6 py-2.5 rounded-xl font-semibold")}
+                                        className={cn(buttonVariants({ variant: 'outline' }), "border-gray-300 text-gray-700 hover:bg-white text-sm md:text-base px-7 py-3 rounded-xl font-bold shadow-xs hover:shadow-sm transition-all")}
                                     >
-                                        {auth?.user ? 'View My DSS Matches' : 'How It Works'}
+                                        {auth?.user ? 'Recommended Matches' : 'How It Works'}
                                     </Link>
                                 </div>
                             </div>

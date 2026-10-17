@@ -15,6 +15,7 @@ use App\Http\Controllers\AdopterProfileController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\Auth\EmailAvailabilityController;
 use App\Http\Controllers\Auth\SocialAuthController;
+use App\Http\Controllers\CertificateSignatoryController;
 use App\Http\Controllers\DiditVerificationController;
 use App\Http\Controllers\DssMatchController;
 use App\Http\Controllers\LifestyleProfileController;
@@ -95,6 +96,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/application', [ApplicationController::class, 'store'])->name('application.store');
     Route::post('/application/transfer', [ApplicationController::class, 'transfer'])->name('application.transfer');
     Route::post('/application/withdraw', [ApplicationController::class, 'withdraw'])->name('application.withdraw');
+    Route::post('/applications/{application}/record-pass-print', [ApplicationController::class, 'recordPassPrint'])->name('applications.record-pass-print');
+    Route::post('/applications/{application}/record-certificate-print', [ApplicationController::class, 'recordCertificatePrint'])->name('applications.record-certificate-print');
+
+    // Adoption Certificate Signatories Configuration (MAO & Admin)
+    Route::middleware(['role:mao_staff|admin'])->group(function () {
+        Route::post('/certificate-signatories', [CertificateSignatoryController::class, 'update'])->name('certificate-signatories.update');
+        Route::post('/certificate-signatories/upload-signature', [CertificateSignatoryController::class, 'uploadSignature'])->name('certificate-signatories.upload-signature');
+        Route::post('/certificate-signatories/delete-signature', [CertificateSignatoryController::class, 'deleteSignature'])->name('certificate-signatories.delete-signature');
+    });
 
     // Notification Center API
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');

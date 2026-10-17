@@ -579,7 +579,23 @@ export default function AdminUsers({
                                         const isToggling = togglingVerificationId === u.id;
 
                                         return (
-                                            <tr key={u.id} className="hover:bg-gray-50/50">
+                                            <tr
+                                                key={u.id}
+                                                onClick={() => {
+                                                    if (currentTab === 'subscribers') {
+                                                        setInspectingSubscriber(u);
+                                                    } else {
+                                                        setEditingUser(u);
+                                                        setData({
+                                                            name: u.name,
+                                                            email: u.email,
+                                                            password: '',
+                                                            role: u.roles[0]?.name || 'shelter_staff',
+                                                        });
+                                                    }
+                                                }}
+                                                className="hover:bg-amber-50/40 cursor-pointer transition-colors"
+                                            >
                                                 <td className="p-3">
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-mono text-[10px] text-gray-400 font-semibold">
@@ -634,7 +650,10 @@ export default function AdminUsers({
                                                                     variant="ghost"
                                                                     size="sm"
                                                                     disabled={isToggling}
-                                                                    onClick={() => handleToggleVerification(u)}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleToggleVerification(u);
+                                                                    }}
                                                                     className={`h-6 text-[10px] px-2 rounded-md font-semibold ${
                                                                         isVerified 
                                                                             ? 'text-red-700 hover:bg-red-50 hover:text-red-800' 
@@ -703,7 +722,7 @@ export default function AdminUsers({
                                                     {new Date(u.created_at).toLocaleDateString()}
                                                 </td>
 
-                                                <td className="p-3 text-right">
+                                                <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
                                                     <div className="flex items-center justify-end gap-1">
                                                         {currentTab === 'subscribers' ? (
                                                             <>

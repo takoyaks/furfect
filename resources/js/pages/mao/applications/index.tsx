@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Head, Link, router, useForm } from '@inertiajs/react';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,6 +47,8 @@ import { IdentityVerificationReport } from '@/components/identity-verification-r
 import { IdentityVerificationBadge } from '@/components/identity-verification-badge';
 import { DssScoreCard } from '@/components/dss-score-card';
 import { ApplicationTimelineCard, TimelineEvent } from '@/components/application-timeline-card';
+import { AuditRemarksSelector } from '@/components/audit-remarks-selector';
+import { stripHtmlTags } from '@/lib/utils';
 
 interface ChecklistItem {
     label: string;
@@ -289,7 +292,7 @@ export default function MaoApplicationIndex({
     };
 
     // Form state for MAO Audit
-    const { data: auditData, setData: setAuditData, patch, processing } = useForm<{
+    const { data: auditData, setData: setAuditData, patch, processing, errors: auditErrors } = useForm<{
         decision: string;
         remarks: string;
         checklist: Record<string, boolean>;
@@ -375,6 +378,11 @@ export default function MaoApplicationIndex({
     const handleAuditSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedApplication) return;
+
+        if (auditData.decision === 'approved' && (!auditData.remarks || !auditData.remarks.trim())) {
+            toast.error('Official audit remarks are required when approving an application.');
+            return;
+        }
 
         patch(route('mao.applications.update', selectedApplication.id), {
             preserveScroll: true,
@@ -494,7 +502,14 @@ export default function MaoApplicationIndex({
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {applications.data.map((app) => (
-                                        <tr key={app.id} className="hover:bg-purple-50/20 transition">
+                                        <tr
+                                            key={app.id}
+                                            onClick={() => {
+                                                handleSelectApplication(app.id);
+                                                setViewMode('split');
+                                            }}
+                                            className="hover:bg-purple-50/40 cursor-pointer transition-colors"
+                                        >
                                             <td className="py-3 px-4 font-mono font-bold text-gray-900">{app.reference_number}</td>
                                             <td className="py-3 px-4 font-medium text-gray-900 uppercase">{app.adopter.name}</td>
                                             <td className="py-3 px-4 text-gray-700">{app.pet.name}</td>
@@ -506,7 +521,7 @@ export default function MaoApplicationIndex({
                                                 </span>
                                             </td>
                                             <td className="py-3 px-4 text-gray-500">{new Date(app.submitted_at).toLocaleDateString()}</td>
-                                            <td className="py-3 px-4 text-right">
+                                            <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                                                 <div className="flex items-center justify-end gap-1.5">
                                                     {app.status === 'mao_audit' && (
                                                         <Button
@@ -1236,7 +1251,7 @@ export default function MaoApplicationIndex({
                                                                 <div className="flex items-start sm:col-span-2">
                                                                     <span className="w-32 text-gray-500 font-medium">Kennel / Staff Notes</span>
                                                                     <span className="text-gray-400 mr-2">:</span>
-                                                                    <span className="text-gray-700 italic">"{selectedApplication.pet.housing_notes}"</span>
+                                                                    <span className="text-gray-700 italic">"{stripHtmlTags(selectedApplication.pet.housing_notes)}"</span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -1258,7 +1273,7 @@ export default function MaoApplicationIndex({
                                                             <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-100 text-xs mt-2">
                                                                 <span className="font-bold text-gray-700 block mb-1">About {selectedApplication.pet.name}:</span>
                                                                 <p className="text-gray-600 leading-relaxed italic">
-                                                                    "{selectedApplication.pet.description}"
+                                                                    "{stripHtmlTags(selectedApplication.pet.description)}"
                                                                 </p>
                                                             </div>
                                                         )}
@@ -1814,19 +1829,13 @@ export default function MaoApplicationIndex({
                             </div>
 
                             {/* Officer Remarks */}
-                            <div className="space-y-1.5">
-                                <Label htmlFor="modal-mao-remarks" className="text-xs font-bold text-gray-700">
-                                    Official Audit Remarks &amp; Feedback
-                                </Label>
-                                <Textarea
-                                    id="modal-mao-remarks"
-                                    value={auditData.remarks}
-                                    onChange={(e) => setAuditData('remarks', e.target.value)}
-                                    rows={3}
-                                    placeholder="Add notes explaining statutory compliance verification or reasons for decision..."
-                                    className="text-xs"
-                                />
-                            </div>
+                            <AuditRemarksSelector
+                                id="modal-mao-remarks"
+                                decision={auditData.decision}
+                                value={auditData.remarks}
+                                onChange={(val) => setAuditData('remarks', val)}
+                                error={auditErrors.remarks}
+                            />
 
                             {/* Action Buttons */}
                             <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">

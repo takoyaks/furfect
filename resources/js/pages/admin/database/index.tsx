@@ -158,6 +158,7 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
     const [overrideReason, setOverrideReason] = useState<string>('');
     const [syncPetStatus, setSyncPetStatus] = useState<boolean>(true);
     const [isOverridingApp, setIsOverridingApp] = useState(false);
+    const [overrideError, setOverrideError] = useState<string | null>(null);
 
     // Modals: Master Reset
     const [resetScope, setResetScope] = useState<'all' | 'adopted_data' | 'verification_data' | 'quiz_data' | null>(null);
@@ -304,29 +305,67 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
         );
     };
 
-    // Application Override Handlers
+    // Application Override / Rollback Handlers
     const openOverrideApp = (app: ApplicationRecord) => {
         setAppToOverride(app);
         setOverrideStatus(app.status);
         setOverrideReason('');
         setSyncPetStatus(true);
+        setOverrideError(null);
+    };
+
+    const openRollbackApp = (app: ApplicationRecord) => {
+        setAppToOverride(app);
+        setOverrideError(null);
+        setSyncPetStatus(true);
+        // Suggest intelligent rollback default based on current status
+        if (['released', 'approved'].includes(app.status)) {
+            setOverrideStatus('under_review');
+            setOverrideReason('Super Admin rollback to shelter screening review.');
+        } else if (app.status === 'mao_audit') {
+            setOverrideStatus('under_review');
+            setOverrideReason('Super Admin rollback from MAO audit to shelter review.');
+        } else if (['rejected', 'unclaimed', 'closed'].includes(app.status)) {
+            setOverrideStatus('pending');
+            setOverrideReason('Super Admin reopening application back to pending submission.');
+        } else {
+            setOverrideStatus('pending');
+            setOverrideReason('Super Admin rollback to initial submission.');
+        }
     };
 
     const handleSaveOverrideApp = (e: React.FormEvent) => {
         e.preventDefault();
         if (!appToOverride) return;
         setIsOverridingApp(true);
+        setOverrideError(null);
+
+        const isRollback = ['pending', 'under_review', 'mao_audit'].includes(overrideStatus)
+            && ['approved', 'released', 'rejected', 'unclaimed', 'closed', 'mao_audit'].includes(appToOverride.status);
+
         router.post(
-            route('admin.database.applications.override-status', appToOverride.id),
+            `/admin/database/applications/${appToOverride.id}/override-status`,
             {
                 status: overrideStatus,
-                reason: overrideReason,
+                reason: overrideReason.trim() || (isRollback 
+                    ? `Super Admin rollback from ${appToOverride.status} to ${overrideStatus}.`
+                    : `Super Admin status override to ${overrideStatus}.`
+                ),
                 sync_pet_status: syncPetStatus,
+                is_rollback: isRollback,
             },
             {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setAppToOverride(null);
+                    setOverrideError(null);
+                },
+                onError: (errors) => {
+                    const errorMsg = Object.values(errors).flat().join(' ') || 'Failed to update application status.';
+                    setOverrideError(errorMsg);
+                },
                 onFinish: () => {
                     setIsOverridingApp(false);
-                    setAppToOverride(null);
                 },
             }
         );
@@ -337,9 +376,16 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
         if (!resetScope) return;
         setIsResetting(true);
         router.post('/admin/database/reset-all', { scope: resetScope }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setResetScope(null);
+            },
+            onError: (errors) => {
+                const msg = Object.values(errors).flat().join(' ') || 'Failed to execute reset.';
+                alert(msg);
+            },
             onFinish: () => {
                 setIsResetting(false);
-                setResetScope(null);
             },
         });
     };
@@ -507,7 +553,11 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
                                             const isVerified = u.adopter_profile?.is_identity_verified;
 
                                             return (
-                                                <tr key={u.id} className="hover:bg-neutral-50/60">
+                                                <tr
+                                                    key={u.id}
+                                                    onClick={() => openInspect(u)}
+                                                    className="hover:bg-amber-50/40 cursor-pointer transition-colors"
+                                                >
                                                     <td className="p-3">
                                                         <div className="flex items-center gap-2">
                                                             <span className="font-mono text-[10px] text-neutral-400 font-bold">
@@ -548,7 +598,7 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
                                                         {u.applications_count} apps · {u.saved_pets_count} saved
                                                     </td>
 
-                                                    <td className="p-3 text-right">
+                                                    <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
                                                         <div className="flex items-center justify-end gap-1.5">
                                                             <Button
                                                                 variant="outline"
@@ -663,7 +713,11 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
                                         </tr>
                                     ) : (
                                         pets.data.map((pet) => (
-                                            <tr key={pet.id} className="hover:bg-neutral-50/60">
+                                            <tr
+                                                key={pet.id}
+                                                onClick={() => openEditPet(pet)}
+                                                className="hover:bg-amber-50/40 cursor-pointer transition-colors"
+                                            >
                                                 <td className="p-3">
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-mono text-[10px] text-neutral-400 font-bold">
@@ -688,7 +742,7 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
                                                     {getStatusBadge(pet.status)}
                                                 </td>
 
-                                                <td className="p-3 text-right">
+                                                <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
@@ -772,7 +826,11 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
                                         </tr>
                                     ) : (
                                         applications.data.map((app) => (
-                                            <tr key={app.id} className="hover:bg-neutral-50/60">
+                                            <tr
+                                                key={app.id}
+                                                onClick={() => openOverrideApp(app)}
+                                                className="hover:bg-amber-50/40 cursor-pointer transition-colors"
+                                            >
                                                 <td className="p-3 font-mono font-semibold text-neutral-900">
                                                     {app.reference_number}
                                                 </td>
@@ -801,16 +859,29 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
                                                     )}
                                                 </td>
 
-                                                <td className="p-3 text-right">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => openOverrideApp(app)}
-                                                        className="h-7 px-2.5 text-[11px] border-amber-300 text-amber-900 hover:bg-amber-50"
-                                                    >
-                                                        <ArrowLeftRight className="size-3 mr-1 text-amber-700" />
-                                                        Override / Rollback
-                                                    </Button>
+                                                <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
+                                                    <div className="flex items-center justify-end gap-1.5">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => openRollbackApp(app)}
+                                                            className="h-7 px-2.5 text-[11px] border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800"
+                                                            title="Rollback this application to a previous status"
+                                                        >
+                                                            <RotateCcw className="size-3 mr-1 text-red-600" />
+                                                            Rollback
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => openOverrideApp(app)}
+                                                            className="h-7 px-2.5 text-[11px] border-amber-300 text-amber-900 hover:bg-amber-50"
+                                                            title="Override status to any lifecycle stage"
+                                                        >
+                                                            <SlidersHorizontal className="size-3 mr-1 text-amber-700" />
+                                                            Override
+                                                        </Button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))
@@ -1059,12 +1130,19 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
                         <DialogHeader>
                             <DialogTitle className="text-sm font-bold flex items-center gap-2">
                                 <SlidersHorizontal className="size-4 text-amber-600" />
-                                <span>Override Status: {appToOverride?.reference_number}</span>
+                                <span>Status Management: {appToOverride?.reference_number}</span>
                             </DialogTitle>
                             <DialogDescription className="text-xs text-neutral-500">
-                                Manually override or rollback this application to any lifecycle stage.
+                                Override or rollback this application to any lifecycle stage with real-time pet status syncing.
                             </DialogDescription>
                         </DialogHeader>
+
+                        {overrideError && (
+                            <div className="p-2.5 rounded-md bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+                                <AlertTriangle className="size-4 shrink-0 text-red-600" />
+                                <span>{overrideError}</span>
+                            </div>
+                        )}
 
                         <form onSubmit={handleSaveOverrideApp} className="space-y-3 py-2">
                             <div className="bg-neutral-50 p-2.5 rounded-lg border border-neutral-200 text-xs flex justify-between items-center">
@@ -1078,12 +1156,78 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
                                 </div>
                             </div>
 
+                            {/* Quick Rollback Presets */}
+                            <div className="space-y-1.5">
+                                <div className="text-[11px] font-semibold text-neutral-600 flex items-center gap-1">
+                                    <RotateCcw className="size-3 text-amber-600" />
+                                    <span>Quick Rollback Presets:</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setOverrideStatus('pending');
+                                            setOverrideReason('Super Admin rollback to pending initial submission.');
+                                        }}
+                                        className={`px-2.5 py-1 text-[11px] font-medium rounded border transition-all ${
+                                            overrideStatus === 'pending'
+                                                ? 'bg-amber-100 border-amber-400 text-amber-900 font-bold shadow-2xs'
+                                                : 'bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50'
+                                        }`}
+                                    >
+                                        ↺ Pending
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setOverrideStatus('under_review');
+                                            setOverrideReason('Super Admin rollback to shelter screening review.');
+                                        }}
+                                        className={`px-2.5 py-1 text-[11px] font-medium rounded border transition-all ${
+                                            overrideStatus === 'under_review'
+                                                ? 'bg-amber-100 border-amber-400 text-amber-900 font-bold shadow-2xs'
+                                                : 'bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50'
+                                        }`}
+                                    >
+                                        ↺ Under Review
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setOverrideStatus('mao_audit');
+                                            setOverrideReason('Super Admin rollback to MAO audit review.');
+                                        }}
+                                        className={`px-2.5 py-1 text-[11px] font-medium rounded border transition-all ${
+                                            overrideStatus === 'mao_audit'
+                                                ? 'bg-amber-100 border-amber-400 text-amber-900 font-bold shadow-2xs'
+                                                : 'bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50'
+                                        }`}
+                                    >
+                                        ↺ MAO Audit
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setOverrideStatus('approved');
+                                            setOverrideReason('Super Admin override: approve for pickup.');
+                                        }}
+                                        className={`px-2.5 py-1 text-[11px] font-medium rounded border transition-all ${
+                                            overrideStatus === 'approved'
+                                                ? 'bg-emerald-100 border-emerald-400 text-emerald-900 font-bold shadow-2xs'
+                                                : 'bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50'
+                                        }`}
+                                    >
+                                        ✓ Approved
+                                    </button>
+                                </div>
+                            </div>
+
                             <div className="space-y-1">
                                 <label className="text-xs font-semibold text-neutral-700">Target Override / Rollback Status</label>
                                 <select
                                     value={overrideStatus}
                                     onChange={(e) => setOverrideStatus(e.target.value)}
-                                    className="w-full h-9 text-xs rounded-md border border-neutral-300 bg-white px-3 text-neutral-800"
+                                    className="w-full h-9 text-xs rounded-md border border-neutral-300 bg-white px-3 text-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
                                 >
                                     <option value="pending">pending (Rollback to initial submission)</option>
                                     <option value="under_review">under_review (Rollback to shelter screening)</option>
@@ -1108,12 +1252,13 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-xs font-semibold text-neutral-700">Reason / Audit Log Note</label>
+                                <label className="text-xs font-semibold text-neutral-700">
+                                    Reason / Audit Log Note <span className="text-neutral-400 font-normal">(optional)</span>
+                                </label>
                                 <Textarea
                                     value={overrideReason}
                                     onChange={(e) => setOverrideReason(e.target.value)}
                                     placeholder="Explain why this status is being overridden or rolled back..."
-                                    required
                                     rows={2}
                                     className="text-xs"
                                 />
@@ -1124,7 +1269,14 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
                                     Cancel
                                 </Button>
                                 <Button type="submit" size="sm" disabled={isOverridingApp} className="bg-amber-600 hover:bg-amber-700 text-white font-bold">
-                                    {isOverridingApp ? 'Applying...' : 'Apply Status Change'}
+                                    {isOverridingApp ? (
+                                        <span className="flex items-center gap-1.5">
+                                            <RefreshCw className="size-3.5 animate-spin" />
+                                            Applying...
+                                        </span>
+                                    ) : (
+                                        'Apply Status Change'
+                                    )}
                                 </Button>
                             </DialogFooter>
                         </form>

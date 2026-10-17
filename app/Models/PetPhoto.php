@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\CloudinaryService;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -97,5 +98,39 @@ class PetPhoto extends Model
     public function pet(): BelongsTo
     {
         return $this->belongsTo(Pet::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (PetPhoto $photo): void {
+            $cloudinary = app(CloudinaryService::class);
+            $rawPath = $photo->getRawOriginal('photo_path');
+            $rawVideo = $photo->getRawOriginal('video_path');
+            $rawThumb = $photo->getRawOriginal('thumbnail_path');
+
+            if ($rawVideo) {
+                if (str_starts_with($rawVideo, 'http://') || str_starts_with($rawVideo, 'https://')) {
+                    $cloudinary->delete($rawVideo, ['resource_type' => 'video']);
+                } elseif (Storage::disk('public')->exists($rawVideo)) {
+                    Storage::disk('public')->delete($rawVideo);
+                }
+            }
+
+            if ($rawThumb) {
+                if (str_starts_with($rawThumb, 'http://') || str_starts_with($rawThumb, 'https://')) {
+                    $cloudinary->delete($rawThumb);
+                } elseif (Storage::disk('public')->exists($rawThumb)) {
+                    Storage::disk('public')->delete($rawThumb);
+                }
+            }
+
+            if ($rawPath) {
+                if (str_starts_with($rawPath, 'http://') || str_starts_with($rawPath, 'https://')) {
+                    $cloudinary->delete($rawPath);
+                } elseif (Storage::disk('public')->exists($rawPath)) {
+                    Storage::disk('public')->delete($rawPath);
+                }
+            }
+        });
     }
 }

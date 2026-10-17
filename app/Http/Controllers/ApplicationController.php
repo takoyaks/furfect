@@ -8,6 +8,7 @@ use App\Models\Pet;
 use App\Models\SystemSetting;
 use App\Services\AdoptionNotificationService;
 use App\Services\DssMatchingService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -249,6 +250,32 @@ class ApplicationController extends Controller
             }
         }
 
+        // 4. Check for post-adoption cooldown (3-month focus period)
+        $cooldownMonths = (int) SystemSetting::get('adopter_adoption_cooldown_months', 3);
+        if ($cooldownMonths > 0) {
+            $lastCompleted = Application::where('user_id', $user->id)
+                ->where('status', 'completed')
+                ->latest('released_at')
+                ->first();
+
+            if ($lastCompleted) {
+                $referenceDate = $lastCompleted->released_at ?? $lastCompleted->resolved_at ?? $lastCompleted->updated_at;
+                if ($referenceDate) {
+                    $eligibleDate = $referenceDate->copy()->addMonths($cooldownMonths);
+                    if (now()->lt($eligibleDate)) {
+                        $remainingDays = (int) ceil(now()->diffInDays($eligibleDate, false));
+                        $formattedDate = $eligibleDate->format('F d, Y');
+                        Inertia::flash('toast', [
+                            'type' => 'warning',
+                            'message' => __("You recently completed an adoption! To ensure your new companion receives dedicated focus and care, there is a {$cooldownMonths}-month focus period before adopting another pet. You may apply again on {$formattedDate} (in {$remainingDays} day(s))."),
+                        ]);
+
+                        return to_route('application.show');
+                    }
+                }
+            }
+        }
+
         $request->validate([
             'pet_id' => ['required', 'exists:pets,id'],
         ]);
@@ -321,5 +348,49 @@ class ApplicationController extends Controller
         ]);
 
         return to_route('application.show');
+    }
+
+    /**
+     * Record a pickup pass print event and increment the pass print counter.
+     */
+    public function recordPassPrint(Request $request, Application $application): JsonResponse
+    {
+        $application->increment('pass_print_count');
+
+        $application->logTimeline(
+            stage: 'releasing',
+            action: 'pickup_pass_printed',
+            title: 'Official Adoption Pass Printed',
+            description: "Adoption pickup pass was printed (Copy #{$application->pass_print_count}).",
+            actor: $request->user(),
+            metadata: ['print_count' => $application->pass_print_count]
+        );
+
+        return response()->json([
+            'success' => true,
+            'pass_print_count' => $application->pass_print_count,
+        ]);
+    }
+
+    /**
+     * Record an adoption certificate print event and increment the certificate print counter.
+     */
+    public function recordCertificatePrint(Request $request, Application $application): JsonResponse
+    {
+        $application->increment('certificate_print_count');
+
+        $application->logTimeline(
+            stage: 'certification',
+            action: 'adoption_certificate_printed',
+            title: 'Official Adoption Certificate Printed',
+            description: "Official adoption certificate was printed (Copy #{$application->certificate_print_count}).",
+            actor: $request->user(),
+            metadata: ['print_count' => $application->certificate_print_count]
+        );
+
+        return response()->json([
+            'success' => true,
+            'certificate_print_count' => $application->certificate_print_count,
+        ]);
     }
 }

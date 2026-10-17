@@ -1,6 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import AppLogo from '@/components/app-logo';
-import { Heart, Cat, MapPin, Phone, Mail, Clock, ShieldCheck } from 'lucide-react';
+import { Heart, MapPin, Phone, Mail, Clock, ShieldCheck } from 'lucide-react';
 import { login, register } from '@/routes';
 import { TermsAndPoliciesModal } from '@/components/terms-and-policies-modal';
 import { useThemeTemplate } from '@/hooks/use-theme-template';
@@ -95,7 +95,11 @@ export function AppFooter({ user, config }: AppFooterProps) {
                 <div className="mt-8 pt-6 border-t border-gray-200/80 flex flex-col sm:flex-row justify-between items-center text-xs text-gray-500 gap-4">
                     <div className="flex items-center gap-1.5 flex-wrap">
                         <span>&copy; {new Date().getFullYear()} FurFect Match. Made with</span>
-                        <Cat className="h-3.5 w-3.5 fill-theme text-theme" />
+                        <span className="inline-flex items-center text-[#FF2D20]" title="Built with Laravel">
+                            <svg className="h-4 w-4 fill-current inline-block drop-shadow-2xs" viewBox="0 0 50 52" xmlns="http://www.w3.org/2000/svg" aria-label="Laravel">
+                                <path d="M49.626 13.788L25.688.082a1.364 1.364 0 00-1.376 0L.374 13.788a1.366 1.366 0 00-.688 1.185v27.414a1.366 1.366 0 00.688 1.185l23.938 13.706a1.366 1.366 0 001.376 0l23.938-13.706a1.366 1.366 0 00.688-1.185V14.973a1.366 1.366 0 00-.688-1.185zM25 2.732l21.5 12.31-6.52 3.733-21.5-12.31L25 2.732zm-2.438 45.922L4.062 38.077V18.156l18.5 10.592v19.906zm2.438-22.348L6.5 15.714l6.52-3.733 18.5 10.592-6.52 3.733zm2.438 22.348V28.748l6.52-3.733v19.906l-6.52 3.733zm18.5-10.577l-9.542 5.462V24.966l9.542-5.462v14.573z"/>
+                            </svg>
+                        </span>
                         <span>for Virac Animal Welfare.</span>
                         {version && (
                             <span className={cn("inline-flex items-center ml-1 px-1.5 py-0.5 rounded text-[10px] font-mono", theme.badge)}>

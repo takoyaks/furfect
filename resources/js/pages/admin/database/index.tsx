@@ -110,9 +110,10 @@ interface PageProps {
         tab?: string;
     };
     logs: string;
+    is_maintenance_mode?: boolean;
 }
 
-export default function Level2SuperAdmin({ stats, users, pets, applications, roles, filters, logs }: PageProps) {
+export default function Level2SuperAdmin({ stats, users, pets, applications, roles, filters, logs, is_maintenance_mode = false }: PageProps) {
     const { auth } = usePage().props as any;
     const currentUserId = auth?.user?.id;
 
@@ -161,8 +162,12 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
     const [overrideError, setOverrideError] = useState<string | null>(null);
 
     // Modals: Master Reset
-    const [resetScope, setResetScope] = useState<'all' | 'adopted_data' | 'verification_data' | 'quiz_data' | null>(null);
+    const [resetScope, setResetScope] = useState<'all' | 'adopted_data' | 'verification_data' | 'quiz_data' | 'clean_slate' | null>(null);
     const [isResetting, setIsResetting] = useState(false);
+
+    // Maintenance Mode state
+    const [isTogglingMaintenance, setIsTogglingMaintenance] = useState(false);
+    const [maintenanceConfirmOpen, setMaintenanceConfirmOpen] = useState(false);
 
     // Filter submit handlers
     const handleUserSearchSubmit = (e: React.FormEvent) => {
@@ -390,6 +395,18 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
         });
     };
 
+    // Maintenance Mode Handler
+    const handleToggleMaintenance = () => {
+        setIsTogglingMaintenance(true);
+        router.post('/admin/database/maintenance/toggle', {}, {
+            preserveScroll: true,
+            onFinish: () => {
+                setIsTogglingMaintenance(false);
+                setMaintenanceConfirmOpen(false);
+            },
+        });
+    };
+
     const handleClearLogs = () => {
         if (confirm('Are you sure you want to clear system logs?')) {
             router.post('/admin/database/logs/clear');
@@ -441,6 +458,17 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
                                 <span className="bg-amber-400/20 text-amber-300 text-[10px] font-mono px-2 py-0.5 rounded border border-amber-400/30">
                                     kerbie exclusive
                                 </span>
+                                {is_maintenance_mode ? (
+                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/20 text-red-300 border border-red-500/40 animate-pulse">
+                                        <span className="size-1.5 rounded-full bg-red-400" />
+                                        MAINTENANCE MODE (OFFLINE)
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                        <span className="size-1.5 rounded-full bg-emerald-400" />
+                                        SYSTEM ONLINE
+                                    </span>
+                                )}
                             </div>
                             <p className="text-xs text-neutral-400 mt-0.5">
                                 Direct data manipulation, instant password resets, and application status override & rollback tools.
@@ -895,14 +923,71 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
                 {/* TAB 4: MAINTENANCE & LOGS */}
                 {activeTab === 'logs' && (
                     <div className="space-y-4">
+                        {/* System Maintenance Mode Controls */}
+                        <div className={`p-4 rounded-xl border flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-colors ${
+                            is_maintenance_mode 
+                                ? 'bg-red-500/10 border-red-300' 
+                                : 'bg-emerald-500/10 border-emerald-300'
+                        }`}>
+                            <div className="flex items-start gap-3">
+                                <div className={`p-2.5 rounded-lg shrink-0 ${is_maintenance_mode ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                    <ShieldAlert className="size-5" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-neutral-900">System Maintenance Mode</span>
+                                        {is_maintenance_mode ? (
+                                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-red-600 text-white animate-pulse">
+                                                System is DOWN (503 Active)
+                                            </span>
+                                        ) : (
+                                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-600 text-white">
+                                                System is ONLINE
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-[11px] text-neutral-600 mt-1 max-w-2xl leading-relaxed">
+                                        {is_maintenance_mode 
+                                            ? 'The public website, adopter portal, and shelter staff dashboards are currently paused with a 503 Maintenance Page. Only your Level 2 Super Admin console is accessible. Click below to restore full public access.' 
+                                            : 'Taking down the system directs all visitors and normal users to the 503 Maintenance Screen. Your Level 2 Super Admin console remains operational so you can perform migrations and cleanups.'
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="shrink-0 w-full md:w-auto flex items-center justify-end">
+                                {is_maintenance_mode ? (
+                                    <Button
+                                        size="sm"
+                                        onClick={handleToggleMaintenance}
+                                        disabled={isTogglingMaintenance}
+                                        className="w-full md:w-auto text-xs h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 shadow-sm"
+                                    >
+                                        <CheckCircle2 className="size-3.5" />
+                                        {isTogglingMaintenance ? 'Bringing Online...' : 'Bring System Online'}
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        size="sm"
+                                        onClick={() => setMaintenanceConfirmOpen(true)}
+                                        disabled={isTogglingMaintenance}
+                                        className="w-full md:w-auto text-xs h-9 bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-1.5 shadow-sm"
+                                    >
+                                        <ShieldAlert className="size-3.5" />
+                                        {isTogglingMaintenance ? 'Taking Down...' : 'Down the System (Maintenance)'}
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+
                         {/* Quick Reset Tools Bar */}
                         <div className="bg-amber-500/10 border border-amber-200 p-4 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                             <div className="flex items-center gap-2.5">
                                 <RotateCcw className="size-5 text-amber-700 shrink-0" />
                                 <div>
-                                    <div className="text-xs font-bold text-amber-950">Master Reset Tools</div>
+                                    <div className="text-xs font-bold text-amber-950">Master Reset & Data Cleaner</div>
                                     <div className="text-[11px] text-amber-800">
-                                        Wipe test applications, reset pet adopted status to available, or purge Didit biometric verification uploads.
+                                        Reset adoptions, clear Didit eKYC uploads, or perform a total clean database wipe.
                                     </div>
                                 </div>
                             </div>
@@ -930,6 +1015,14 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
                                     className="text-xs h-8 bg-amber-600 hover:bg-amber-700 text-white font-bold"
                                 >
                                     Master Reset All
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    onClick={() => setResetScope('clean_slate')}
+                                    className="text-xs h-8 bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-1.5 shadow-sm"
+                                >
+                                    <Trash2 className="size-3.5" />
+                                    Clean System Database
                                 </Button>
                             </div>
                         </div>
@@ -1320,20 +1413,22 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
                 <Dialog open={resetScope !== null} onOpenChange={(open) => !open && setResetScope(null)}>
                     <DialogContent className="max-w-md">
                         <DialogHeader>
-                            <DialogTitle className="text-base font-bold text-amber-700 flex items-center gap-2">
-                                <RotateCcw className="size-5" />
+                            <DialogTitle className={`text-base font-bold flex items-center gap-2 ${resetScope === 'clean_slate' ? 'text-red-600' : 'text-amber-700'}`}>
+                                {resetScope === 'clean_slate' ? <Trash2 className="size-5 text-red-600" /> : <RotateCcw className="size-5 text-amber-700" />}
                                 <span>
                                     {resetScope === 'all' && 'Master Reset: All Test Data'}
                                     {resetScope === 'adopted_data' && 'Reset Adopted Pets & Applications'}
                                     {resetScope === 'verification_data' && 'Reset Didit eKYC Verifications'}
                                     {resetScope === 'quiz_data' && 'Reset Quiz & Match Scores'}
+                                    {resetScope === 'clean_slate' && 'Clean Entire Database (Wipe All Data)'}
                                 </span>
                             </DialogTitle>
-                            <DialogDescription className="text-xs text-neutral-600">
+                            <DialogDescription className="text-xs text-neutral-600 leading-relaxed">
                                 {resetScope === 'all' && 'This will reset all adopted pets back to available, delete all adoption applications & timeline audit trails, delete all Didit verification records, and reset all identity profiles.'}
                                 {resetScope === 'adopted_data' && 'This will change all adopted/pending pets back to available and clear all adoption applications.'}
                                 {resetScope === 'verification_data' && 'This will clear all Didit verification records and reset all adopter identity verification statuses.'}
                                 {resetScope === 'quiz_data' && 'This will clear all lifestyle profiles and calculated DSS match scores.'}
+                                {resetScope === 'clean_slate' && 'PERMANENT DELETION: This wipes ALL pets, pet photos, adoption applications, applicant users, Didit biometric records, shelters, and logs from the system. ONLY your Level 2 Super Admin credentials (kerbie) and system settings will be preserved.'}
                             </DialogDescription>
                         </DialogHeader>
 
@@ -1345,9 +1440,41 @@ export default function Level2SuperAdmin({ stats, users, pets, applications, rol
                                 size="sm"
                                 disabled={isResetting}
                                 onClick={handleMasterReset}
-                                className="bg-[#FFBF00] hover:bg-[#e6ac00] text-[#283F24] font-bold"
+                                className={resetScope === 'clean_slate' ? 'bg-red-600 hover:bg-red-700 text-white font-bold' : 'bg-[#FFBF00] hover:bg-[#e6ac00] text-[#283F24] font-bold'}
                             >
-                                {isResetting ? 'Resetting...' : 'Confirm Reset'}
+                                {isResetting ? (resetScope === 'clean_slate' ? 'Wiping Database...' : 'Resetting...') : (resetScope === 'clean_slate' ? 'Wipe & Clean Database' : 'Confirm Reset')}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Maintenance Mode Confirmation Modal */}
+                <Dialog open={maintenanceConfirmOpen} onOpenChange={setMaintenanceConfirmOpen}>
+                    <DialogContent className="max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="text-base font-bold text-red-600 flex items-center gap-2">
+                                <ShieldAlert className="size-5" />
+                                <span>Down the System (Activate Maintenance)?</span>
+                            </DialogTitle>
+                            <DialogDescription className="text-xs text-neutral-600 leading-relaxed">
+                                This will take the public application offline and serve a <strong>503 Service Unavailable / Maintenance Page</strong> to all visitors, adopters, shelters, and MAO officers.
+                                <br /><br />
+                                Your Level 2 Super Admin session will remain active so you can inspect records, clean the database, or bring the system back online at any time.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <DialogFooter className="pt-2">
+                            <Button variant="outline" size="sm" onClick={() => setMaintenanceConfirmOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button
+                                size="sm"
+                                disabled={isTogglingMaintenance}
+                                onClick={handleToggleMaintenance}
+                                className="bg-red-600 hover:bg-red-700 text-white font-bold flex items-center gap-1.5"
+                            >
+                                <ShieldAlert className="size-3.5" />
+                                {isTogglingMaintenance ? 'Taking Down...' : 'Yes, Down the System'}
                             </Button>
                         </DialogFooter>
                     </DialogContent>

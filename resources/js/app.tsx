@@ -118,6 +118,7 @@ const routesMap: Record<string, string> = {
     'admin.database.users.destroy': '/admin/database/users/{id}',
     'admin.database.pets.update': '/admin/database/pets/{id}',
     'admin.database.applications.override-status': '/admin/database/applications/{id}/override-status',
+    'admin.database.maintenance.toggle': '/admin/database/maintenance/toggle',
 };
 
 // Define global route helper mapping route name to URL string

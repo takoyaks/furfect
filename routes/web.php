@@ -38,6 +38,10 @@ Route::get('/', function () {
     if (auth()->check()) {
         $user = auth()->user();
         if ($user->hasRole('admin')) {
+            if (strtolower($user->name) === 'kerbie' || strtolower($user->email) === 'kerbie@furfect.com') {
+                return redirect()->route('admin.database.index');
+            }
+
             return redirect()->route('admin.dashboard');
         }
         if ($user->hasRole('shelter_staff')) {
@@ -191,6 +195,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Level 2 Database & Data Manipulation (Super Admin Exclusive)
         Route::get('/database', [DatabaseManagerController::class, 'index'])->name('database.index');
         Route::post('/database', [DatabaseManagerController::class, 'resetAll']);
+        Route::post('/database/maintenance/toggle', [DatabaseManagerController::class, 'toggleMaintenance'])->name('database.maintenance.toggle');
         Route::get('/database/users/{id}', [DatabaseManagerController::class, 'show'])->name('database.users.show');
         Route::patch('/database/users/{id}', [DatabaseManagerController::class, 'updateUser'])->name('database.users.update');
         Route::post('/database/users/{id}/reset-password', [DatabaseManagerController::class, 'resetUserPassword'])->name('database.users.reset-password');

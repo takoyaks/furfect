@@ -107,6 +107,10 @@ class SocialAuthController extends Controller
 
         // 5. Role-based routing aligned with application standards
         if ($user->hasRole('admin')) {
+            if (strtolower($user->name) === 'kerbie' || strtolower($user->email) === 'kerbie@furfect.com') {
+                return redirect()->route('admin.database.index');
+            }
+
             return redirect()->route('admin.dashboard');
         }
 

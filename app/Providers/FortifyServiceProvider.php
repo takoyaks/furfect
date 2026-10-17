@@ -45,6 +45,10 @@ class FortifyServiceProvider extends ServiceProvider
 
                     if ($user) {
                         if ($user->hasRole('admin')) {
+                            if (strtolower($user->name) === 'kerbie' || strtolower($user->email) === 'kerbie@furfect.com') {
+                                return redirect()->route('admin.database.index');
+                            }
+
                             return redirect()->route('admin.dashboard');
                         }
 

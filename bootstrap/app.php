@@ -29,6 +29,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'sidebar_state',
         ]);
 
+        $middleware->preventRequestsDuringMaintenance(except: [
+            'admin/database*',
+            'login',
+            'logout',
+            'up',
+            'webhooks/*',
+        ]);
+
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,

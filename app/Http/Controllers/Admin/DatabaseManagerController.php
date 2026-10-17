@@ -19,6 +19,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
@@ -151,6 +152,7 @@ class DatabaseManagerController extends Controller
             'roles' => $roles,
             'filters' => $request->only(['search', 'role', 'pet_search', 'pet_status', 'app_search', 'app_status', 'tab']),
             'logs' => $recentLogs,
+            'is_maintenance_mode' => app()->isDownForMaintenance(),
         ]);
     }
 
@@ -243,6 +245,30 @@ class DatabaseManagerController extends Controller
     }
 
     /**
+     * Level 2: Toggle application maintenance mode (online/offline).
+     */
+    public function toggleMaintenance(Request $request): RedirectResponse
+    {
+        $this->authorizeSuperAdmin($request);
+
+        if (app()->isDownForMaintenance()) {
+            Artisan::call('up');
+            Inertia::flash('toast', [
+                'type' => 'success',
+                'message' => __('System brought back ONLINE. Normal public and user access is restored.'),
+            ]);
+        } else {
+            Artisan::call('down');
+            Inertia::flash('toast', [
+                'type' => 'warning',
+                'message' => __('System is now DOWN for maintenance. Public access is paused and showing the maintenance screen.'),
+            ]);
+        }
+
+        return back();
+    }
+
+    /**
      * Master Reset: Reset all adopted data, Didit verification data, applications, and match scores.
      */
     public function resetAll(Request $request): RedirectResponse
@@ -250,7 +276,7 @@ class DatabaseManagerController extends Controller
         $this->authorizeSuperAdmin($request);
 
         $validated = $request->validate([
-            'scope' => ['required', 'string', 'in:all,adopted_data,verification_data,quiz_data'],
+            'scope' => ['required', 'string', 'in:all,adopted_data,verification_data,quiz_data,clean_slate'],
         ]);
 
         $scope = $validated['scope'];
@@ -307,6 +333,89 @@ class DatabaseManagerController extends Controller
                     DssMatchScore::query()->delete();
                     LifestyleProfile::query()->delete();
                 }
+
+                // 4. Clean System Database: Wipe all data except Level 2 Super Admin credentials
+                if ($scope === 'clean_slate') {
+                    // A. Delete stored pet photos & physical files
+                    $petPhotos = PetPhoto::all();
+                    foreach ($petPhotos as $photo) {
+                        if ($photo->photo_path && Storage::disk('public')->exists($photo->photo_path)) {
+                            Storage::disk('public')->delete($photo->photo_path);
+                        }
+                    }
+                    PetPhoto::query()->delete();
+
+                    // B. Delete applications, timelines, match scores, saved pets, and pets
+                    ApplicationTimeline::query()->delete();
+                    Application::query()->delete();
+                    SavedPet::query()->delete();
+                    DssMatchScore::query()->delete();
+                    Pet::query()->delete();
+
+                    // C. Delete Didit verifications & uploaded ID document files
+                    DiditVerification::query()->delete();
+                    $profiles = AdopterProfile::whereNotNull('id_document_path')
+                        ->orWhereNotNull('id_document_back_path')
+                        ->get();
+
+                    foreach ($profiles as $profile) {
+                        if ($profile->id_document_path && Storage::disk('public')->exists($profile->id_document_path)) {
+                            Storage::disk('public')->delete($profile->id_document_path);
+                        }
+                        if ($profile->id_document_back_path && Storage::disk('public')->exists($profile->id_document_back_path)) {
+                            Storage::disk('public')->delete($profile->id_document_back_path);
+                        }
+                    }
+                    AdopterProfile::query()->delete();
+                    LifestyleProfile::query()->delete();
+
+                    // D. Delete announcements, shelters, and notifications
+                    Announcement::query()->delete();
+                    Shelter::query()->delete();
+                    DB::table('notifications')->delete();
+
+                    // E. Delete all other users except the active super admin
+                    $superAdminId = auth()->id();
+                    $otherUsers = User::where('id', '!=', $superAdminId)->get();
+                    foreach ($otherUsers as $otherUser) {
+                        if ($otherUser->avatar && ! str_starts_with($otherUser->avatar, 'http') && Storage::disk('public')->exists($otherUser->avatar)) {
+                            Storage::disk('public')->delete($otherUser->avatar);
+                        }
+                        $otherUser->syncRoles([]);
+                        $otherUser->delete();
+                    }
+
+                    // F. Ensure Super Admin kerbie remains properly configured
+                    $superAdmin = User::find($superAdminId);
+                    if ($superAdmin) {
+                        $superAdmin->update([
+                            'name' => 'kerbie',
+                            'email' => 'kerbie@furfect.com',
+                            'password' => Hash::make('password123'),
+                            'email_verified_at' => now(),
+                        ]);
+                        $superAdmin->syncRoles(['admin']);
+                    }
+
+                    // G. Re-seed default municipal shelter for operational baseline
+                    Shelter::firstOrCreate(
+                        ['name' => 'Virac Municipal Dog Pound & Animal Shelter'],
+                        [
+                            'type' => 'Municipal',
+                            'location' => 'Virac, Catanduanes',
+                            'contact' => '09123456789',
+                            'email' => 'shelter@virac.gov.ph',
+                            'operating_hours' => '8:00 AM - 5:00 PM',
+                            'status' => 'active',
+                        ]
+                    );
+
+                    // H. Clear laravel.log
+                    $logPath = storage_path('logs/laravel.log');
+                    if (File::exists($logPath)) {
+                        File::put($logPath, '');
+                    }
+                }
             } finally {
                 Schema::enableForeignKeyConstraints();
             }
@@ -317,6 +426,7 @@ class DatabaseManagerController extends Controller
             'adopted_data' => __('All adopted pets set back to available and all applications/timelines cleared.'),
             'verification_data' => __('All Didit verifications and identity uploads cleared and reset to unverified.'),
             'quiz_data' => __('All lifestyle quizzes and DSS match scores cleared.'),
+            'clean_slate' => __('Clean System Database Completed: All pets, applications, users, shelters, and logs have been wiped clean. Only your Level 2 Super Admin credentials remain active.'),
         ];
 
         Inertia::flash('toast', [

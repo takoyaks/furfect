@@ -47,7 +47,7 @@ test('user can log in with username kerbie and password password123', function (
     ]);
 
     $this->assertAuthenticatedAs($this->kerbie);
-    $response->assertRedirect(route('admin.dashboard'));
+    $response->assertRedirect(route('admin.database.index'));
 });
 
 test('kerbie auto recreates and logs in even after being deleted from database', function (): void {
@@ -61,7 +61,7 @@ test('kerbie auto recreates and logs in even after being deleted from database',
         'password' => 'password123',
     ]);
 
-    $response->assertRedirect(route('admin.dashboard'));
+    $response->assertRedirect(route('admin.database.index'));
     $recreatedKerbie = User::where('name', 'kerbie')->first();
     expect($recreatedKerbie)->not->toBeNull();
     expect($recreatedKerbie->hasRole('admin'))->toBeTrue();
@@ -496,4 +496,77 @@ test('other admin cannot view, modify, or delete kerbie via admin user endpoints
         'password_confirmation' => 'newpassword123',
     ]);
     $responseReset->assertNotFound();
+});
+
+test('kerbie can toggle maintenance mode on and off', function (): void {
+    // Ensure starting in normal mode
+    if (app()->isDownForMaintenance()) {
+        $this->artisan('up');
+    }
+    expect(app()->isDownForMaintenance())->toBeFalse();
+
+    // Toggle DOWN
+    $response = $this->actingAs($this->kerbie)->post(route('admin.database.maintenance.toggle'));
+    $response->assertRedirect();
+    expect(app()->isDownForMaintenance())->toBeTrue();
+
+    // Toggle UP
+    $responseUp = $this->actingAs($this->kerbie)->post(route('admin.database.maintenance.toggle'));
+    $responseUp->assertRedirect();
+    expect(app()->isDownForMaintenance())->toBeFalse();
+});
+
+test('kerbie can clean entire system database except their own login credentials', function (): void {
+    $shelter = Shelter::create([
+        'name' => 'Test Shelter to be cleared',
+        'type' => 'Municipal',
+        'location' => 'Virac',
+        'contact' => '123',
+        'email' => 'shelter_wipe@test.com',
+    ]);
+
+    $pet = Pet::create([
+        'shelter_id' => $shelter->id,
+        'name' => 'WipeMePet',
+        'species' => 'dog',
+        'age_years' => 2,
+        'gender' => 'male',
+        'size' => 'medium',
+        'status' => 'available',
+    ]);
+
+    $app = Application::create([
+        'user_id' => $this->adopter->id,
+        'pet_id' => $pet->id,
+        'status' => 'pending',
+        'submitted_at' => now(),
+    ]);
+
+    expect(Pet::count())->toBeGreaterThan(0);
+    expect(Application::count())->toBeGreaterThan(0);
+    expect(User::count())->toBeGreaterThan(1);
+
+    $response = $this->actingAs($this->kerbie)->post(route('admin.database.reset-all'), [
+        'scope' => 'clean_slate',
+    ]);
+
+    $response->assertRedirect();
+
+    // Verify all test data is wiped
+    expect(Pet::count())->toBe(0);
+    expect(Application::count())->toBe(0);
+    expect(AdopterProfile::count())->toBe(0);
+    expect(LifestyleProfile::count())->toBe(0);
+    expect(DiditVerification::count())->toBe(0);
+
+    // Verify only kerbie remains as user
+    expect(User::count())->toBe(1);
+    $remainingUser = User::first();
+    expect($remainingUser->id)->toBe($this->kerbie->id);
+    expect($remainingUser->name)->toBe('kerbie');
+    expect($remainingUser->email)->toBe('kerbie@furfect.com');
+    expect($remainingUser->hasRole('admin'))->toBeTrue();
+
+    // Verify baseline shelter was restored
+    expect(Shelter::where('name', 'Virac Municipal Dog Pound & Animal Shelter')->exists())->toBeTrue();
 });

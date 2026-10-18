@@ -249,23 +249,6 @@ class PetController extends Controller
                 ->get();
 
             foreach ($toDelete as $photoItem) {
-                $rawPath = $photoItem->getRawOriginal('photo_path');
-                $rawVideo = $photoItem->getRawOriginal('video_path');
-
-                if ($rawVideo) {
-                    if (str_starts_with($rawVideo, 'http://') || str_starts_with($rawVideo, 'https://')) {
-                        $cloudinary->delete($rawVideo, ['resource_type' => 'video']);
-                    } elseif (Storage::disk('public')->exists($rawVideo)) {
-                        Storage::disk('public')->delete($rawVideo);
-                    }
-                }
-
-                if ($rawPath && (str_starts_with($rawPath, 'http://') || str_starts_with($rawPath, 'https://'))) {
-                    $cloudinary->delete($rawPath);
-                } elseif ($rawPath && Storage::disk('public')->exists($rawPath)) {
-                    Storage::disk('public')->delete($rawPath);
-                }
-
                 $photoItem->delete();
             }
 
@@ -283,14 +266,6 @@ class PetController extends Controller
         if ($request->boolean('delete_video')) {
             $existingVideos = PetPhoto::where('pet_id', $pet->id)->where('media_type', 'video')->get();
             foreach ($existingVideos as $vid) {
-                $rawVideo = $vid->getRawOriginal('video_path');
-                if ($rawVideo) {
-                    if (str_starts_with($rawVideo, 'http://') || str_starts_with($rawVideo, 'https://')) {
-                        $cloudinary->delete($rawVideo, ['resource_type' => 'video']);
-                    } elseif (Storage::disk('public')->exists($rawVideo)) {
-                        Storage::disk('public')->delete($rawVideo);
-                    }
-                }
                 $vid->delete();
             }
         }
@@ -326,14 +301,6 @@ class PetController extends Controller
             // Delete existing video first
             $existingVideos = PetPhoto::where('pet_id', $pet->id)->where('media_type', 'video')->get();
             foreach ($existingVideos as $vid) {
-                $rawVideo = $vid->getRawOriginal('video_path');
-                if ($rawVideo) {
-                    if (str_starts_with($rawVideo, 'http://') || str_starts_with($rawVideo, 'https://')) {
-                        $cloudinary->delete($rawVideo, ['resource_type' => 'video']);
-                    } elseif (Storage::disk('public')->exists($rawVideo)) {
-                        Storage::disk('public')->delete($rawVideo);
-                    }
-                }
                 $vid->delete();
             }
 

@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Services\CloudinaryService;
+use App\Traits\DeletesMediaAssets;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -24,6 +24,8 @@ use Illuminate\Support\Str;
  */
 class Announcement extends Model
 {
+    use DeletesMediaAssets;
+
     protected $fillable = [
         'title',
         'slug',
@@ -99,34 +101,43 @@ class Announcement extends Model
             }
         });
 
-        static::deleting(function ($announcement): void {
-            $cloudinary = app(CloudinaryService::class);
+        static::updating(function (Announcement $announcement): void {
+            if ($announcement->isDirty('image_path')) {
+                $oldImage = $announcement->getRawOriginal('image_path');
+                if ($oldImage) {
+                    static::deleteStoredMedia($oldImage);
+                }
+            }
 
+            if ($announcement->isDirty('video_path')) {
+                $oldVideo = $announcement->getRawOriginal('video_path');
+                if ($oldVideo) {
+                    static::deleteStoredMedia($oldVideo, ['resource_type' => 'video']);
+                }
+            }
+
+            if ($announcement->isDirty('video_thumbnail_path')) {
+                $oldThumb = $announcement->getRawOriginal('video_thumbnail_path');
+                if ($oldThumb) {
+                    static::deleteStoredMedia($oldThumb);
+                }
+            }
+        });
+
+        static::deleting(function (Announcement $announcement): void {
             $rawImage = $announcement->getRawOriginal('image_path');
             if ($rawImage) {
-                if (str_starts_with($rawImage, 'http://') || str_starts_with($rawImage, 'https://')) {
-                    $cloudinary->delete($rawImage);
-                } elseif (Storage::disk('public')->exists($rawImage)) {
-                    Storage::disk('public')->delete($rawImage);
-                }
+                static::deleteStoredMedia($rawImage);
             }
 
             $rawVideo = $announcement->getRawOriginal('video_path');
             if ($rawVideo) {
-                if (str_starts_with($rawVideo, 'http://') || str_starts_with($rawVideo, 'https://')) {
-                    $cloudinary->delete($rawVideo, ['resource_type' => 'video']);
-                } elseif (Storage::disk('public')->exists($rawVideo)) {
-                    Storage::disk('public')->delete($rawVideo);
-                }
+                static::deleteStoredMedia($rawVideo, ['resource_type' => 'video']);
             }
 
             $rawThumb = $announcement->getRawOriginal('video_thumbnail_path');
             if ($rawThumb) {
-                if (str_starts_with($rawThumb, 'http://') || str_starts_with($rawThumb, 'https://')) {
-                    $cloudinary->delete($rawThumb);
-                } elseif (Storage::disk('public')->exists($rawThumb)) {
-                    Storage::disk('public')->delete($rawThumb);
-                }
+                static::deleteStoredMedia($rawThumb);
             }
         });
     }

@@ -7,7 +7,6 @@ use App\Models\Announcement;
 use App\Services\CloudinaryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -125,14 +124,6 @@ class AnnouncementController extends Controller
 
         $imagePath = $announcement->getRawOriginal('image_path');
         if ($request->hasFile('image')) {
-            if ($imagePath) {
-                if (str_starts_with($imagePath, 'http://') || str_starts_with($imagePath, 'https://')) {
-                    $cloudinary->delete($imagePath);
-                } elseif (Storage::disk('public')->exists($imagePath)) {
-                    Storage::disk('public')->delete($imagePath);
-                }
-            }
-
             if ($cloudinary->isConfigured()) {
                 $upload = $cloudinary->upload($request->file('image'), 'announcements');
                 $imagePath = $upload['secure_url'];
@@ -158,32 +149,11 @@ class AnnouncementController extends Controller
             'published_at' => $publishedAt,
         ];
 
-        // Handle video deletion or replacement
-        if ($request->boolean('delete_video') || $request->hasFile('video')) {
-            $rawVideo = $announcement->getRawOriginal('video_path');
-            $rawThumb = $announcement->getRawOriginal('video_thumbnail_path');
-
-            if ($rawVideo) {
-                if (str_starts_with($rawVideo, 'http://') || str_starts_with($rawVideo, 'https://')) {
-                    $cloudinary->delete($rawVideo, ['resource_type' => 'video']);
-                } elseif (Storage::disk('public')->exists($rawVideo)) {
-                    Storage::disk('public')->delete($rawVideo);
-                }
-            }
-
-            if ($rawThumb) {
-                if (str_starts_with($rawThumb, 'http://') || str_starts_with($rawThumb, 'https://')) {
-                    $cloudinary->delete($rawThumb);
-                } elseif (Storage::disk('public')->exists($rawThumb)) {
-                    Storage::disk('public')->delete($rawThumb);
-                }
-            }
-
-            if ($request->boolean('delete_video') && ! $request->hasFile('video')) {
-                $updateData['video_path'] = null;
-                $updateData['video_thumbnail_path'] = null;
-                $updateData['video_duration'] = null;
-            }
+        // Handle video deletion
+        if ($request->boolean('delete_video') && ! $request->hasFile('video')) {
+            $updateData['video_path'] = null;
+            $updateData['video_thumbnail_path'] = null;
+            $updateData['video_duration'] = null;
         }
 
         if ($request->hasFile('video')) {
@@ -221,36 +191,9 @@ class AnnouncementController extends Controller
     /**
      * Delete an announcement.
      */
-    public function destroy(int $id, CloudinaryService $cloudinary): RedirectResponse
+    public function destroy(int $id): RedirectResponse
     {
         $announcement = Announcement::findOrFail($id);
-
-        $rawImage = $announcement->getRawOriginal('image_path');
-        if ($rawImage) {
-            if (str_starts_with($rawImage, 'http://') || str_starts_with($rawImage, 'https://')) {
-                $cloudinary->delete($rawImage);
-            } elseif (Storage::disk('public')->exists($rawImage)) {
-                Storage::disk('public')->delete($rawImage);
-            }
-        }
-
-        $rawVideo = $announcement->getRawOriginal('video_path');
-        if ($rawVideo) {
-            if (str_starts_with($rawVideo, 'http://') || str_starts_with($rawVideo, 'https://')) {
-                $cloudinary->delete($rawVideo, ['resource_type' => 'video']);
-            } elseif (Storage::disk('public')->exists($rawVideo)) {
-                Storage::disk('public')->delete($rawVideo);
-            }
-        }
-
-        $rawThumb = $announcement->getRawOriginal('video_thumbnail_path');
-        if ($rawThumb) {
-            if (str_starts_with($rawThumb, 'http://') || str_starts_with($rawThumb, 'https://')) {
-                $cloudinary->delete($rawThumb);
-            } elseif (Storage::disk('public')->exists($rawThumb)) {
-                Storage::disk('public')->delete($rawThumb);
-            }
-        }
 
         $announcement->delete();
 

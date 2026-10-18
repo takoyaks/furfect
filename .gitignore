@@ -31,3 +31,4 @@ yarn-error.log
 .cursor/
 AGENTS.md
 CLAUDE.md
+tests/

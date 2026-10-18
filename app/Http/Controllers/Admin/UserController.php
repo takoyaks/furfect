@@ -441,33 +441,6 @@ class UserController extends Controller
         }
 
         DB::transaction(function () use ($user): void {
-            $cloudinary = app(CloudinaryService::class);
-
-            if ($user->adopterProfile) {
-                if ($user->adopterProfile->id_document_path) {
-                    if (str_starts_with($user->adopterProfile->id_document_path, 'http')) {
-                        $cloudinary->delete($user->adopterProfile->id_document_path);
-                    } elseif (Storage::disk('public')->exists($user->adopterProfile->id_document_path)) {
-                        Storage::disk('public')->delete($user->adopterProfile->id_document_path);
-                    }
-                }
-                if ($user->adopterProfile->id_document_back_path) {
-                    if (str_starts_with($user->adopterProfile->id_document_back_path, 'http')) {
-                        $cloudinary->delete($user->adopterProfile->id_document_back_path);
-                    } elseif (Storage::disk('public')->exists($user->adopterProfile->id_document_back_path)) {
-                        Storage::disk('public')->delete($user->adopterProfile->id_document_back_path);
-                    }
-                }
-            }
-
-            if ($user->avatar) {
-                if (str_starts_with($user->avatar, 'http')) {
-                    $cloudinary->delete($user->avatar);
-                } elseif (Storage::disk('public')->exists($user->avatar)) {
-                    Storage::disk('public')->delete($user->avatar);
-                }
-            }
-
             DiditVerification::where('user_id', $user->id)->delete();
             DssMatchScore::where('user_id', $user->id)->delete();
             SavedPet::where('user_id', $user->id)->delete();

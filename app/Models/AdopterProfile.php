@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\DeletesMediaAssets;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -38,6 +39,8 @@ use Illuminate\Support\Carbon;
  */
 class AdopterProfile extends Model
 {
+    use DeletesMediaAssets;
+
     protected $fillable = [
         'user_id',
         'full_name',
@@ -112,5 +115,36 @@ class AdopterProfile extends Model
     public function diditVerifications(): HasMany
     {
         return $this->hasMany(DiditVerification::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (AdopterProfile $profile): void {
+            if ($profile->isDirty('id_document_path')) {
+                $oldFront = $profile->getRawOriginal('id_document_path');
+                if ($oldFront) {
+                    static::deleteStoredMedia($oldFront);
+                }
+            }
+
+            if ($profile->isDirty('id_document_back_path')) {
+                $oldBack = $profile->getRawOriginal('id_document_back_path');
+                if ($oldBack) {
+                    static::deleteStoredMedia($oldBack);
+                }
+            }
+        });
+
+        static::deleting(function (AdopterProfile $profile): void {
+            $front = $profile->getRawOriginal('id_document_path');
+            if ($front) {
+                static::deleteStoredMedia($front);
+            }
+
+            $back = $profile->getRawOriginal('id_document_back_path');
+            if ($back) {
+                static::deleteStoredMedia($back);
+            }
+        });
     }
 }

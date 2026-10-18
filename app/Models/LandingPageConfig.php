@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\DeletesMediaAssets;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
@@ -26,6 +27,8 @@ use Illuminate\Support\Facades\Storage;
  */
 class LandingPageConfig extends Model
 {
+    use DeletesMediaAssets;
+
     protected $fillable = [
         'template_name',
         'hero_title',
@@ -117,5 +120,24 @@ class LandingPageConfig extends Model
                 ],
             ]
         );
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (LandingPageConfig $config): void {
+            if ($config->isDirty('hero_image_path')) {
+                $oldHero = $config->getRawOriginal('hero_image_path');
+                if ($oldHero) {
+                    static::deleteStoredMedia($oldHero);
+                }
+            }
+        });
+
+        static::deleting(function (LandingPageConfig $config): void {
+            $hero = $config->getRawOriginal('hero_image_path');
+            if ($hero) {
+                static::deleteStoredMedia($hero);
+            }
+        });
     }
 }

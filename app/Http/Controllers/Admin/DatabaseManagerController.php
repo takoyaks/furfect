@@ -199,21 +199,7 @@ class DatabaseManagerController extends Controller
         }
 
         DB::transaction(function () use ($user): void {
-            // 1. Clean up stored files
-            if ($user->adopterProfile) {
-                if ($user->adopterProfile->id_document_path && Storage::disk('public')->exists($user->adopterProfile->id_document_path)) {
-                    Storage::disk('public')->delete($user->adopterProfile->id_document_path);
-                }
-                if ($user->adopterProfile->id_document_back_path && Storage::disk('public')->exists($user->adopterProfile->id_document_back_path)) {
-                    Storage::disk('public')->delete($user->adopterProfile->id_document_back_path);
-                }
-            }
-
-            if ($user->avatar && ! str_starts_with($user->avatar, 'http') && Storage::disk('public')->exists($user->avatar)) {
-                Storage::disk('public')->delete($user->avatar);
-            }
-
-            // 2. Cascade delete records
+            // 1. Cascade delete records
             DiditVerification::where('user_id', $user->id)->delete();
             DssMatchScore::where('user_id', $user->id)->delete();
             SavedPet::where('user_id', $user->id)->delete();
@@ -224,7 +210,10 @@ class DatabaseManagerController extends Controller
                 Application::whereIn('id', $applicationIds)->delete();
             }
 
-            AdopterProfile::where('user_id', $user->id)->delete();
+            if ($user->adopterProfile) {
+                $user->adopterProfile->delete();
+            }
+
             LifestyleProfile::where('user_id', $user->id)->delete();
 
             DB::table('notifications')->where('notifiable_id', $user->id)->where('notifiable_type', User::class)->delete();

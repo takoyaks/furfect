@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\DeletesMediaAssets;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -52,7 +53,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasRoles, Notifiable;
+    use DeletesMediaAssets, HasFactory, HasRoles, Notifiable;
 
     /**
      * Get the attributes that should be cast.
@@ -223,5 +224,28 @@ class User extends Authenticatable
     public function hasGoogleLinked(): bool
     {
         return ! empty($this->google_id);
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (User $user): void {
+            if ($user->isDirty('avatar')) {
+                $oldAvatar = $user->getRawOriginal('avatar');
+                if ($oldAvatar) {
+                    static::deleteStoredMedia($oldAvatar);
+                }
+            }
+        });
+
+        static::deleting(function (User $user): void {
+            $avatar = $user->getRawOriginal('avatar');
+            if ($avatar) {
+                static::deleteStoredMedia($avatar);
+            }
+
+            if ($user->adopterProfile) {
+                $user->adopterProfile->delete();
+            }
+        });
     }
 }

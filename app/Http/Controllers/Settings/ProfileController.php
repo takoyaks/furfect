@@ -12,7 +12,6 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -61,28 +60,11 @@ class ProfileController extends Controller
 
         // Handle avatar removal
         if ($request->boolean('remove_avatar')) {
-            $rawAvatar = $user->getRawOriginal('avatar');
-            if ($rawAvatar) {
-                if (str_starts_with($rawAvatar, 'http://') || str_starts_with($rawAvatar, 'https://')) {
-                    $cloudinary->delete($rawAvatar);
-                } elseif (Storage::disk('public')->exists($rawAvatar)) {
-                    Storage::disk('public')->delete($rawAvatar);
-                }
-            }
             $user->avatar = null;
         }
 
         // Handle avatar upload
         if ($request->hasFile('avatar')) {
-            $rawAvatar = $user->getRawOriginal('avatar');
-            if ($rawAvatar) {
-                if (str_starts_with($rawAvatar, 'http://') || str_starts_with($rawAvatar, 'https://')) {
-                    $cloudinary->delete($rawAvatar);
-                } elseif (Storage::disk('public')->exists($rawAvatar)) {
-                    Storage::disk('public')->delete($rawAvatar);
-                }
-            }
-
             if ($cloudinary->isConfigured()) {
                 $upload = $cloudinary->upload($request->file('avatar'), 'avatars');
                 $user->avatar = $upload['secure_url'];
@@ -136,14 +118,6 @@ class ProfileController extends Controller
 
             // Handle front ID file upload if provided
             if ($request->hasFile('id_document')) {
-                if ($adopterProfile?->id_document_path) {
-                    if (str_starts_with($adopterProfile->id_document_path, 'http')) {
-                        $cloudinary->delete($adopterProfile->id_document_path);
-                    } else {
-                        $fileStorage->deleteFile($adopterProfile->id_document_path);
-                    }
-                }
-
                 if ($cloudinary->isConfigured()) {
                     $upload = $cloudinary->upload($request->file('id_document'), 'id_documents');
                     $adopterData['id_document_path'] = $upload['secure_url'];
@@ -159,14 +133,6 @@ class ProfileController extends Controller
 
             // Handle back ID file upload if provided
             if ($request->hasFile('id_document_back')) {
-                if ($adopterProfile?->id_document_back_path) {
-                    if (str_starts_with($adopterProfile->id_document_back_path, 'http')) {
-                        $cloudinary->delete($adopterProfile->id_document_back_path);
-                    } else {
-                        $fileStorage->deleteFile($adopterProfile->id_document_back_path);
-                    }
-                }
-
                 if ($cloudinary->isConfigured()) {
                     $upload = $cloudinary->upload($request->file('id_document_back'), 'id_documents');
                     $adopterData['id_document_back_path'] = $upload['secure_url'];

@@ -16,6 +16,7 @@ import { IdentityVerificationBadge } from '@/components/identity-verification-ba
 import { AdoptionCertificateModal } from '@/components/adoption-certificate-modal';
 import { AdoptionPassModal } from '@/components/adoption-pass-modal';
 import { AuditRemarksSelector } from '@/components/audit-remarks-selector';
+import { formatWorkSchedule } from '@/lib/lifestyle-labels';
 
 interface ChecklistItem {
     label: string;
@@ -76,10 +77,12 @@ interface Application {
             outdoor_access: string;
             activity_level: string;
             work_schedule: string;
+            work_schedule_other?: string | null;
             household_size: number;
             household_agrees: boolean;
             has_children: string;
             other_pets: string;
+            occupation?: string;
             monthly_income: string;
             pet_experience: string;
         };
@@ -242,6 +245,8 @@ export default function MaoApplicationShow({ application, dssMatch, defaultCheck
                                         <div className="space-y-1 text-gray-600">
                                             <p><strong>Housing:</strong> {lifestyle?.housing_type?.replace(/_/g, ' ') || 'N/A'}</p>
                                             <p><strong>Outdoor Access:</strong> {lifestyle?.outdoor_access?.replace(/_/g, ' ') || 'N/A'}</p>
+                                            <p><strong>Occupation:</strong> {lifestyle?.occupation || 'N/A'}</p>
+                                            <p><strong>Daily Schedule:</strong> {formatWorkSchedule(lifestyle?.work_schedule, lifestyle?.work_schedule_other)}</p>
                                             <p><strong>Activity Level:</strong> {lifestyle?.activity_level?.replace(/_/g, ' ') || 'N/A'}</p>
                                             <p><strong>Income:</strong> {lifestyle?.monthly_income?.replace(/_/g, ' ') || 'N/A'}</p>
                                             <p><strong>Experience:</strong> {lifestyle?.pet_experience?.replace(/_/g, ' ') || 'N/A'}</p>

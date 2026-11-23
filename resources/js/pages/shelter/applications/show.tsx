@@ -17,6 +17,7 @@ import { AdoptionCertificateModal } from '@/components/adoption-certificate-moda
 import { AdoptionPassModal } from '@/components/adoption-pass-modal';
 import { ConfirmPetReleaseModal } from '@/components/confirm-pet-release-modal';
 import { AuditRemarksSelector } from '@/components/audit-remarks-selector';
+import { formatWorkSchedule } from '@/lib/lifestyle-labels';
 
 interface CompetingApp {
     id: number;
@@ -87,6 +88,7 @@ interface Application {
             outdoor_access: string;
             activity_level: string;
             work_schedule: string;
+            work_schedule_other?: string | null;
             household_size: number;
             household_agrees: boolean;
             has_children: string;
@@ -239,6 +241,8 @@ export default function ShelterApplicationShow({
                                         <div className="space-y-1 text-gray-600">
                                             <p><strong>Housing:</strong> {lifestyle?.housing_type?.replace(/_/g, ' ') || 'N/A'}</p>
                                             <p><strong>Outdoor:</strong> {lifestyle?.outdoor_access?.replace(/_/g, ' ') || 'N/A'}</p>
+                                            <p><strong>Occupation:</strong> {lifestyle?.occupation || 'N/A'}</p>
+                                            <p><strong>Daily Schedule:</strong> {formatWorkSchedule(lifestyle?.work_schedule, lifestyle?.work_schedule_other)}</p>
                                             <p><strong>Activity Level:</strong> {lifestyle?.activity_level?.replace(/_/g, ' ') || 'N/A'}</p>
                                             <p><strong>Experience:</strong> {lifestyle?.pet_experience?.replace(/_/g, ' ') || 'N/A'}</p>
                                             <p><strong>Other Animals:</strong> {lifestyle?.other_pets || 'None'}</p>

@@ -7,6 +7,7 @@ use App\Models\Pet;
 use App\Models\PetPhoto;
 use App\Models\Shelter;
 use App\Services\CloudinaryService;
+use App\Services\DssMatchingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -60,7 +61,7 @@ class PetController extends Controller
     /**
      * Store a newly created pet in storage.
      */
-    public function store(Request $request, CloudinaryService $cloudinary): RedirectResponse
+    public function store(Request $request, CloudinaryService $cloudinary, DssMatchingService $dssService): RedirectResponse
     {
         $validated = $request->validate([
             'shelter_id' => ['required', 'exists:shelters,id'],
@@ -171,6 +172,9 @@ class PetController extends Controller
             ]);
         }
 
+        // Compute & persist DSS match scores and alert qualified adopters
+        $dssService->computeMatchesForPet($pet, notifyAdopters: true);
+
         Inertia::flash('toast', [
             'type' => 'success',
             'message' => __('Pet listing created successfully!'),
@@ -196,7 +200,7 @@ class PetController extends Controller
     /**
      * Update the specified pet in storage.
      */
-    public function update(Request $request, int $id, CloudinaryService $cloudinary): RedirectResponse
+    public function update(Request $request, int $id, CloudinaryService $cloudinary, DssMatchingService $dssService): RedirectResponse
     {
         $pet = Pet::findOrFail($id);
 
@@ -343,6 +347,10 @@ class PetController extends Controller
                 'is_primary' => false,
                 'sort_order' => $sortOrder,
             ]);
+        }
+
+        if ($pet->status === 'available') {
+            $dssService->computeMatchesForPet($pet, notifyAdopters: true);
         }
 
         Inertia::flash('toast', [

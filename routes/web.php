@@ -83,9 +83,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // 3-Step Onboarding (Adopter Role): 1. eKYC -> 2. Personal Info -> 3. Lifestyle Quiz
     Route::get('/onboarding/ekyc', [AdopterProfileController::class, 'ekyc'])->name('onboarding.ekyc.show');
     Route::get('/onboarding/personal', [AdopterProfileController::class, 'edit'])->name('onboarding.personal.edit');
+    Route::post('/onboarding/personal/draft', [AdopterProfileController::class, 'saveDraft'])->name('onboarding.personal.draft');
     Route::post('/onboarding/personal', [AdopterProfileController::class, 'store'])->name('onboarding.personal.store');
     Route::get('/adopter/{profile}/id-document', [AdopterProfileController::class, 'viewIdDocument'])->name('adopter.id-document.show');
     Route::get('/onboarding/lifestyle', [LifestyleProfileController::class, 'edit'])->name('onboarding.lifestyle.edit');
+    Route::post('/onboarding/lifestyle/draft', [LifestyleProfileController::class, 'saveDraft'])->name('onboarding.lifestyle.draft');
     Route::post('/onboarding/lifestyle', [LifestyleProfileController::class, 'store'])->name('onboarding.lifestyle.store');
 
     // Automated Identity & Biometric Verification

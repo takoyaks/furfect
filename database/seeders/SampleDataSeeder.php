@@ -109,7 +109,7 @@ class SampleDataSeeder extends Seeder
                 'has_aircon' => 'stable',
                 'outdoor_access' => 'none',
                 'activity_level' => 'moderate',
-                'work_schedule' => 'office',
+                'work_schedule' => 'frequently_at_home',
                 'household_size' => 2,
                 'household_agrees' => true,
                 'has_children' => 'none',

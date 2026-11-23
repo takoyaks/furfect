@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { router, usePage } from '@inertiajs/react';
+import { toast } from 'sonner';
 import {
     Bell,
     FileCheck,
@@ -12,6 +13,7 @@ import {
     Clock,
     HeartHandshake,
     Zap,
+    Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,6 +33,7 @@ interface NotificationItem {
         event: string;
         application_id?: number;
         reference_number?: string;
+        pet_id?: number;
         pet_name?: string;
     };
     read_at: string | null;
@@ -48,6 +51,7 @@ const iconMap: Record<string, typeof Bell> = {
     'clock': Clock,
     'heart-handshake': HeartHandshake,
     'zap': Zap,
+    'sparkles': Sparkles,
     'bell': Bell,
 };
 
@@ -62,48 +66,114 @@ const colorMap: Record<string, string> = {
 
 export function NotificationCenter() {
     const page = usePage();
+    const isAuthenticated = Boolean((page.props as any)?.auth?.user);
     const notificationsData = (page.props as any).notifications ?? {};
-    const unreadCount: number = notificationsData?.unreadCount ?? 0;
+    const initialUnreadCount: number = notificationsData?.unreadCount ?? 0;
     const initialList: NotificationItem[] = notificationsData?.list ?? [];
 
     const [notifications, setNotifications] = useState<NotificationItem[]>(initialList);
+    const [unreadCount, setUnreadCount] = useState<number>(initialUnreadCount);
     const [loading, setLoading] = useState(false);
     const [open, setOpen] = useState(false);
+    const seenIdsRef = useRef<Set<string> | null>(null);
 
-    // Keep notifications synced whenever page props update
+    // Seed seen IDs on mount and keep synced whenever Inertia shared props update
     useEffect(() => {
         if (notificationsData?.list) {
             setNotifications(notificationsData.list);
+            if (seenIdsRef.current === null) {
+                seenIdsRef.current = new Set(notificationsData.list.map((n: NotificationItem) => n.id));
+            } else {
+                notificationsData.list.forEach((n: NotificationItem) => seenIdsRef.current?.add(n.id));
+            }
         }
-    }, [notificationsData?.list]);
+        if (typeof notificationsData?.unreadCount === 'number') {
+            setUnreadCount(notificationsData.unreadCount);
+        }
+    }, [notificationsData?.list, notificationsData?.unreadCount]);
 
-    const fetchNotifications = async () => {
-        setLoading(true);
+    const fetchNotifications = async (showSpinner = false, announceNew = false) => {
+        if (!isAuthenticated) {
+            return;
+        }
+        if (showSpinner) {
+            setLoading(true);
+        }
         try {
             const response = await fetch(route('notifications.index'), {
                 headers: {
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
                 },
             });
+            if (!response.ok) {
+                return;
+            }
             const data = await response.json();
-            if (data.notifications && data.notifications.length > 0) {
+            if (Array.isArray(data.notifications)) {
                 setNotifications(data.notifications);
+
+                if (seenIdsRef.current === null) {
+                    seenIdsRef.current = new Set(data.notifications.map((n: NotificationItem) => n.id));
+                } else {
+                    data.notifications.forEach((n: NotificationItem) => {
+                        if (!seenIdsRef.current?.has(n.id)) {
+                            seenIdsRef.current?.add(n.id);
+                            if (announceNew && !n.read_at) {
+                                toast.info(n.data.title, {
+                                    description: n.data.message,
+                                    action: {
+                                        label: 'View',
+                                        onClick: () => markAsRead(n.id, n.data.action_url),
+                                    },
+                                });
+                            }
+                        }
+                    });
+                }
+            }
+            if (typeof data.unread_count === 'number') {
+                setUnreadCount(data.unread_count);
             }
         } catch {
             // fallback gracefully to shared props list
+        } finally {
+            if (showSpinner) {
+                setLoading(false);
+            }
         }
-        setLoading(false);
     };
 
     useEffect(() => {
         if (open) {
-            fetchNotifications();
+            fetchNotifications(true, false);
         }
     }, [open]);
 
+    // Real-time background polling for new pet matches and application updates
+    useEffect(() => {
+        if (!isAuthenticated || typeof window === 'undefined') {
+            return;
+        }
+
+        const interval = window.setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                fetchNotifications(false, true);
+            }
+        }, 15000);
+
+        return () => window.clearInterval(interval);
+    }, [isAuthenticated]);
+
     const markAsRead = async (id: string, actionUrl: string) => {
         try {
+            const target = notifications.find((n) => n.id === id);
+            if (target && !target.read_at) {
+                setUnreadCount((c) => Math.max(0, c - 1));
+                setNotifications((prev) =>
+                    prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n))
+                );
+            }
             await fetch(route('notifications.read', { id }), {
                 method: 'POST',
                 headers: {
@@ -130,6 +200,7 @@ export function NotificationCenter() {
                 },
             });
             setNotifications((prev) => prev.map((n) => ({ ...n, read_at: new Date().toISOString() })));
+            setUnreadCount(0);
             router.reload({ only: ['notifications'] });
         } catch {
             // silently fail
@@ -180,7 +251,7 @@ export function NotificationCenter() {
                         <div className="flex flex-col items-center justify-center py-8 text-gray-400">
                             <Bell className="h-8 w-8 mb-2 opacity-40" />
                             <p className="text-xs font-medium">No notifications yet</p>
-                            <p className="text-[10px] text-gray-300 mt-0.5">You'll see updates about your applications here.</p>
+                            <p className="text-[10px] text-gray-300 mt-0.5">You'll see updates about matches and applications here.</p>
                         </div>
                     ) : (
                         notifications.map((notification) => {

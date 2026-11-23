@@ -35,8 +35,8 @@ class DashboardController extends Controller
             : "DATE_FORMAT(submitted_at, '%Y-%m')";
 
         $appDateExpr = $driver === 'sqlite'
-            ? "strftime('%Y-%m', resolved_at)"
-            : "DATE_FORMAT(resolved_at, '%Y-%m')";
+            ? "strftime('%Y-%m', COALESCE(resolved_at, released_at))"
+            : "DATE_FORMAT(COALESCE(resolved_at, released_at), '%Y-%m')";
 
         $months = collect(range(5, 0))->map(function ($i) {
             return Carbon::now()->subMonths($i)->format('Y-m');
@@ -48,8 +48,10 @@ class DashboardController extends Controller
             ->pluck('count', 'month');
 
         $approvalsByMonth = Application::selectRaw("{$appDateExpr} as month, count(*) as count")
-            ->where('status', 'approved')
-            ->whereNotNull('resolved_at')
+            ->whereIn('status', ['approved', 'completed'])
+            ->where(function ($q): void {
+                $q->whereNotNull('resolved_at')->orWhereNotNull('released_at');
+            })
             ->groupBy('month')
             ->pluck('count', 'month');
 

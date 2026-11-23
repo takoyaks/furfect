@@ -28,8 +28,10 @@ class EnsureOnboardingCompleted
                 in_array($currentRoute, [
                     'onboarding.ekyc.show',
                     'onboarding.personal.edit',
+                    'onboarding.personal.draft',
                     'onboarding.personal.store',
                     'onboarding.lifestyle.edit',
+                    'onboarding.lifestyle.draft',
                     'onboarding.lifestyle.store',
                     'identity.verification.session',
                     'identity.verification.callback',

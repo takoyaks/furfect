@@ -39,6 +39,7 @@ import { DssScoreCard } from '@/components/dss-score-card';
 import { ApplicationTimelineCard, TimelineEvent } from '@/components/application-timeline-card';
 import { AuditRemarksSelector } from '@/components/audit-remarks-selector';
 import { stripHtmlTags } from '@/lib/utils';
+import { formatWorkSchedule } from '@/lib/lifestyle-labels';
 import { toast } from 'sonner';
 
 interface ChecklistItem {
@@ -124,6 +125,7 @@ interface Application {
             outdoor_access?: string;
             activity_level?: string;
             work_schedule?: string;
+            work_schedule_other?: string | null;
             household_size?: number;
             household_agrees?: boolean;
             has_children?: string;
@@ -1458,9 +1460,15 @@ export default function ShelterApplicationIndex({
                                                     </div>
 
                                                     <div className="flex items-start">
-                                                        <span className="w-44 text-gray-500 font-medium">Work Routine</span>
+                                                        <span className="w-44 text-gray-500 font-medium">Occupation</span>
                                                         <span className="text-gray-400 mr-2">:</span>
-                                                        <span className="font-bold text-gray-900 capitalize">{activeLifestyle?.work_schedule?.replace(/_/g, ' ') || 'N/A'}</span>
+                                                        <span className="font-bold text-gray-900">{activeLifestyle?.occupation || 'N/A'}</span>
+                                                    </div>
+
+                                                    <div className="flex items-start">
+                                                        <span className="w-44 text-gray-500 font-medium">Daily Schedule</span>
+                                                        <span className="text-gray-400 mr-2">:</span>
+                                                        <span className="font-bold text-gray-900">{formatWorkSchedule(activeLifestyle?.work_schedule, activeLifestyle?.work_schedule_other)}</span>
                                                     </div>
 
                                                     <div className="flex items-start">

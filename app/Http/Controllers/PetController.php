@@ -201,6 +201,7 @@ class PetController extends Controller
             'hasActiveApplication' => $hasActiveApplication,
             'isApproved' => $isApproved,
             'isViewOnly' => $isViewOnly,
+            'adoptionCooldown' => $user ? $user->getAdoptionCooldownStatus() : null,
         ]);
     }
 }

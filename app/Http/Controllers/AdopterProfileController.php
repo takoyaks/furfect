@@ -7,8 +7,10 @@ use App\Models\SystemSetting;
 use App\Services\CloudinaryService;
 use App\Services\DiditVerificationService;
 use App\Services\EncryptedFileStorageService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -122,6 +124,94 @@ class AdopterProfileController extends Controller
     }
 
     /**
+     * Save progressive draft updates for the personal info onboarding wizard without marking it complete.
+     */
+    public function saveDraft(Request $request, EncryptedFileStorageService $fileStorage, CloudinaryService $cloudinary): JsonResponse
+    {
+        $user = $request->user()->fresh();
+        $ekycEnabled = (bool) SystemSetting::get('ekyc_enabled', true);
+
+        if ($ekycEnabled && ! $user->isIdentityVerified()) {
+            return response()->json([
+                'saved' => false,
+                'message' => __('eKYC identity verification is required before saving personal information.'),
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'draft_step' => ['sometimes', 'integer', 'min:1', 'max:5'],
+            'full_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'contact_number' => ['sometimes', 'nullable', 'string', 'max:50'],
+            'date_of_birth' => ['sometimes', 'nullable', 'date', 'before:today'],
+            'home_address' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'valid_id_type' => ['sometimes', 'nullable', 'string', 'max:150'],
+            'valid_id_number' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'id_document' => ['sometimes', 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
+            'id_document_back' => ['sometimes', 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
+            'had_pets_before' => ['sometimes', 'nullable', 'string', 'in:currently_have,had_before,never'],
+            'previous_pet_notes' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'surrendered_pet' => ['sometimes', 'nullable'],
+            'adoption_reason' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'adoption_reason_text' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'pet_stay' => ['sometimes', 'nullable', 'string', 'in:inside,outdoors,both'],
+        ]);
+
+        if (array_key_exists('surrendered_pet', $validated)) {
+            $validated['surrendered_pet'] = filter_var($validated['surrendered_pet'], FILTER_VALIDATE_BOOLEAN);
+        }
+
+        foreach (['had_pets_before', 'pet_stay', 'draft_step'] as $nonNullableKey) {
+            if (array_key_exists($nonNullableKey, $validated) && $validated[$nonNullableKey] === null) {
+                unset($validated[$nonNullableKey]);
+            }
+        }
+
+        $existingProfile = $user->adopterProfile;
+
+        if ($request->hasFile('id_document')) {
+            $storedFront = $this->storeIdDocument(
+                $request->file('id_document'),
+                $existingProfile?->id_document_path,
+                $fileStorage,
+                $cloudinary
+            );
+            $validated['id_document_path'] = $storedFront['path'];
+            $validated['id_document_mime'] = $storedFront['mime'];
+            $validated['id_document_name'] = $storedFront['name'];
+        }
+
+        if ($request->hasFile('id_document_back')) {
+            $storedBack = $this->storeIdDocument(
+                $request->file('id_document_back'),
+                $existingProfile?->id_document_back_path,
+                $fileStorage,
+                $cloudinary
+            );
+            $validated['id_document_back_path'] = $storedBack['path'];
+            $validated['id_document_back_mime'] = $storedBack['mime'];
+            $validated['id_document_back_name'] = $storedBack['name'];
+        }
+
+        unset($validated['id_document'], $validated['id_document_back']);
+
+        $profile = AdopterProfile::updateOrCreate(
+            ['user_id' => $user->id],
+            $validated
+        );
+
+        return response()->json([
+            'saved' => true,
+            'draft_step' => $profile->draft_step ?? 1,
+            'has_id_document' => $profile->hasIdDocument(),
+            'id_document_name' => $profile->id_document_name,
+            'has_id_document_back' => $profile->hasBackIdDocument(),
+            'id_document_back_name' => $profile->id_document_back_name,
+            'front_preview_url' => $profile->id_document_path ? route('adopter.id-document.show', ['profile' => $profile->id, 'side' => 'front']) : null,
+            'back_preview_url' => $profile->id_document_back_path ? route('adopter.id-document.show', ['profile' => $profile->id, 'side' => 'back']) : null,
+        ]);
+    }
+
+    /**
      * Store or update the adopter's personal info.
      */
     public function store(Request $request, EncryptedFileStorageService $fileStorage, CloudinaryService $cloudinary): RedirectResponse
@@ -171,48 +261,28 @@ class AdopterProfileController extends Controller
 
         // Handle front ID file upload if provided
         if ($request->hasFile('id_document')) {
-            if ($existingProfile?->id_document_path) {
-                if (str_starts_with($existingProfile->id_document_path, 'http')) {
-                    $cloudinary->delete($existingProfile->id_document_path);
-                } else {
-                    $fileStorage->deleteFile($existingProfile->id_document_path);
-                }
-            }
-
-            if ($cloudinary->isConfigured()) {
-                $upload = $cloudinary->upload($request->file('id_document'), 'id_documents');
-                $validated['id_document_path'] = $upload['secure_url'];
-                $validated['id_document_mime'] = $request->file('id_document')->getMimeType() ?: 'image/jpeg';
-                $validated['id_document_name'] = $request->file('id_document')->getClientOriginalName();
-            } else {
-                $stored = $fileStorage->storeEncrypted($request->file('id_document'), 'id_documents');
-                $validated['id_document_path'] = $stored['path'];
-                $validated['id_document_mime'] = $stored['mime'];
-                $validated['id_document_name'] = $stored['original_name'];
-            }
+            $storedFront = $this->storeIdDocument(
+                $request->file('id_document'),
+                $existingProfile?->id_document_path,
+                $fileStorage,
+                $cloudinary
+            );
+            $validated['id_document_path'] = $storedFront['path'];
+            $validated['id_document_mime'] = $storedFront['mime'];
+            $validated['id_document_name'] = $storedFront['name'];
         }
 
         // Handle back ID file upload if provided
         if ($request->hasFile('id_document_back')) {
-            if ($existingProfile?->id_document_back_path) {
-                if (str_starts_with($existingProfile->id_document_back_path, 'http')) {
-                    $cloudinary->delete($existingProfile->id_document_back_path);
-                } else {
-                    $fileStorage->deleteFile($existingProfile->id_document_back_path);
-                }
-            }
-
-            if ($cloudinary->isConfigured()) {
-                $upload = $cloudinary->upload($request->file('id_document_back'), 'id_documents');
-                $validated['id_document_back_path'] = $upload['secure_url'];
-                $validated['id_document_back_mime'] = $request->file('id_document_back')->getMimeType() ?: 'image/jpeg';
-                $validated['id_document_back_name'] = $request->file('id_document_back')->getClientOriginalName();
-            } else {
-                $stored = $fileStorage->storeEncrypted($request->file('id_document_back'), 'id_documents');
-                $validated['id_document_back_path'] = $stored['path'];
-                $validated['id_document_back_mime'] = $stored['mime'];
-                $validated['id_document_back_name'] = $stored['original_name'];
-            }
+            $storedBack = $this->storeIdDocument(
+                $request->file('id_document_back'),
+                $existingProfile?->id_document_back_path,
+                $fileStorage,
+                $cloudinary
+            );
+            $validated['id_document_back_path'] = $storedBack['path'];
+            $validated['id_document_back_mime'] = $storedBack['mime'];
+            $validated['id_document_back_name'] = $storedBack['name'];
         }
 
         unset($validated['id_document'], $validated['id_document_back']);
@@ -221,6 +291,7 @@ class AdopterProfileController extends Controller
         AdopterProfile::updateOrCreate(
             ['user_id' => $user->id],
             array_merge($validated, [
+                'draft_step' => 1,
                 'profile_completed_at' => now(),
             ])
         );
@@ -232,6 +303,44 @@ class AdopterProfileController extends Controller
         ]);
 
         return to_route('onboarding.lifestyle.edit');
+    }
+
+    /**
+     * Store an uploaded ID document (Cloudinary or encrypted local disk) and remove any prior file.
+     *
+     * @return array{path: string, mime: string, name: string}
+     */
+    private function storeIdDocument(
+        UploadedFile $file,
+        ?string $existingPath,
+        EncryptedFileStorageService $fileStorage,
+        CloudinaryService $cloudinary
+    ): array {
+        if ($existingPath) {
+            if (str_starts_with($existingPath, 'http')) {
+                $cloudinary->delete($existingPath);
+            } else {
+                $fileStorage->deleteFile($existingPath);
+            }
+        }
+
+        if ($cloudinary->isConfigured()) {
+            $upload = $cloudinary->upload($file, 'id_documents');
+
+            return [
+                'path' => $upload['secure_url'],
+                'mime' => $file->getMimeType() ?: 'image/jpeg',
+                'name' => $file->getClientOriginalName(),
+            ];
+        }
+
+        $stored = $fileStorage->storeEncrypted($file, 'id_documents');
+
+        return [
+            'path' => $stored['path'],
+            'mime' => $stored['mime'],
+            'name' => $stored['original_name'],
+        ];
     }
 
     /**

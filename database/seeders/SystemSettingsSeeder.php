@@ -122,8 +122,8 @@ class SystemSettingsSeeder extends Seeder
                 'key' => 'adopter_adoption_cooldown_months',
                 'value' => '3',
                 'type' => 'integer',
-                'label' => 'Adopter Post-Adoption Cooldown (Months)',
-                'description' => 'The adopter can only adopt another pet after this many months so they can focus on their newly adopted pet. Set to 0 to disable.',
+                'label' => 'Post-Approval Application Cooldown (Months)',
+                'description' => 'Number of months an applicant is restricted from applying again starting from the date their adoption is approved (default: 3 months). Set to 0 to disable.',
             ],
             [
                 'key' => 'certificate_signatories',

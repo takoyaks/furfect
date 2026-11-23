@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\Application;
+use App\Models\Pet;
 use App\Models\User;
 use App\Notifications\ApplicationStatusUpdatedNotification;
+use App\Notifications\NewMatchedPetAvailableNotification;
 use Spatie\Permission\Models\Role;
 
 class AdoptionNotificationService
@@ -82,12 +84,26 @@ class AdoptionNotificationService
     private function notifyRole(string|array $roleName, Application $application, string $event): void
     {
         $roleNames = (array) $roleName;
-        $users = User::role($roleNames)->get()->unique('id');
+        $existingRoles = Role::whereIn('name', $roleNames)->pluck('name')->all();
+
+        if ($existingRoles === []) {
+            return;
+        }
+
+        $users = User::role($existingRoles)->get()->unique('id');
 
         foreach ($users as $user) {
             $user->notify(
                 new ApplicationStatusUpdatedNotification($application, $event)
             );
         }
+    }
+
+    /**
+     * Notify an adopter when a newly available pet matches their saved lifestyle profile.
+     */
+    public function notifyNewMatchedPet(User $adopter, Pet $pet): void
+    {
+        $adopter->notify(new NewMatchedPetAvailableNotification($pet));
     }
 }

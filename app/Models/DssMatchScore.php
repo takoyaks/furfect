@@ -24,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property array<string>|null $match_reasons
  * @property array<string>|null $mismatch_reasons
  * @property Carbon $computed_at
+ * @property Carbon|null $notified_at
  */
 class DssMatchScore extends Model
 {
@@ -52,6 +53,7 @@ class DssMatchScore extends Model
         'match_reasons',
         'mismatch_reasons',
         'computed_at',
+        'notified_at',
     ];
 
     /**
@@ -80,6 +82,7 @@ class DssMatchScore extends Model
             'match_reasons' => 'array',
             'mismatch_reasons' => 'array',
             'computed_at' => 'datetime',
+            'notified_at' => 'datetime',
         ];
     }
 

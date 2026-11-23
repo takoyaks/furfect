@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\DssMatchScore;
 use App\Models\LifestyleProfile;
 use App\Models\Pet;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -44,41 +45,143 @@ class DssMatchingService
 
         DB::transaction(function () use ($user, $lifestyle, $pets, &$scores): void {
             foreach ($pets as $pet) {
-                $result = $this->computeScore($lifestyle, $pet);
-
-                $score = DssMatchScore::updateOrCreate(
-                    ['user_id' => $user->id, 'pet_id' => $pet->id],
-                    [
-                        'total_score' => $result['total_score'],
-                        'lifestyle_score' => $result['lifestyle_score'],
-                        'housing_score' => $result['housing_score'],
-                        'care_capacity_score' => $result['care_capacity_score'],
-                        'experience_score' => $result['experience_score'],
-                        'other_pets_score' => $result['other_pets_score'],
-                        'family_children_score' => $result['family_children_score'],
-                        'age_activity_score' => $result['age_activity_score'],
-                        'special_requirements_score' => $result['special_requirements_score'],
-                        'breakdown_details' => $result['breakdown_details'],
-                        'fast_track_eligible' => $result['fast_track_eligible'],
-                        // Legacy column compatibility
-                        'living_score' => $result['housing_score'],
-                        'health_score' => $result['special_requirements_score'],
-                        'financial_score' => $result['care_capacity_score'],
-                        'activity_score' => $result['lifestyle_score'],
-                        'household_score' => $result['family_children_score'],
-                        'preference_score' => $result['age_activity_score'],
-                        'match_reasons' => $result['match_reasons'],
-                        'mismatch_reasons' => $result['mismatch_reasons'],
-                        'computed_at' => now(),
-                    ]
-                );
-
+                $score = $this->persistScore($user, $lifestyle, $pet, markNotifiedIfNew: true);
                 $score->setRelation('pet', $pet);
                 $scores->push($score);
             }
         });
 
         return $scores->sortByDesc('total_score')->values();
+    }
+
+    /**
+     * Compute and persist DSS match scores for a newly added or updated pet across all eligible adopters,
+     * notifying qualified adopters who have not yet been alerted for this pet.
+     *
+     * @return Collection<int, DssMatchScore>
+     */
+    public function computeMatchesForPet(Pet $pet, bool $notifyAdopters = true): Collection
+    {
+        if ($pet->status !== 'available') {
+            return collect();
+        }
+
+        $pet->loadMissing('shelter');
+        $minScore = (float) SystemSetting::get('dss_minimum_score', 50);
+        $scores = collect();
+        $notificationService = app(AdoptionNotificationService::class);
+
+        LifestyleProfile::whereNotNull('submitted_at')
+            ->with('user.roles')
+            ->chunkById(100, function ($profiles) use ($pet, $notifyAdopters, $minScore, $notificationService, &$scores): void {
+                foreach ($profiles as $lifestyle) {
+                    $user = $lifestyle->user;
+
+                    if (! $user || $user->isSuspended() || $user->hasAnyRole(['admin', 'shelter_staff', 'mao_staff'])) {
+                        continue;
+                    }
+
+                    $score = $this->persistScore($user, $lifestyle, $pet);
+                    $score->setRelation('pet', $pet);
+
+                    if ($notifyAdopters && $score->notified_at === null && $this->isQualifyingMatch($score, $minScore)) {
+                        $notificationService->notifyNewMatchedPet($user, $pet);
+                        $score->forceFill(['notified_at' => now()])->save();
+                    }
+
+                    $scores->push($score);
+                }
+            });
+
+        return $scores->sortByDesc('total_score')->values();
+    }
+
+    /**
+     * Ensure all currently available pets have a persisted DSS match score for the given adopter.
+     */
+    public function syncMissingMatchesForUser(User $user): void
+    {
+        $lifestyle = $user->lifestyleProfile;
+
+        if (! $lifestyle || ! $lifestyle->submitted_at) {
+            return;
+        }
+
+        $missingPets = Pet::where('status', 'available')
+            ->whereDoesntHave('matchScores', fn ($query) => $query->where('user_id', $user->id))
+            ->with(['photos', 'shelter'])
+            ->get();
+
+        if ($missingPets->isEmpty()) {
+            return;
+        }
+
+        DB::transaction(function () use ($user, $lifestyle, $missingPets): void {
+            foreach ($missingPets as $pet) {
+                $this->persistScore($user, $lifestyle, $pet);
+            }
+        });
+    }
+
+    /**
+     * Determine whether a persisted DSS match score qualifies as a match for an adopter.
+     */
+    public function isQualifyingMatch(DssMatchScore $score, ?float $minScore = null): bool
+    {
+        $threshold = $minScore ?? (float) SystemSetting::get('dss_minimum_score', 50);
+
+        return (float) $score->total_score >= $threshold && (float) $score->housing_score > 0.0;
+    }
+
+    /**
+     * Compute and persist a single DssMatchScore row without duplicating storage logic.
+     */
+    private function persistScore(User $user, LifestyleProfile $lifestyle, Pet $pet, bool $markNotifiedIfNew = false): DssMatchScore
+    {
+        $result = $this->computeScore($lifestyle, $pet);
+
+        $attributes = [
+            'total_score' => $result['total_score'],
+            'lifestyle_score' => $result['lifestyle_score'],
+            'housing_score' => $result['housing_score'],
+            'care_capacity_score' => $result['care_capacity_score'],
+            'experience_score' => $result['experience_score'],
+            'other_pets_score' => $result['other_pets_score'],
+            'family_children_score' => $result['family_children_score'],
+            'age_activity_score' => $result['age_activity_score'],
+            'special_requirements_score' => $result['special_requirements_score'],
+            'breakdown_details' => $result['breakdown_details'],
+            'fast_track_eligible' => $result['fast_track_eligible'],
+            // Legacy column compatibility
+            'living_score' => $result['housing_score'],
+            'health_score' => $result['special_requirements_score'],
+            'financial_score' => $result['care_capacity_score'],
+            'activity_score' => $result['lifestyle_score'],
+            'household_score' => $result['family_children_score'],
+            'preference_score' => $result['age_activity_score'],
+            'match_reasons' => $result['match_reasons'],
+            'mismatch_reasons' => $result['mismatch_reasons'],
+            'computed_at' => now(),
+        ];
+
+        $existing = DssMatchScore::where('user_id', $user->id)
+            ->where('pet_id', $pet->id)
+            ->first();
+
+        if ($existing) {
+            $existing->update($attributes);
+
+            return $existing;
+        }
+
+        if ($markNotifiedIfNew) {
+            $attributes['notified_at'] = now();
+        }
+
+        return DssMatchScore::create(array_merge([
+            'user_id' => $user->id,
+            'pet_id' => $pet->id,
+        ], $attributes));
     }
 
     /**
@@ -240,7 +343,7 @@ class DssMatchingService
         $petEnergy = $petEnergyScale[$pet->energy_level ?? 'moderate'] ?? 2;
         $gap = abs($userActivity - $petEnergy);
 
-        $schedule = $lifestyle->work_schedule ?? 'office';
+        $schedule = $lifestyle->work_schedule ?? 'frequently_at_home';
         $score = 1.00;
 
         if ($gap === 0) {
@@ -257,20 +360,34 @@ class DssMatchingService
             $mismatchReasons[] = 'Very high energy vs. low activity — poor match';
         }
 
-        // Long hours away with high energy pet adjustment
-        if ($petEnergy >= 2 && in_array($schedule, ['shifting', 'office']) && $score > 0.50 && $schedule !== 'wfh' && $schedule !== 'student') {
-            $score = 0.75;
-            $mismatchReasons[] = 'Standard away-from-home schedule will require dedicated exercise time for this active pet.';
-        } elseif (in_array($schedule, ['wfh', 'student'])) {
-            $matchReasons[] = 'Flexible schedule allows quality companionship time.';
+        // Daily schedule / presence adjustments
+        if (in_array($schedule, ['always_at_home', 'frequently_at_home', 'wfh', 'student'], true)) {
+            $matchReasons[] = 'Flexible daily schedule allows quality companionship time.';
+        } elseif (in_array($schedule, ['travel_sometimes', 'others', 'office'], true)) {
+            if ($petEnergy >= 2 && $score > 0.75) {
+                $score = 0.75;
+                $mismatchReasons[] = 'Periodic time away or travel will require dedicated exercise time for this active pet.';
+            }
+        } elseif (in_array($schedule, ['travel_a_lot', 'shifting'], true)) {
+            if ($petEnergy >= 2 && $score > 0.50) {
+                $score = 0.50;
+                $mismatchReasons[] = 'Frequent travel schedule may limit daily supervision and exercise time for this active pet.';
+            } elseif ($petEnergy < 2 && $score > 0.75) {
+                $score = 0.75;
+                $mismatchReasons[] = 'Frequent travel schedule requires reliable daily care arrangements for this pet.';
+            }
         }
+
+        $scheduleLabel = $schedule === 'others' && ! empty($lifestyle->work_schedule_other)
+            ? "others ({$lifestyle->work_schedule_other})"
+            : $schedule;
 
         $breakdownDetails['lifestyle'] = [
             'score' => $score,
             'weight' => 25,
             'label' => 'Lifestyle Compatibility',
             'assessment' => $score >= 1.0 ? 'Excellent Match' : ($score >= 0.75 ? 'Acceptable' : ($score >= 0.50 ? 'Limited Compatibility' : 'Incompatible')),
-            'details' => "Adopter Activity: {$lifestyle->activity_level}, Pet Energy: {$pet->energy_level}, Work Schedule: {$schedule}",
+            'details' => "Adopter Activity: {$lifestyle->activity_level}, Pet Energy: {$pet->energy_level}, Daily Schedule: {$scheduleLabel}",
         ];
 
         return $score;

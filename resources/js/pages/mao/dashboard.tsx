@@ -164,7 +164,7 @@ export default function MaoDashboard({
             fontFamily: 'inherit',
         },
         labels: [
-            'Approved Placement',
+            'Approved Adoption',
             'Disapproved / Non-Compliant',
             'Awaiting MAO Statutory Audit',
             'Under Staff Review',

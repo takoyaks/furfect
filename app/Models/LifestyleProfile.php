@@ -9,11 +9,12 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property int $user_id
- * @property string $housing_type
+ * @property string|null $housing_type
  * @property string $has_aircon
  * @property string $outdoor_access
  * @property string $activity_level
  * @property string $work_schedule
+ * @property string|null $work_schedule_other
  * @property int $household_size
  * @property bool $household_agrees
  * @property string $has_children
@@ -26,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property array<string>|null $preferred_size
  * @property string $preferred_gender
  * @property array<string>|null $preferred_coat
+ * @property int $draft_step
  * @property Carbon|null $submitted_at
  * @property Carbon|null $locked_until
  */
@@ -38,6 +40,7 @@ class LifestyleProfile extends Model
         'outdoor_access',
         'activity_level',
         'work_schedule',
+        'work_schedule_other',
         'household_size',
         'household_agrees',
         'has_children',
@@ -50,6 +53,7 @@ class LifestyleProfile extends Model
         'preferred_size',
         'preferred_gender',
         'preferred_coat',
+        'draft_step',
         'submitted_at',
         'locked_until',
     ];
@@ -67,6 +71,7 @@ class LifestyleProfile extends Model
             'submitted_at' => 'datetime',
             'locked_until' => 'datetime',
             'household_size' => 'integer',
+            'draft_step' => 'integer',
         ];
     }
 

@@ -59,6 +59,14 @@ interface DssData {
     mismatch_reasons: string[];
 }
 
+interface AdoptionCooldown {
+    is_restricted: boolean;
+    cooldown_months: number;
+    approved_date_formatted: string | null;
+    eligible_date_formatted: string | null;
+    remaining_days: number;
+}
+
 export default function PetShow({
     pet,
     dssData,
@@ -66,6 +74,7 @@ export default function PetShow({
     hasActiveApplication,
     isApproved = false,
     isViewOnly = false,
+    adoptionCooldown = null,
 }: {
     pet: Pet;
     dssData: DssData | null;
@@ -73,6 +82,7 @@ export default function PetShow({
     hasActiveApplication: boolean;
     isApproved: boolean;
     isViewOnly?: boolean;
+    adoptionCooldown?: AdoptionCooldown | null;
 }) {
     const page = usePage();
     const { auth, systemSettings } = page.props as any;
@@ -307,10 +317,10 @@ export default function PetShow({
                                             <Heart className={`h-5 w-5 ${isSaved && !isViewOnlyMode ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
                                         </Button>
                                         <Button 
-                                            onClick={isViewOnlyMode ? undefined : handleApply}
-                                            disabled={isViewOnlyMode || hasActiveApplication || pet.status !== 'available'}
+                                            onClick={isViewOnlyMode || adoptionCooldown?.is_restricted ? undefined : handleApply}
+                                            disabled={isViewOnlyMode || hasActiveApplication || Boolean(adoptionCooldown?.is_restricted) || pet.status !== 'available'}
                                             className={`flex-1 font-bold text-sm h-10 shadow-xs gap-1.5 ${
-                                                isViewOnlyMode 
+                                                isViewOnlyMode || adoptionCooldown?.is_restricted
                                                     ? 'bg-gray-200 text-gray-500 cursor-not-allowed hover:bg-gray-200' 
                                                     : 'bg-[#D4A017] hover:bg-[#B8860B] text-white'
                                             }`}
@@ -319,6 +329,8 @@ export default function PetShow({
                                                 'View-Only Mode'
                                             ) : hasActiveApplication ? (
                                                 'Application Active'
+                                            ) : adoptionCooldown?.is_restricted ? (
+                                                'Adoption Cooldown Active'
                                             ) : pet.status !== 'available' ? (
                                                 'Pet Unavailable'
                                             ) : (
@@ -333,6 +345,14 @@ export default function PetShow({
                                     {!isViewOnlyMode && hasActiveApplication && (
                                         <p className="text-[11px] text-center text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200">
                                             You currently have an active adoption application. Track progress in your portal.
+                                        </p>
+                                    )}
+
+                                    {!isViewOnlyMode && !hasActiveApplication && adoptionCooldown?.is_restricted && (
+                                        <p className="text-[11px] text-center text-amber-800 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+                                            Your previous adoption was approved on{' '}
+                                            <strong>{adoptionCooldown.approved_date_formatted}</strong>. You may apply again on{' '}
+                                            <strong>{adoptionCooldown.eligible_date_formatted}</strong> ({adoptionCooldown.remaining_days} day(s) remaining).
                                         </p>
                                     )}
                                 </div>

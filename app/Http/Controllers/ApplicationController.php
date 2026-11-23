@@ -76,6 +76,16 @@ class ApplicationController extends Controller
     {
         $user = $request->user();
 
+        $cooldown = $user->getAdoptionCooldownStatus();
+        if ($cooldown['is_restricted']) {
+            Inertia::flash('toast', [
+                'type' => 'warning',
+                'message' => __("Your adoption application was approved on {$cooldown['approved_date_formatted']}. You must wait {$cooldown['cooldown_months']} month(s) from approval before applying again. You may apply again on {$cooldown['eligible_date_formatted']} (in {$cooldown['remaining_days']} day(s))."),
+            ]);
+
+            return to_route('application.show');
+        }
+
         $request->validate([
             'pet_id' => ['required', 'exists:pets,id'],
         ]);
@@ -250,30 +260,15 @@ class ApplicationController extends Controller
             }
         }
 
-        // 4. Check for post-adoption cooldown (3-month focus period)
-        $cooldownMonths = (int) SystemSetting::get('adopter_adoption_cooldown_months', 3);
-        if ($cooldownMonths > 0) {
-            $lastCompleted = Application::where('user_id', $user->id)
-                ->where('status', 'completed')
-                ->latest('released_at')
-                ->first();
+        // 4. Check for post-approval cooldown (default: 3 months from approval date)
+        $cooldown = $user->getAdoptionCooldownStatus();
+        if ($cooldown['is_restricted']) {
+            Inertia::flash('toast', [
+                'type' => 'warning',
+                'message' => __("Your adoption application was approved on {$cooldown['approved_date_formatted']}. You must wait {$cooldown['cooldown_months']} month(s) from approval before applying again. You may apply again on {$cooldown['eligible_date_formatted']} (in {$cooldown['remaining_days']} day(s))."),
+            ]);
 
-            if ($lastCompleted) {
-                $referenceDate = $lastCompleted->released_at ?? $lastCompleted->resolved_at ?? $lastCompleted->updated_at;
-                if ($referenceDate) {
-                    $eligibleDate = $referenceDate->copy()->addMonths($cooldownMonths);
-                    if (now()->lt($eligibleDate)) {
-                        $remainingDays = (int) ceil(now()->diffInDays($eligibleDate, false));
-                        $formattedDate = $eligibleDate->format('F d, Y');
-                        Inertia::flash('toast', [
-                            'type' => 'warning',
-                            'message' => __("You recently completed an adoption! To ensure your new companion receives dedicated focus and care, there is a {$cooldownMonths}-month focus period before adopting another pet. You may apply again on {$formattedDate} (in {$remainingDays} day(s))."),
-                        ]);
-
-                        return to_route('application.show');
-                    }
-                }
-            }
+            return to_route('application.show');
         }
 
         $request->validate([

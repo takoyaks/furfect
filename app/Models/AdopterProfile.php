@@ -11,12 +11,12 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property int $user_id
- * @property string $full_name
- * @property string $contact_number
- * @property string $date_of_birth
- * @property string $home_address
- * @property string $valid_id_type
- * @property string $valid_id_number
+ * @property string|null $full_name
+ * @property string|null $contact_number
+ * @property string|null $date_of_birth
+ * @property string|null $home_address
+ * @property string|null $valid_id_type
+ * @property string|null $valid_id_number
  * @property string|null $id_document_path
  * @property string|null $id_document_mime
  * @property string|null $id_document_name
@@ -26,9 +26,10 @@ use Illuminate\Support\Carbon;
  * @property string $had_pets_before
  * @property string|null $previous_pet_notes
  * @property bool $surrendered_pet
- * @property string $adoption_reason
+ * @property string|null $adoption_reason
  * @property string|null $adoption_reason_text
  * @property string $pet_stay
+ * @property int $draft_step
  * @property bool $is_identity_verified
  * @property Carbon|null $identity_verified_at
  * @property string|null $identity_verification_provider
@@ -67,6 +68,7 @@ class AdopterProfile extends Model
         'adoption_reason',
         'adoption_reason_text',
         'pet_stay',
+        'draft_step',
         'profile_completed_at',
     ];
 
@@ -98,6 +100,7 @@ class AdopterProfile extends Model
             'identity_verified_at' => 'datetime',
             'profile_completed_at' => 'datetime',
             'date_of_birth' => 'date',
+            'draft_step' => 'integer',
         ];
     }
 

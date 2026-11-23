@@ -219,6 +219,81 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the adopter's post-approval adoption cooldown restriction status.
+     *
+     * @return array{
+     *   is_restricted: bool,
+     *   cooldown_months: int,
+     *   approved_at: string|null,
+     *   approved_date_formatted: string|null,
+     *   eligible_at: string|null,
+     *   eligible_date_formatted: string|null,
+     *   remaining_days: int
+     * }
+     */
+    public function getAdoptionCooldownStatus(): array
+    {
+        $cooldownMonths = (int) SystemSetting::get('adopter_adoption_cooldown_months', 3);
+
+        if ($cooldownMonths <= 0) {
+            return [
+                'is_restricted' => false,
+                'cooldown_months' => 0,
+                'approved_at' => null,
+                'approved_date_formatted' => null,
+                'eligible_at' => null,
+                'eligible_date_formatted' => null,
+                'remaining_days' => 0,
+            ];
+        }
+
+        $latest = Application::where('user_id', $this->id)
+            ->whereIn('status', ['approved', 'completed'])
+            ->orderByRaw('COALESCE(resolved_at, released_at, updated_at) DESC')
+            ->first();
+
+        if (! $latest) {
+            return [
+                'is_restricted' => false,
+                'cooldown_months' => $cooldownMonths,
+                'approved_at' => null,
+                'approved_date_formatted' => null,
+                'eligible_at' => null,
+                'eligible_date_formatted' => null,
+                'remaining_days' => 0,
+            ];
+        }
+
+        $referenceDate = $latest->resolved_at ?? $latest->released_at ?? $latest->updated_at;
+
+        if (! $referenceDate) {
+            return [
+                'is_restricted' => false,
+                'cooldown_months' => $cooldownMonths,
+                'approved_at' => null,
+                'approved_date_formatted' => null,
+                'eligible_at' => null,
+                'eligible_date_formatted' => null,
+                'remaining_days' => 0,
+            ];
+        }
+
+        $eligibleAt = $referenceDate->copy()->addMonths($cooldownMonths);
+        $isRestricted = now()->lt($eligibleAt);
+        $remainingDays = $isRestricted ? max(1, (int) ceil(now()->diffInDays($eligibleAt, false))) : 0;
+
+        return [
+            'is_restricted' => $isRestricted,
+            'cooldown_months' => $cooldownMonths,
+            'approved_at' => $referenceDate->toIso8601String(),
+            'approved_date_formatted' => $referenceDate->format('F d, Y'),
+            'eligible_at' => $eligibleAt->toIso8601String(),
+            'eligible_date_formatted' => $eligibleAt->format('F d, Y'),
+            'remaining_days' => $remainingDays,
+        ];
+    }
+
+    /**
      * Check if user has linked their Google account.
      */
     public function hasGoogleLinked(): bool

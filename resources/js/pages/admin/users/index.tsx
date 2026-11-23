@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { useThemeTemplate } from '@/hooks/use-theme-template';
+import { formatWorkSchedule } from '@/lib/lifestyle-labels';
 import { 
     Search, 
     User as UserIcon, 
@@ -60,6 +61,7 @@ interface LifestyleProfileData {
     housing_type: string;
     activity_level: string;
     work_schedule: string;
+    work_schedule_other?: string | null;
     household_size: number;
     has_children: string;
     other_pets: string;
@@ -923,8 +925,12 @@ export default function AdminUsers({
                                                 <span className="font-semibold text-gray-800 break-words block capitalize">{inspectingSubscriber.lifestyle_profile.activity_level?.replace(/_/g, ' ') || 'N/A'}</span>
                                             </div>
                                             <div className="min-w-0 bg-white/80 p-2 rounded border border-purple-100/80">
-                                                <span className="text-[10px] text-purple-600 font-semibold block uppercase">Work Schedule</span>
-                                                <span className="font-semibold text-gray-800 break-words block capitalize">{inspectingSubscriber.lifestyle_profile.work_schedule?.replace(/_/g, ' ') || 'N/A'}</span>
+                                                <span className="text-[10px] text-purple-600 font-semibold block uppercase">Occupation</span>
+                                                <span className="font-semibold text-gray-800 break-words block">{inspectingSubscriber.lifestyle_profile.occupation || 'N/A'}</span>
+                                            </div>
+                                            <div className="min-w-0 bg-white/80 p-2 rounded border border-purple-100/80">
+                                                <span className="text-[10px] text-purple-600 font-semibold block uppercase">Daily Schedule</span>
+                                                <span className="font-semibold text-gray-800 break-words block">{formatWorkSchedule(inspectingSubscriber.lifestyle_profile.work_schedule, inspectingSubscriber.lifestyle_profile.work_schedule_other)}</span>
                                             </div>
                                             <div className="min-w-0 bg-white/80 p-2 rounded border border-purple-100/80">
                                                 <span className="text-[10px] text-purple-600 font-semibold block uppercase">Household Size</span>

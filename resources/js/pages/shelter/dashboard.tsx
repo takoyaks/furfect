@@ -133,7 +133,7 @@ export default function ShelterDashboard({
             data: monthlyTrends.map(t => t.submitted),
         },
         {
-            name: 'Adopted Placements',
+            name: 'Adoption Complete',
             data: monthlyTrends.map(t => t.approved),
         },
     ];

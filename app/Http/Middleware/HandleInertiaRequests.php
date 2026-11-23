@@ -61,6 +61,7 @@ class HandleInertiaRequests extends Middleware
                             'event' => $data['event'] ?? 'notification',
                             'application_id' => $data['application_id'] ?? null,
                             'reference_number' => $data['reference_number'] ?? null,
+                            'pet_id' => $data['pet_id'] ?? null,
                             'pet_name' => $data['pet_name'] ?? null,
                         ],
                         'read_at' => $n->read_at ? $n->read_at->toIso8601String() : null,

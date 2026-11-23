@@ -160,7 +160,7 @@ export default function AdminDashboard({
             type: 'donut' as const,
             fontFamily: 'inherit',
         },
-        labels: ['Pending Initial', 'Under Staff Review', 'MAO Statutory Audit', 'Approved Placement', 'Rejected / Ineligible'],
+        labels: ['Pending Initial', 'Under Staff Review', 'MAO Statutory Audit', 'Approved Adoption', 'Rejected / Ineligible'],
         colors: [
             THEME_COLORS.vibrantYellow,
             '#5E9447',
@@ -429,7 +429,7 @@ export default function AdminDashboard({
                                     Adoption &amp; Application Velocity
                                 </CardTitle>
                                 <CardDescription className="text-xs text-[#283F24]/60">
-                                    6-month trend comparing inbound adoption applications against approved pet placements.
+                                    6-month trend comparing inbound adoption applications against approved adoptions.
                                 </CardDescription>
                             </div>
                         </CardHeader>
